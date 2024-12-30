@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anime Stream - Home</title>
+    <script src="https://unpkg.com/alpinejs" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        navy: {
+                            DEFAULT: '#1a1b2e',
+                            dark: '#13141f',
+                            light: '#2a2b3d'
+                        },
+                        accent: {
+                            cyan: '#0ff',
+                            pink: '#ff69b4'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-navy-dark text-white min-h-screen flex items-center justify-center" x-data="{
+    newRoomId: '',
+    errorMessage: '',
+    createOrJoinRoom() {
+        if (this.newRoomId.trim()) {
+            window.location.href = '/' + this.newRoomId;
+        } else {
+            this.errorMessage = 'Please enter a room ID';
+        }
+    }
+}">
+    <div class="text-center">
+        <h1 class="text-4xl font-bold mb-8">Welcome to Anime Stream</h1>
+        <form @submit.prevent="createOrJoinRoom" class="space-y-4">
+            <div>
+                <input 
+                    type="text" 
+                    x-model="newRoomId"
+                    placeholder="Enter a room ID"
+                    class="w-64 px-4 py-2 bg-navy rounded-lg border border-navy-light focus:border-accent-cyan focus:ring-1 focus:ring-accent-cyan outline-none"
+                >
+            </div>
+            <button 
+                type="submit"
+                class="px-6 py-2 bg-accent-cyan text-navy rounded-lg hover:bg-opacity-75 transition-colors font-medium"
+            >
+                Create/Join Room
+            </button>
+            <p x-show="errorMessage" x-text="errorMessage" class="text-red-500"></p>
+        </form>
+    </div>
+</body>
+</html>
+

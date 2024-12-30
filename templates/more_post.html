@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Future of AI in Gaming: Possibilities and Challenges</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        'primary': '#ef4444',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="min-h-screen bg-black/95 text-white p-4 md:p-6" x-data="{ 
+    isLiked: false, 
+    likeCount: 123,
+    comments: [
+        { id: 1, author: 'Alice', content: 'Great post! Thanks for sharing.', timestamp: '1 hour ago' },
+        { id: 2, author: 'Bob', content: 'I have a question about this. Can you elaborate more on...', timestamp: '30 minutes ago' }
+    ],
+    newComment: '',
+    handleLike() {
+        this.isLiked = !this.isLiked;
+        this.likeCount += this.isLiked ? 1 : -1;
+        anime({
+            targets: '#likeButton',
+            scale: [1, 1.2, 1],
+            duration: 300,
+            easing: 'easeInOutQuad'
+        });
+    },
+    submitComment() {
+        if (this.newComment.trim()) {
+            this.comments.push({ 
+                id: this.comments.length + 1, 
+                author: 'You', 
+                content: this.newComment, 
+                timestamp: 'Just now' 
+            });
+            this.newComment = '';
+            this.$nextTick(() => {
+                anime({
+                    targets: '.comment:last-child',
+                    translateY: [20, 0],
+                    opacity: [0, 1],
+                    duration: 500,
+                    easing: 'easeOutQuad'
+                });
+            });
+        }
+    }
+}">
+    <div class="max-w-4xl mx-auto space-y-6">
+        <button class="mb-4 text-white/60 hover:text-white transition-colors" onclick="history.back()">
+            <svg xmlns="http://www.w3.org/2000/svg" class="inline-block h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Back to Community
+        </button>
+
+        <article class="bg-black/60 border border-white/10 rounded-lg p-6 space-y-4">
+            <header class="flex items-center gap-4">
+                <img src="https://g-9bccjjsgxvz.vusercontent.net/placeholder.svg" alt="Author avatar" class="h-9 w-9 rounded-full">
+                <div class="flex-1">
+                    <h2 class="text-sm font-medium">Community Member</h2>
+                    <p class="text-white/60 text-xs">2 hours ago</p>
+                </div>
+                <span class="px-2 py-1 text-xs font-semibold rounded-full bg-primary/10 text-primary">Discussion</span>
+            </header>
+            <h1 class="text-2xl font-bold">The Future of AI in Gaming: Possibilities and Challenges</h1>
+            <div class="space-y-4 text-white/80">
+                <p>
+                    Artificial Intelligence has been making waves in various industries, and gaming is no exception. As we look towards the future, 
+                    the potential applications of AI in gaming are both exciting and challenging. From more realistic NPCs to dynamic storytelling, 
+                    AI promises to revolutionize the way we experience games.
+                </p>
+                <p>
+                    One of the most promising areas is the use of AI to create more immersive and responsive game worlds. Imagine NPCs that can 
+                    engage in natural conversations, remember past interactions, and adapt their behavior based on the player's actions. This level 
+                    of sophistication could lead to truly unique gaming experiences for each player.
+                </p>
+                <p>
+                    However, with these possibilities come challenges. How do we balance AI-driven content with hand-crafted narratives? 
+                    What are the ethical implications of creating highly realistic AI characters? And how do we ensure that games remain fun 
+                    and not overly complex?
+                </p>
+                <p>
+                    What are your thoughts on this? How do you see AI shaping the future of gaming, and what potential pitfalls should we be aware of?
+                </p>
+            </div>
+            <footer class="flex items-center gap-4 pt-4">
+                <button id="likeButton" @click="handleLike" :class="{ 'text-primary': isLiked }" class="flex items-center gap-2 text-white/60 hover:text-primary transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" :class="{ 'fill-current': isLiked }" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                    </svg>
+                    <span x-text="likeCount"></span>
+                </button>
+                <button class="flex items-center gap-2 text-white/60 hover:text-primary transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                    </svg>
+                    <span x-text="comments.length"></span>
+                </button>
+                <button class="flex items-center gap-2 text-white/60 hover:text-primary transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                    </svg>
+                    Share
+                </button>
+            </footer>
+        </article>
+
+        <section class="bg-black/60 border border-white/10 rounded-lg p-6 space-y-4">
+            <h2 class="text-xl font-bold">Comments</h2>
+            <form @submit.prevent="submitComment" class="space-y-4">
+                <textarea x-model="newComment" placeholder="Add a comment..." class="w-full min-h-[100px] bg-black/30 border border-white/10 rounded-md p-2 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-primary"></textarea>
+                <button type="submit" class="px-4 py-2 bg-primary/10 text-primary hover:bg-primary/20 rounded-md transition-colors">Post Comment</button>
+            </form>
+        </section>
+
+        <section class="bg-black/60 border border-white/10 rounded-lg p-6">
+            <div class="space-y-4 max-h-[400px] overflow-y-auto pr-4">
+                <template x-for="comment in comments" :key="comment.id">
+                    <div class="comment space-y-2 pb-4 border-b border-white/10 last:border-b-0">
+                        <div class="flex items-center gap-2">
+                            <div class="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-primary font-semibold" x-text="comment.author[0]"></div>
+                            <span class="font-semibold" x-text="comment.author"></span>
+                            <span class="text-white/60 text-sm" x-text="comment.timestamp"></span>
+                        </div>
+                        <p class="text-white/80 ml-8" x-text="comment.content"></p>
+                    </div>
+                </template>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        document.addEventListener('alpine:init', () => {
+            anime({
+                targets: 'article, section',
+                translateY: [20, 0],
+                opacity: [0, 1],
+                duration: 800,
+                delay: anime.stagger(200),
+                easing: 'easeOutQuad'
+            });
+        });
+    </script>
+</body>
+</html>

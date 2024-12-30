@@ -1,0 +1,424 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+    [x-cloak] {
+        display: none !important;
+    }
+
+    :root {
+        --primary-bg: #1a1a2e;
+        --card-bg: rgba(67, 67, 92, 0.3);
+        --hover-bg: rgba(82, 82, 109, 0.4);
+    }
+
+    body {
+        background: linear-gradient(135deg, #2e1a1a 0%, #000000 100%);
+        color: #ffffff;
+        font-family: 'Inter', sans-serif;
+    }
+
+    .glass {
+        background: var(--card-bg);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+    }
+
+    .glass:hover {
+        background: var(--hover-bg);
+    }
+
+    .category-tag {
+        transition: all 0.3s ease;
+        opacity: 0.8;
+    }
+
+    .category-tag:hover,
+    .category-tag.active {
+        opacity: 1;
+        transform: translateY(-2px);
+    }
+
+    .pinned-badge {
+        background: rgba(255, 192, 203, 0.2);
+        color: pink;
+    }
+
+    .post-count {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        padding: 2px 8px;
+        font-size: 0.8rem;
+    }
+</style>
+<div class="min-h-screen" x-data="{ ...forumData(), ...joinCommunity() }"
+x-init="initIntersectionObserver(); initializeSocket()"
+@join-room.window="joinRoom()">
+    <div class="flex flex-col md:flex-row">
+        <!-- Sidebar -->
+        <div
+            class="w-full md:w-64 md:h-screen md:fixed left-0 p-4 space-y-2 overflow-y-auto glass hidden md:inline-block">
+            <template x-for="category in categories" :key="category.name">
+                <div @click="selectCategory(category.name)"
+                    class="category-tag glass p-3 cursor-pointer flex justify-between"
+                    :class="{ 'active': currentCategory === category.name }">
+                    <span x-text="'#' + category.name" :class="getCategoryColor(category.name)"></span>
+                    <span x-text="category.posts" class="post-count"></span>
+                </div>
+            </template>
+        </div>
+
+        <!-- Main Content -->
+        <div class="w-full md:ml-64 p-4">
+            <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+                <button @click="showCreatePost = true" class="glass px-4 py-2 rounded w-full sm:w-auto">
+                    + Create
+                </button>
+                <div class="flex items-center gap-4 w-full sm:w-auto">
+                    <select x-model="currentCategory" @change="selectCategory(currentCategory)"
+                        class="glass px-4 py-2 rounded w-full sm:w-auto">
+                        <option value="All">All Categories</option>
+                        <template x-for="category in categories" :key="category.name">
+                            <option :value="category.name" x-text="category.name"></option>
+                        </template>
+                    </select>
+                    <button class="glass px-4 py-2 rounded w-full sm:w-auto">My Posts</button>
+                    <select class="glass px-4 py-2 rounded w-full sm:w-auto">
+                        <option>Sort by</option>
+                        <option>Latest</option>
+                        <option>Top</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Tab buttons -->
+            <div class="flex overflow-x-auto space-x-2 mb-4">
+                <template x-for="category in categories" :key="category.name">
+                    <button @click="selectCategory(category.name)"
+                        class="tab-button glass px-4 py-2 rounded-full whitespace-nowrap"
+                        :class="{ 'bg-pink-600': currentCategory === category.name }" x-text="category.name">
+                    </button>
+                </template>
+            </div>
+
+            <!-- Tab content -->
+            <div id="postsContainer" class="space-y-4">
+                <template x-for="post in posts" :key="post.id">
+                    <div class="glass p-6">
+                        <div class="flex items-start gap-4">
+                            <div class="vote-container flex flex-col items-center justify-center gap-2">
+                                <button @click="likePost(post)"
+                                    :class="{'text-red-500': post.userLiked, 'text-gray-500': !post.userLiked}"
+                                    class="hover:text-gray-300 transition-colors p-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
+                                        viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
+                                    </svg>
+                                </button>
+                                <span x-text="post.likes" class="likes text-sm font-medium text-gray-500"></span>
+                                <button @click="unlikePost(post)"
+                                    :class="{'text-blue-500': post.userUnliked, 'text-gray-500': !post.userUnliked}"
+                                    class="hover:text-gray-300 transition-colors p-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
+                                        viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018a2 2 0 01.485.06l3.76.94m-7 10v5a2 2 0 002 2h.096c.5 0 .905-.405.905-.904 0-.715.211-1.413.608-2.008L17 13V4m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5" />
+                                    </svg>
+                                </button>
+                            </div>
+                            <a :href="'/post/' + post.id" class="flex-1">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <template x-if="post.pinned">
+                                        <span class="pinned-badge px-2 py-1 rounded text-xs">📌 Pinned</span>
+                                    </template>
+                                    <span x-text="'#' + post.category" :class="getCategoryColor(post.category)"></span>
+                                    <span x-text="post.time" class="text-gray-400"></span>
+                                </div>
+                                <h2 x-text="post.title" class="text-xl font-bold mb-2"></h2>
+                                <p x-text="post.content" class="text-gray-300 mb-4"></p>
+                                <div class="flex items-center gap-3">
+                                    <div class="w-8 h-8 bg-gray-500 rounded-full"></div>
+                                    <span x-text="post.author" class="font-medium"></span>
+                                    <template x-if="post.isMod">
+                                        <span class="bg-gray-600 px-2 py-0.5 rounded text-xs">MOD</span>
+                                    </template>
+                                    <div class="ml-auto flex items-center gap-2">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                            xmlns="http://www.w3.org/2000/svg">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z">
+                                            </path>
+                                        </svg>
+                                        <span x-text="post.comments"></span>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                </template>
+            </div>
+
+            <!-- Lazy loading trigger -->
+            <div x-ref="loadMoreTrigger" class="h-10 w-full"></div>
+
+            <!-- Loading more animation -->
+            <div x-show="isLoadingMore" class="flex justify-center items-center h-20">
+                <div class="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-pink-500"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Post Modal (unchanged) -->
+    <div x-show="showCreatePost" x-cloak class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+        <div @click.away="showCreatePost = false" class="glass p-6 w-full max-w-md">
+            <h2 class="text-2xl font-bold mb-4">Create New Post</h2>
+            <form @submit.prevent="createPost">
+                <div class="mb-4">
+                    <label for="title" class="block text-sm font-medium text-gray-300 mb-2">Title</label>
+                    <input type="text" id="title" x-model="newPost.title"
+                        class="w-full px-3 py-2 bg-[#3a3a4a] rounded-md text-white" required>
+                </div>
+                <div class="mb-4">
+                    <label for="content" class="block text-sm font-medium text-gray-300 mb-2">Content</label>
+                    <textarea id="content" x-model="newPost.content" rows="4"
+                        class="w-full px-3 py-2 bg-[#3a3a4a] rounded-md text-white" required></textarea>
+                </div>
+                <div class="mb-4">
+                    <label for="category" class="block text-sm font-medium text-gray-300 mb-2">Category</label>
+                    <select id="category" x-model="newPost.category"
+                        class="w-full px-3 py-2 bg-[#3a3a4a] rounded-md text-white" required>
+                        <option value="">Select a category</option>
+                        <template x-for="category in categories.slice(1)" :key="category.name">
+                            <option :value="name" x-text="category.name"></option>
+                        </template>
+                    </select>
+                </div>
+                <div class="flex justify-end gap-4">
+                    <button @click="showCreatePost = false" type="button"
+                        class="px-4 py-2 bg-gray-600 rounded-md hover:bg-gray-500">Cancel</button>
+                    <button type="submit"
+                        class="px-4 py-2 bg-pink-600 rounded-md hover:bg-pink-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                        x-bind:disabled="isLoading">
+                        <span x-show="!isLoading">Create Post</span>
+                        <span x-show="isLoading" class="flex items-center">
+                            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg"
+                                fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                                    stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor"
+                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                                </path>
+                            </svg>
+                            Posting...
+                        </span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function forumData() {
+            const userInfo = {{ userInfo | tojson | safe}};
+        return {
+            categories: {{ categories | tojson }},
+        posts: [],
+            currentCategory: 'All',
+                showCreatePost: false,
+                    newPost: {
+            title: '',
+                content: '',
+                    category: ''
+        },
+        isLoading: false,
+            isLoadingMore: false,
+                currentPage: 1,
+                    hasMore: true,
+                        selectCategory(category) {
+            this.currentCategory = category;
+            this.currentPage = 1;
+            this.posts = [];
+            this.hasMore = true;
+            this.loadPosts();
+        },
+        getCategoryColor(category) {
+            const colors = {
+                'All': 'text-white',
+                'Updates': 'text-pink-400',
+                'General': 'text-blue-400',
+                'Suggestion': 'text-green-400',
+                'Question': 'text-yellow-400',
+                'Discussion': 'text-purple-400',
+                'Feedback': 'text-orange-400'
+            };
+            return colors[category] || 'text-white';
+        },
+        loadPosts() {
+            if (this.isLoading || !this.hasMore) return;
+
+            this.isLoadingMore = true;
+            fetch(`/api/posts?category=${this.currentCategory}&page=${this.currentPage}`)
+                .then(response => response.json())
+                .then(data => {
+                    const newPosts = data.posts.map(post => ({ ...post }));
+                    this.posts = [...this.posts, ...newPosts];
+                    this.hasMore = data.hasMore;
+                    this.currentPage++;
+                    this.isLoadingMore = false;
+                })
+                .catch(error => {
+                    console.error('Error loading posts:', error);
+                    this.isLoadingMore = false;
+                });
+        },
+                async likePost(post) {
+            if (!post.userLiked) {
+                if (typeof userInfo === "undefined" || userInfo === null) {
+                    window.dispatchEvent(new CustomEvent('trigger-auth-modal'));
+                } else {
+                    const response = await fetch(`/api/post/respond/${this.post.id}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                                type: 'like', // or 'dislike' or whatever type you're sending
+                                // You can add other data here if needed
+                        }),
+                    });
+                    if (response.ok) {
+                        post.likes++;
+                        post.userLiked = true;
+                        if (post.userUnliked) {
+                            post.dislikes--;
+                            post.userUnliked = false;
+                        }
+                    } else {
+
+                    }
+                }
+                // Here you would typically send a request to your backend to update the like status
+            }
+        },
+        async unlikePost(post) {
+            console.log(post.id)
+            if (!post.userUnliked) {
+                if (typeof userInfo === "undefined" || userInfo === null) {
+                    window.dispatchEvent(new CustomEvent('trigger-auth-modal'));
+                } else {
+                    const response = await fetch(`/api/post/respond/${this.post.id}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                                type: 'dislike', // or 'dislike' or whatever type you're sending
+                                // You can add other data here if needed
+                        }),
+                    });
+                    if (response.ok) {
+                        post.dislikes++;
+                        post.userUnliked = true;
+                        if (post.userLiked) {
+                            post.likes--;
+                            post.userLiked = false;
+                        }
+                    } else {
+
+                    }
+                }
+                // Here you would typically send a request to your backend to update the unlike status
+            }
+        },
+        createPost() {
+            this.isLoading = true;
+            fetch('/api/posts', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(this.newPost),
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Something went wrong');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    const newPost = { ...data, userLiked: false };
+                    this.posts.unshift(newPost);
+                    this.showCreatePost = false;
+                    this.newPost = { title: '', content: '', category: '' };
+                    window.dispatchEvent(new CustomEvent('notify', {
+                        detail: { message: 'Post created successfully!', type: 'success' }
+                    }));
+                    anime({
+                        targets: '#postsContainer > div:first-child',
+                        translateY: [20, 0],
+                        opacity: [0, 1],
+                        duration: 600,
+                        easing: 'easeOutElastic(1, .8)'
+                    });
+                })
+                .catch(error => {
+                    console.error('Error creating post:', error);
+                    window.dispatchEvent(new CustomEvent('notify', {
+                        detail: { message: error.message || 'Error creating post. Please try again.', type: 'error' }
+                    }));
+                })
+                .finally(() => {
+                    this.isLoading = false;
+                });
+        },
+        initIntersectionObserver() {
+            const observer = new IntersectionObserver((entries) => {
+                if (entries[0].isIntersecting && !this.isLoadingMore && this.hasMore) {
+                    this.loadPosts();
+                }
+            }, { rootMargin: '100px' });
+
+            observer.observe(this.$refs.loadMoreTrigger);
+        },
+                
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            anime({
+                targets: '.glass',
+                translateY: [20, 0],
+                opacity: [0, 1],
+                delay: anime.stagger(100),
+                easing: 'easeOutElastic(1, .8)'
+            });
+        });
+        function joinCommunity(){
+            console.log("lol")
+            return{
+            socket: null,
+            currentRoom: null,
+            initializeSocket() {
+                        this.socket = io({ transports: ['websocket'] });
+
+                        this.socket.on('connect', () => {
+                            console.log('Connected to server');
+                            this.joinRoom();
+                        });
+                    },
+                    joinRoom() {
+                    const part = 'community'
+                    console.log(part);
+                    if (this.currentRoom) {
+                        this.socket.emit('leave', { room: this.currentRoom });
+                    }
+                    this.currentRoom = part;
+                    this.socket.emit('join', { other_id: this.currentRoom });
+                    this.socket.emit('get_current_room_count', { room: this.currentRoom }); // Request count for the current room
+                }
+                }
+            }
+            window.dispatchEvent(new Event('join-room'));
+    </script>
+    {% endblock %}

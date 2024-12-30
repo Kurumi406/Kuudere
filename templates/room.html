@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anime Stream - Room</title>
+    <script src="https://unpkg.com/alpinejs" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        navy: {
+                            DEFAULT: '#1a1b2e',
+                            dark: '#13141f',
+                            light: '#2a2b3d'
+                        },
+                        accent: {
+                            cyan: '#0ff',
+                            pink: '#ff69b4'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-navy-dark text-white min-h-screen" x-data="{
+    videoUrl: '',
+    messages: [],
+    newMessage: '',
+    searchQuery: '',
+    showSearch: false,
+    currentVideo: null,
+    isHost: false,
+    socket: null,
+    rooms: { host: null },
+    hls: null,
+    syncInterval: null,
+    lastUpdateTime: 0,
+    showChat: true,
+    episodeTitle: 'Re:ZERO -Starting Life in Another World- Season 3',
+    episodeNumber: 'Episode 1',
+    viewerCount: 0,
+    username: 'User_' + Math.floor(Math.random() * 1000),
+    roomId: '{{ room_id }}',
+    
+    init() {
+        this.socket = io({query: 'room=' + this.roomId});
+        
+        this.socket.on('connect', () => {
+            console.log('Connected to server');
+        });
+        
+        this.socket.on('video_control', (data) => {
+            const video = document.getElementById('videoPlayer');
+            if (data.action === 'seek' && Math.abs(video.currentTime - data.currentTime) > 1) {
+                video.currentTime = data.currentTime;
+            } else if (data.action === 'play') {
+                video.play();
+            } else if (data.action === 'pause') {
+                video.pause();
+            }
+        });
+        
+        this.socket.on('new_video', (data) => {
+            this.videoUrl = data.url;
+            this.initVideo();
+        });
+        
+        this.socket.on('chat_message', (data) => {
+            this.messages.push(data);
+            this.animateNewMessage();
+            this.$nextTick(() => {
+                const chatMessages = this.$refs.chatMessages;
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            });
+        });
+        
+        this.socket.on('user_list', (data) => {
+            this.viewerCount = data.users.length;
+        });
+
+        this.socket.on('host_updated', (data) => {
+            this.rooms.host = data.host;
+            this.isHost = this.socket.id === data.host;
+        });
+
+        const video = document.getElementById('videoPlayer');
+        video.addEventListener('timeupdate', () => {
+            if (this.isHost && Math.abs(video.currentTime - this.lastUpdateTime) > 1) {
+                this.handleSeek();
+                this.lastUpdateTime = video.currentTime;
+            }
+        });
+
+        // Animate the viewer count on update
+        this.$watch('viewerCount', () => {
+            anime({
+                targets: '#viewerCount',
+                scale: [1.2, 1],
+                duration: 300,
+                easing: 'easeOutElastic'
+            });
+        });
+    },
+    
+    formatTime(seconds) {
+        const h = Math.floor(seconds / 3600);
+        const m = Math.floor((seconds % 3600) / 60);
+        const s = Math.floor(seconds % 60);
+        return `${h > 0 ? h + ':' : ''}${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    },
+
+    initVideo() {
+        if (this.videoUrl) {
+            const video = document.getElementById('videoPlayer');
+            if (Hls.isSupported() && this.videoUrl.includes('.m3u8')) {
+                if (this.hls) {
+                    this.hls.destroy();
+                }
+                this.hls = new Hls();
+                this.hls.loadSource(this.videoUrl);
+                this.hls.attachMedia(video);
+                this.hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                    this.setupSyncInterval();
+                });
+            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                video.src = this.videoUrl;
+                video.addEventListener('loadedmetadata', () => {
+                    this.setupSyncInterval();
+                });
+            } else if (this.videoUrl.includes('.mp4')) {
+                video.src = this.videoUrl;
+                this.setupSyncInterval();
+            }
+        }
+    },
+    
+    setupSyncInterval() {
+        if (this.syncInterval) {
+            clearInterval(this.syncInterval);
+        }
+        this.syncInterval = setInterval(() => {
+            if (!this.isHost) {
+                this.socket.emit('sync_request', { room: this.roomId });
+            }
+        }, 5000);
+    },
+    
+    sendMessage() {
+        if (this.newMessage.trim()) {
+            const messageData = {
+                text: this.newMessage,
+                timestamp: new Date().toLocaleTimeString(),
+                username: this.username,
+                room: this.roomId
+            };
+            this.socket.emit('chat_message', messageData);
+            this.newMessage = '';
+        }
+    },
+    
+    animateNewMessage() {
+        anime({
+            targets: '.chat-message:last-child',
+            translateX: [-20, 0],
+            opacity: [0, 1],
+            duration: 800,
+            easing: 'easeOutElastic'
+        });
+    },
+    
+    controlVideo(action, time = null) {
+        const video = document.getElementById('videoPlayer');
+        if (this.isHost) {
+            if (action === 'play') {
+                video.play();
+            } else if (action === 'pause') {
+                video.pause();
+            } else if (action === 'seek') {
+                video.currentTime = time;
+            }
+            this.socket.emit('video_control', { action, currentTime: video.currentTime, room: this.roomId });
+        }
+    },
+
+    handleSeek() {
+        if (this.isHost) {
+            const video = document.getElementById('videoPlayer');
+            this.socket.emit('video_control', { action: 'seek', currentTime: video.currentTime, room: this.roomId });
+        }
+    },
+    
+    loadVideo() {
+        if (this.isHost && this.searchQuery.trim()) {
+            this.socket.emit('new_video', { url: this.searchQuery, room: this.roomId });
+            this.videoUrl = this.searchQuery;
+            this.initVideo();
+            this.searchQuery = '';
+        }
+    },
+
+    claimHost() {
+        this.socket.emit('claim_host', { room: this.roomId });
+    },
+
+    transferHost() {
+        const newHost = prompt('Enter the user ID to transfer host to:');
+        if (newHost) {
+            this.socket.emit('transfer_host', { newHost, room: this.roomId });
+        }
+    }
+}">
+    <!-- Top Navigation -->
+    <nav class="bg-navy p-4 border-b border-navy-light">
+        <div class="container mx-auto flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <h1 class="text-xl font-semibold" x-text="episodeTitle"></h1>
+                <span class="px-2 py-1 bg-green-500 text-xs rounded">SUB</span>
+                <span class="text-gray-400" x-text="episodeNumber"></span>
+            </div>
+            <div class="flex items-center space-x-4">
+                <span class="text-accent-cyan">Room: <span x-text="roomId"></span></span>
+                <a href="/" class="px-4 py-2 bg-accent-pink rounded-lg hover:bg-opacity-75 transition-colors">
+                    Return to Home
+                </a>
+                <button 
+                    @click="showChat = !showChat"
+                    class="px-4 py-2 bg-navy-light rounded-lg hover:bg-opacity-75 transition-colors"
+                >
+                    Hide chatbox
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mx-auto p-4 flex flex-col lg:flex-row gap-4">
+        <!-- Main Content -->
+        <div class="flex-1">
+            <!-- Search Bar for Host -->
+            <div class="mb-4" x-show="isHost">
+                <div class="relative">
+                    <input 
+                        type="text" 
+                        x-model="searchQuery"
+                        placeholder="Enter video URL..."
+                        class="w-full px-4 py-2 bg-navy rounded-lg border border-navy-light focus:border-accent-cyan focus:ring-1 focus:ring-accent-cyan outline-none"
+                    >
+                    <button 
+                        @click="loadVideo()"
+                        class="absolute right-2 top-1/2 transform -translate-y-1/2 px-4 py-1 bg-accent-cyan text-navy rounded hover:bg-opacity-75 transition-colors"
+                    >
+                        Load
+                    </button>
+                </div>
+            </div>
+
+            <!-- Video Player -->
+            <div class="relative aspect-video bg-black rounded-lg overflow-hidden shadow-xl">
+                <video 
+                    id="videoPlayer"
+                    class="w-full h-full"
+                    x-ref="videoPlayer"
+                    controls
+                >
+                    Your browser does not support the video tag.
+                </video>
+            </div>
+
+            <!-- Host Controls -->
+            <div class="mt-4 flex justify-center gap-4" x-show="isHost">
+                <button 
+                    @click="controlVideo('play')"
+                    class="px-6 py-2 bg-accent-cyan text-navy rounded-lg hover:bg-opacity-75 transition-colors font-medium"
+                >
+                    Play
+                </button>
+                <button 
+                    @click="controlVideo('pause')"
+                    class="px-6 py-2 bg-accent-cyan text-navy rounded-lg hover:bg-opacity-75 transition-colors font-medium"
+                >
+                    Pause
+                </button>
+            </div>
+
+            <!-- Video Info -->
+            <div class="mt-4 p-4 bg-navy rounded-lg border border-navy-light">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-lg font-semibold">Stream Info</h2>
+                    <div class="flex items-center space-x-2">
+                        <span class="text-sm text-gray-400">Viewers:</span>
+                        <span id="viewerCount" class="text-accent-cyan font-medium" x-text="viewerCount"></span>
+                    </div>
+                </div>
+                <p class="text-gray-400 break-all" x-text="videoUrl || 'No video loaded'"></p>
+                <div class="mt-4 flex justify-center gap-4">
+                    <button 
+                        x-show="!isHost && !rooms.host"
+                        @click="claimHost()"
+                        class="px-6 py-2 bg-accent-pink rounded-lg hover:bg-opacity-75 transition-colors font-medium"
+                    >
+                        Claim Host
+                    </button>
+                    <button 
+                        x-show="isHost"
+                        @click="transferHost()"
+                        class="px-6 py-2 bg-accent-pink rounded-lg hover:bg-opacity-75 transition-colors font-medium"
+                    >
+                        Transfer Host
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat Sidebar -->
+        <div 
+            class="w-full lg:w-96 flex flex-col bg-navy rounded-lg border border-navy-light overflow-hidden transition-all duration-300"
+            x-show="showChat"
+            x-transition:enter="transition ease-out duration-300"
+            x-transition:enter-start="opacity-0 transform translate-x-full"
+            x-transition:enter-end="opacity-100 transform translate-x-0"
+            x-transition:leave="transition ease-in duration-300"
+            x-transition:leave-start="opacity-100 transform translate-x-0"
+            x-transition:leave-end="opacity-0 transform translate-x-full"
+        >
+            <!-- Chat Header -->
+            <div class="p-4 border-b border-navy-light bg-navy-light">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-lg font-semibold">Live Chat</h2>
+                    <span class="text-sm text-gray-400" x-text="username"></span>
+                </div>
+            </div>
+
+            <!-- Chat Messages -->
+            <div 
+                x-ref="chatMessages"
+                class="flex-1 overflow-y-auto p-4 space-y-4"
+                style="height: calc(100vh - 400px);"
+            >
+                <template x-for="message in messages" :key="message.timestamp">
+                    <div class="chat-message bg-navy-light rounded-lg p-3 transform transition-all duration-300">
+                        <div class="flex items-center gap-2">
+                            <span class="font-bold text-accent-cyan" x-text="message.username"></span>
+                            <span class="text-xs text-gray-500" x-text="message.timestamp"></span>
+                        </div>
+                        <p class="mt-1 text-sm" x-text="message.text"></p>
+                    </div>
+                </template>
+            </div>
+
+            <!-- Chat Input -->
+            <div class="p-4 border-t border-navy-light bg-navy-light">
+                <form @submit.prevent="sendMessage" class="flex gap-2">
+                    <input 
+                        type="text" 
+                        x-model="newMessage"
+                        placeholder="Send a message..."
+                        class="flex-1 px-4 py-2 bg-navy rounded-lg border border-navy-light focus:border-accent-cyan focus:ring-1 focus:ring-accent-cyan outline-none"
+                    >
+                    <button 
+                        type="submit"
+                        class="px-6 py-2 bg-accent-pink rounded-lg hover:bg-opacity-75 transition-colors font-medium whitespace-nowrap"
+                    >
+                        Send
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+

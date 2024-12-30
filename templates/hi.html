@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Advanced Video Player</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <style>
+        @keyframes ripple {
+            0% {
+                transform: scale(0.1);
+                opacity: 1;
+            }
+
+            100% {
+                transform: scale(4);
+                opacity: 0;
+            }
+        }
+
+        .water-ripple {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.6);
+            animation: ripple 1s ease-out infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .loading-spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid #ffffff;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+
+        .dot-pulse {
+            position: relative;
+            left: -9999px;
+            width: 10px;
+            height: 10px;
+            border-radius: 5px;
+            background-color: #ffffff;
+            color: #ffffff;
+            box-shadow: 9999px 0 0 -5px;
+            animation: dot-pulse 1.5s infinite linear;
+            animation-delay: 0.25s;
+        }
+
+        .dot-pulse::before,
+        .dot-pulse::after {
+            content: "";
+            display: inline-block;
+            position: absolute;
+            top: 0;
+            width: 10px;
+            height: 10px;
+            border-radius: 5px;
+            background-color: #ffffff;
+            color: #ffffff;
+        }
+
+        .dot-pulse::before {
+            box-shadow: 9984px 0 0 -5px;
+            animation: dot-pulse-before 1.5s infinite linear;
+            animation-delay: 0s;
+        }
+
+        .dot-pulse::after {
+            box-shadow: 10014px 0 0 -5px;
+            animation: dot-pulse-after 1.5s infinite linear;
+            animation-delay: 0.5s;
+        }
+
+        @keyframes dot-pulse-before {
+            0% {
+                box-shadow: 9984px 0 0 -5px;
+            }
+
+            30% {
+                box-shadow: 9984px 0 0 2px;
+            }
+
+            60%,
+            100% {
+                box-shadow: 9984px 0 0 -5px;
+            }
+        }
+
+        @keyframes dot-pulse {
+            0% {
+                box-shadow: 9999px 0 0 -5px;
+            }
+
+            30% {
+                box-shadow: 9999px 0 0 2px;
+            }
+
+            60%,
+            100% {
+                box-shadow: 9999px 0 0 -5px;
+            }
+        }
+
+        @keyframes dot-pulse-after {
+            0% {
+                box-shadow: 10014px 0 0 -5px;
+            }
+
+            30% {
+                box-shadow: 10014px 0 0 2px;
+            }
+
+            60%,
+            100% {
+                box-shadow: 10014px 0 0 -5px;
+            }
+        }
+
+        ::cue {
+            background-color: transparent;
+            color: white;
+            text-shadow:
+                -2px -2px 0 #000,
+                2px -2px 0 #000,
+                -2px 2px 0 #000,
+                2px 2px 0 #000;
+            font-weight: 600;
+        }
+
+        #status-for-nerds {
+            font-family: monospace;
+            font-size: 12px;
+            line-height: 1.4;
+            z-index: 1000;
+        }
+
+        #status-for-nerds p {
+            margin-bottom: 4px;
+        }
+
+        #play-button {
+            transition: all 0.3s ease-in-out;
+        }
+
+        #play-button:hover {
+            transform: scale(1.1);
+            filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.7));
+        }
+
+        #video-container {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+            /* Adjust to parent container as needed */
+            max-width: none;
+        }
+
+        #video {
+            width: 100%;
+            height: 100%;
+            /* Fill the container */
+            object-fit: cover;
+            /* Ensure the video fits nicely */
+        }
+
+        @media (max-width: 768px) {
+            #video {
+                border-radius: 0;
+                /* Remove rounded corners for full-screen look */
+            }
+
+            #controls {
+                flex-direction: column;
+                /* Stack controls vertically */
+                padding: 4px;
+            }
+
+            #progress {
+                width: 100%;
+                /* Full width for progress bar */
+                margin: 8px 0;
+            }
+
+            button svg {
+                width: 20px;
+                /* Smaller icons */
+                height: 20px;
+            }
+        }
+    </style>
+</head>
+
+<body class="flex items-center justify-center h-screen overflow-hidden">
+    <div id="video-container" class="relative video w-full max-w-4xl">
+        <video id="video" class="w-full h-full bg-black cursor-pointer">
+            Your browser does not support the video tag.
+        </video>
+        <div id="video-cover" class="absolute inset-0 bg-black flex items-center justify-center">
+            <div id="loading" class="text-white text-center">
+                <div class="dot-pulse mx-auto mb-4"></div>
+            </div>
+            <button id="play-button"
+                class="hidden text-white text-6xl transition-transform duration-300 ease-in-out transform hover:scale-110">
+                <svg class="w-24 h-24" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z">
+                    </path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+            </button>
+        </div>
+        <div id="buffering" class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 hidden">
+            <div class="loading-spinner"></div>
+        </div>
+        <div id="controls"
+            class="absolute bottom-0 left-0 right-0 bg-black opacity-0 bg-opacity-50 p-4 transition-opacity duration-300">
+            <div class="flex items-center justify-between mb-2">
+                <button id="play-pause" class="text-white">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z">
+                        </path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </button>
+                <input type="range" id="progress" class="w-full mx-4" min="0" max="100" value="0" />
+            </div>
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <button id="rewind" class="text-white mr-2">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                            xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12.066 11.2a1 1 0 000 1.6l5.334 4A1 1 0 0019 16V8a1 1 0 00-1.6-.8l-5.333 4zM4.066 11.2a1 1 0 000 1.6l5.334 4A1 1 0 0011 16V8a1 1 0 00-1.6-.8l-5.334 4z">
+                            </path>
+                        </svg>
+                    </button>
+                    <button id="forward" class="text-white mr-2">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                            xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M11.933 12.8a1 1 0 000-1.6l-5.334-4A1 1 0 005 8v8a1 1 0 001.6.8l5.334-4zM19.933 12.8a1 1 0 000-1.6l-5.334-4A1 1 0 0013 8v8a1 1 0 001.6.8l5.334-4z">
+                            </path>
+                        </svg>
+                    </button>
+                    <button id="mute" class="text-white mr-2">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                            xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z">
+                            </path>
+                        </svg>
+                    </button>
+                    <input type="range" id="volume" class="w-20" min="0" max="1" step="0.1" value="1" />
+                    <span id="time" class="text-white text-sm ml-2"></span>
+                </div>
+                <div class="flex items-center">
+                    <button class="text-white mr-2" data-popover-target="popover-default">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20"
+                            height="20">
+                            <path d="M0 0h24v24H0z" fill="none" />
+                            <path
+                                d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z" />
+                        </svg>
+                    </button>
+                    <div data-popover id="popover-default" role="tooltip"
+                        class="absolute z-10 invisible inline-block w-48 rounded-md text-sm text-gray-500 transition-opacity duration-300 bg-black border border-white">
+                        <div class="px-2 py-2 flex items-center">
+                            <div class="w-7 pr pl pb-1 rounded-sm flex items-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="mt-1 ml-1 mr-1" width="17" height="17"
+                                    viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"
+                                    stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="2" y="16" width="4" height="6"></rect>
+                                    <rect x="8" y="12" width="4" height="10"></rect>
+                                    <rect x="14" y="8" width="4" height="14"></rect>
+                                    <rect x="20" y="4" width="4" height="18"></rect>
+                                </svg>
+                            </div>
+                            <div class="flex items-center">
+                                <button id="subtitles" class="text-white mr-2">
+                                    <svg class="w-6 h-6 text-gray-800 dark:text-white" aria-hidden="true"
+                                        xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none"
+                                        viewBox="0 0 24 24">
+                                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+                                            stroke-width="2"
+                                            d="M10.855 14.322a2.475 2.475 0 1 1 .133-4.241m6.053 4.241a2.475 2.475 0 1 1 .133-4.241M4 5h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z" />
+                                    </svg>
+                                </button>
+                            </div>
+                            <div id="audio-tab" class="flex items-center">
+                                <svg class="w-5 h-5 text-gray-800 dark:text-white" aria-hidden="true"
+                                    xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path fill-rule="evenodd"
+                                        d="M12 5a7 7 0 0 0-7 7v1.17c.313-.11.65-.17 1-.17h2a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H6a3 3 0 0 1-3-3v-6a9 9 0 0 1 18 0v6a3 3 0 0 1-3 3h-2a1 1 0 0 1-1-1v-6a1 1 0 0 1 1-1h2c.35 0 .687.06 1 .17V12a7 7 0 0 0-7-7Z"
+                                        clip-rule="evenodd" />
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="bg-black border-b border-white rounded-t-lg">
+                        </div>
+                        <div id="quality-selector" class="px-3 py-2">
+                            <div class="flex items-center text-white">
+                                <input type="checkbox" name="quality" id="0">
+                                <label for="0" class="ml-2">Auto</label>
+                            </div>
+                        </div>
+                        <div id="audio-selector" class="px-3 py-2">
+                            <div class="flex items-center text-white">
+                                <input type="checkbox" name="quality" id="0">
+                                <label for="0" class="ml-2">Auto</label>
+                            </div>
+                        </div>
+                        <div data-popper-arrow></div>
+                    </div>
+                    <button id="pip" class="text-white mr-2">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                            xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M15 13h5v5h-5v-5zM3 7a2 2 0 012-2h14a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
+                        </svg>
+                    </button>
+                    <button id="fullscreen" class="text-white">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                            xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4">
+                            </path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div id="status-for-nerds"
+            class="hidden absolute top-0 left-0 bg-black bg-opacity-75 text-white p-4 rounded-bl-md">
+            <h3 class="text-lg font-bold mb-2">Status for Nerds</h3>
+            <p id="video-info"></p>
+            <p id="connection-speed"></p>
+            <p id="buffer-info"></p>
+        </div>
+    </div>
+
+    <script>
+        const video = document.getElementById("video");
+        const statusForNerds = document.getElementById("status-for-nerds");
+        const videoInfo = document.getElementById("video-info");
+        const connectionSpeed = document.getElementById("connection-speed");
+        const bufferInfo = document.getElementById("buffer-info");
+        const controls = document.getElementById("controls");
+        const videoCover = document.getElementById("video-cover");
+        const loadingIndicator = document.getElementById("loading");
+        const playButton = document.getElementById("play-button");
+        const bufferingIndicator = document.getElementById("buffering");
+        const playPauseBtn = document.getElementById("play-pause");
+        const progressBar = document.getElementById("progress");
+        const timeDisplay = document.getElementById("time");
+        const rewindBtn = document.getElementById("rewind");
+        const forwardBtn = document.getElementById("forward");
+        const pipBtn = document.getElementById("pip");
+        const subtitlesBtn = document.getElementById("subtitles");
+        const fullscreenBtn = document.getElementById("fullscreen");
+        const videoContainer = document.getElementById("video-container");
+        const qualitySelector = document.getElementById("quality-selector");
+        const audioSelector = document.getElementById("audio-selector");
+        const audioTab = document.getElementById("audio-tab");
+        const muteBtn = document.getElementById("mute");
+        const volumeSlider = document.getElementById("volume");
+
+        let controlsTimeout;
+        let mouseTimer;
+        let isMouseMoving = false;
+        let hls;
+
+        const videoSrc =
+            "https://DB3nhnDiJ9.cdn-centaurus.com/hls2/01/00477/it8j0vxjj5sh_h/master.m3u8?t=Gk6p8D98OylDSuVJsia0wSYyQ2YnelbSPUIXc6ZkU1k&s=1734870084&e=129600&f=32335776&srv=81cjh64633yue&i=0.4&sp=500&p1=81cjh64633yue&p2=81cjh64633yue&asn=8849";
+
+        function initializePlayer() {
+            if (Hls.isSupported()) {
+                hls = new Hls();
+                hls.loadSource(videoSrc);
+                hls.attachMedia(video);
+                hls.on(Hls.Events.MANIFEST_PARSED, function (event, data) {
+                    const qualities = data.levels.map((level, index) => {
+                        return { index: index, height: level.height };
+                    });
+                    updateQualitySelector(qualities);
+
+                    const audioTracks = hls.audioTracks;
+                    if (audioTracks.length <= 0) {
+                        audioSelector.style.display = "none";
+                        audioTab.style.display = "none";
+                    }
+                    updateAudioSelector(audioTracks);
+
+                    loadingIndicator.classList.add("hidden");
+                    playButton.classList.remove("hidden");
+                });
+            } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+                video.src = videoSrc;
+                video.addEventListener("loadedmetadata", () => {
+                    loadingIndicator.classList.add("hidden");
+                    playButton.classList.remove("hidden");
+                });
+            }
+        }
+
+        window.addEventListener("load", initializePlayer);
+
+        function startPlaying() {
+            video.play();
+            videoCover.classList.add("hidden");
+        }
+
+        playButton.addEventListener("click", startPlaying);
+
+        function togglePlayPause() {
+            if (video.paused) {
+                video.play();
+            } else {
+                video.pause();
+            }
+        }
+
+        function updateProgress() {
+            const progress = (video.currentTime / video.duration) * 100;
+            progressBar.value = progress;
+            const remainingTime = video.duration - video.currentTime;
+            timeDisplay.textContent = `${formatTime(
+                video.currentTime
+            )} / -${formatTime(remainingTime)}`;
+        }
+
+        function formatTime(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            seconds = Math.floor(seconds % 60);
+            return `${minutes.toString().padStart(2, "0")}:${seconds
+                .toString()
+                .padStart(2, "0")}`;
+        }
+
+        function seek(e) {
+            const seekTime = (e.target.value / 100) * video.duration;
+            video.currentTime = seekTime;
+        }
+
+        function skip(seconds) {
+            video.currentTime += seconds;
+        }
+
+        function togglePiP() {
+            if (document.pictureInPictureElement) {
+                document.exitPictureInPicture();
+            } else if (document.pictureInPictureEnabled) {
+                video.requestPictureInPicture();
+            }
+        }
+
+        // Function to toggle subtitles
+        function toggleSubtitles() {
+            const track = video.textTracks[0];
+            if (track.mode === 'showing') {
+                track.mode = 'disabled';
+                subtitlesBtn.classList.add('disabled');  // Update button UI
+            } else {
+                track.mode = 'showing';
+                subtitlesBtn.classList.remove('disabled');  // Update button UI
+            }
+        }
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                videoContainer.requestFullscreen();
+                video.classList.remove("border");
+            } else {
+                document.exitFullscreen();
+                video.classList.add("border");
+            }
+        }
+
+        function showControls() {
+            if (videoCover.classList.contains("hidden")) {
+                controls.classList.remove("opacity-0");
+                clearTimeout(controlsTimeout);
+                setControlsTimeout();
+            }
+        }
+
+        function hideControls() {
+            if (!video.paused) {
+                controls.classList.add("opacity-0");
+            }
+        }
+
+        function setControlsTimeout() {
+            clearTimeout(controlsTimeout);
+            controlsTimeout = setTimeout(hideControls, 3000);
+        }
+
+        function handleMouseMove() {
+            isMouseMoving = true;
+            showControls();
+            clearTimeout(mouseTimer);
+            mouseTimer = setTimeout(() => {
+                isMouseMoving = false;
+                if (!video.paused) {
+                    hideControls();
+                }
+            }, 3000);
+        }
+
+        function updateQualitySelector(qualities) {
+            qualitySelector.innerHTML = ''; // Clear existing content
+
+            // Add "Auto" radio button
+            const autoContainer = document.createElement("div");
+            autoContainer.classList.add("flex", "items-center", "text-white");
+
+            const autoRadio = document.createElement("input");
+            autoRadio.type = "radio";
+            autoRadio.name = "quality"; // Use the same name for mutual exclusion
+            autoRadio.id = "0";
+            autoRadio.checked = true; // Default selection
+
+            const autoLabel = document.createElement("label");
+            autoLabel.htmlFor = "0";
+            autoLabel.classList.add("ml-2");
+            autoLabel.textContent = "Auto";
+
+            autoContainer.appendChild(autoRadio);
+            autoContainer.appendChild(autoLabel);
+            qualitySelector.appendChild(autoContainer);
+
+            // Add radio buttons for each quality
+            qualities.forEach((quality) => {
+                const container = document.createElement("div");
+                container.classList.add("flex", "items-center", "text-white");
+
+                const radio = document.createElement("input");
+                radio.type = "radio";
+                radio.name = "quality"; // Use the same name for mutual exclusion
+                radio.id = quality.index;
+
+                const label = document.createElement("label");
+                label.htmlFor = quality.index;
+                label.classList.add("ml-2");
+                label.textContent = `${quality.height}p`;
+
+                container.appendChild(radio);
+                container.appendChild(label);
+                qualitySelector.appendChild(container);
+            });
+        }
+
+        function updateAudioSelector(audioTracks) {
+            console.log(audioTracks.length);
+            audioSelector.innerHTML = "";
+            audioTracks.forEach((track, index) => {
+                const container = document.createElement("div");
+                container.classList.add("flex", "items-center", "text-white");
+
+                const radio = document.createElement("input");
+                radio.type = "radio";
+                radio.name = "audio"; // Use the same name for mutual exclusion
+                radio.id = `audio-${index}`;
+
+                const label = document.createElement("label");
+                label.htmlFor = `audio-${index}`;
+                label.classList.add("ml-2");
+                label.textContent = track.name || `Audio ${index + 1}`;
+
+                container.appendChild(radio);
+                container.appendChild(label);
+                audioSelector.appendChild(container);
+            });
+        }
+        function toggleMute() {
+            video.muted = !video.muted;
+            updateMuteButton();
+            if (!video.muted) {
+                volumeSlider.value = video.volume;
+            }
+        }
+
+        function updateMuteButton() {
+            muteBtn.innerHTML = video.muted
+                ? '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" clip-rule="evenodd"></path></svg>'
+                : '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path></svg>';
+        }
+
+        function updateVolume() {
+            video.volume = parseFloat(volumeSlider.value);
+            video.muted = video.volume === 0;
+            updateMuteButton();
+        }
+
+        function updateVolUp() {
+            video.volume = Math.min(1, video.volume + 0.1);
+            volumeSlider.value = video.volume;
+            updateMuteButton();
+        }
+
+        function updateVolDown() {
+            video.volume = Math.max(0, video.volume - 0.1);
+            volumeSlider.value = video.volume;
+            updateMuteButton();
+        }
+
+        function showBuffering() {
+            bufferingIndicator.classList.remove("hidden");
+        }
+
+        function hideBuffering() {
+            bufferingIndicator.classList.add("hidden");
+        }
+
+        // Event listeners
+        playPauseBtn.addEventListener("click", togglePlayPause);
+        video.addEventListener("click", togglePlayPause);
+        video.addEventListener("timeupdate", updateProgress);
+        progressBar.addEventListener("input", seek);
+        rewindBtn.addEventListener("click", () => skip(-10));
+        forwardBtn.addEventListener("click", () => skip(10));
+        pipBtn.addEventListener("click", togglePiP);
+        subtitlesBtn.addEventListener("click", toggleSubtitles);
+        fullscreenBtn.addEventListener("click", toggleFullscreen);
+        videoContainer.addEventListener("mousemove", handleMouseMove);
+        videoContainer.addEventListener("mouseleave", hideControls);
+        muteBtn.addEventListener("click", toggleMute);
+        volumeSlider.addEventListener("input", updateVolume);
+        video.addEventListener("waiting", showBuffering);
+        video.addEventListener("canplay", hideBuffering);
+
+        video.addEventListener("play", () => {
+            playPauseBtn.innerHTML =
+                '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
+            setControlsTimeout();
+        });
+
+        video.addEventListener("pause", () => {
+            playPauseBtn.innerHTML =
+                '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
+            clearTimeout(controlsTimeout);
+            controls.classList.remove("opacity-0");
+        });
+
+        qualitySelector.addEventListener("change", (e) => {
+            hls.currentLevel = parseInt(e.target.id);
+        });
+
+        audioSelector.addEventListener("change", (e) => {
+            hls.audioTrack = parseInt(e.target.id);
+        });
+
+        controls.addEventListener("mouseover", () => {
+            clearTimeout(controlsTimeout);
+        });
+
+        controls.addEventListener("mouseleave", () => {
+            if (!video.paused) {
+                setControlsTimeout();
+            }
+        });
+
+        // Space bar to toggle play/pause
+        document.addEventListener("keydown", (e) => {
+            if (e.code === "Space") {
+                e.preventDefault();
+                togglePlayPause();
+            } else if (e.code === "ArrowRight") {
+                skip(10);
+            } else if (e.code === "ArrowLeft") {
+                skip(-10);
+            } else if (e.code === "ArrowUp") {
+                e.preventDefault();
+                updateVolUp();
+            } else if (e.code === "ArrowDown") {
+                e.preventDefault();
+                updateVolDown();
+            }
+            else if (e.code === "F11") {
+                e.preventDefault();
+                toggleFullscreen()
+            }
+        });
+
+        let statusVisible = false;
+
+        video.addEventListener("contextmenu", function (e) {
+            e.preventDefault();
+            statusVisible = !statusVisible;
+            statusForNerds.classList.toggle("hidden");
+            if (statusVisible) {
+                updateStatus();
+            }
+        });
+
+        function updateStatus() {
+            if (!statusVisible) return;
+
+            // Update video info
+            const videoWidth = video.videoWidth;
+            const videoHeight = video.videoHeight;
+            const currentTime = video.currentTime.toFixed(2);
+            const duration = video.duration.toFixed(2);
+            videoInfo.textContent = `Resolution: ${videoWidth}x${videoHeight} | Time: ${currentTime}/${duration}s`;
+
+            // Update connection speed (if available)
+            if (navigator.connection) {
+                const speed = navigator.connection.downlink;
+                connectionSpeed.textContent = `Connection Speed: ${speed} Mbps`;
+            } else {
+                connectionSpeed.textContent = "Connection Speed: Not available";
+            }
+
+            // Update buffer info
+            const buffered = video.buffered;
+            if (buffered.length > 0) {
+                const bufferedEnd = buffered.end(buffered.length - 1).toFixed(2);
+                const bufferedAmount = ((bufferedEnd / video.duration) * 100).toFixed(2);
+                bufferInfo.textContent = `Buffered: ${bufferedAmount}% (${bufferedEnd}s)`;
+            } else {
+                bufferInfo.textContent = "Buffered: 0%";
+            }
+
+            requestAnimationFrame(updateStatus);
+        }
+
+        // Update status when video metadata is loaded
+        video.addEventListener("loadedmetadata", updateStatus);
+        // Initial setup
+        setControlsTimeout();
+        updateMuteButton();
+    </script>
+</body>
+
+</html>

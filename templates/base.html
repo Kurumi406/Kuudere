@@ -1,0 +1,1074 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title | default("Kuudere - Free Anime Streaming") }}</title>
+    <meta name="description" content="{{ description | default('Default description') }}">
+    <link rel="icon" href="{{ url_for('static', filename='favicon.png') }}" type="image/x-icon">
+
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:title" content="{{ title | default('Default Title') }}">
+    <meta property="og:description" content="{{ description | default('Default description') }}">
+    <meta property="og:url" content="{{ canonical_url | default(request.url) }}">
+    <meta property="og:image" content="{{ cover | default('https://example.com/default-cover.jpg') }}">
+    <meta property="og:type" content="website">
+
+    <link href="{{ url_for('static', filename='css/output.css') }}" rel="stylesheet">
+    <script defer src="{{ url_for('static', filename='js/alphine.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/socket.io.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/anime.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/swiper-bundle.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/lucide.min.js') }}"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/swiper-bundle.min.css') }}" />
+    <style>
+        [x-cloak] {
+            display: none !important;
+        }
+
+        .anime-card {
+            position: relative;
+            z-index: 1;
+        }
+
+        .anime-card:hover {
+            z-index: 30;
+        }
+
+        .anime-info {
+            z-index: 40;
+            pointer-events: none;
+        }
+
+        .anime-info-content {
+            pointer-events: auto;
+        }
+
+        .anime-card:hover .anime-info {
+            display: block;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+
+        img,
+        a,
+        .draggable {
+            -webkit-user-drag: none;
+            /* Disable drag functionality on WebKit browsers */
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(0px);
+            }
+
+            50% {
+                transform: translateY(-20px);
+            }
+
+            100% {
+                transform: translateY(0px);
+            }
+        }
+
+        .float-animation {
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .float-counter {
+            background: rgba(0, 0, 0, 0.9);
+            box-shadow: 0 8px 32px 0 rgb(255, 0, 0);
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+
+        .number-animation {
+            transition: transform 0.3s ease-out;
+        }
+
+        .number-up {
+            color: #ff4444;
+            transform: translateY(-20px);
+        }
+
+        .number-down {
+            color: #ff0000;
+            transform: translateY(20px);
+        }
+
+        .scrollbar-ass::-webkit-scrollbar {
+            width: 0px;
+        }
+
+        /* Custom scrollbar styles */
+        .scrollbar-thin::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .scrollbar-thin::-webkit-scrollbar-track {
+            background: #2a2a2a;
+        }
+
+        .scrollbar-thin::-webkit-scrollbar-thumb {
+            background-color: #FF0000;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+
+<body class="bg-black text-white min-h-screen scrollbar-thin scrollbar-thumb-[#FF0000] scrollbar-track-[#2a2a2a]"
+    x-data="{ isDrawerOpen: false, isOpen: false, isAuthOpen: false }">
+    <div x-cloak x-show="isDrawerOpen" x-transition:enter="transition ease-out duration-300"
+        x-transition:enter-start="opacity-0 -translate-x-full" x-transition:enter-end="opacity-100 translate-x-0"
+        x-transition:leave="transition ease-in duration-300" x-transition:leave-start="opacity-100 translate-x-0"
+        x-transition:leave-end="opacity-0 -translate-x-full"
+        class="fixed inset-y-0 left-0 z-50 w-72 bg-black/40 backdrop-blur-xl border-r border-white/10 shadow-2xl flex flex-col"
+        @click.away="isDrawerOpen = false">
+
+        <!-- Close button with enhanced styling -->
+        <div class="p-4 border-b border-white/10 backdrop-blur-md bg-black/20">
+            <button @click="isDrawerOpen = false"
+                class="flex items-center text-gray-400 hover:text-red-500 transition-all hover:translate-x-1">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                </svg>
+                <span class="font-medium">Close menu</span>
+            </button>
+        </div>
+
+        <!-- Navigation content with glass effect sections -->
+        <div class="flex-1 overflow-y-auto scrollbar-thin">
+            <!-- Community section -->
+            <div class="p-2">
+                <a href="/community"
+                    class="flex items-center px-4 py-3 text-white hover:bg-white/10 rounded-lg transition-all duration-300 group backdrop-blur-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg"
+                        class="h-5 w-5 mr-3 text-red-500 group-hover:scale-110 transition-transform" fill="none"
+                        viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                    <span class="font-medium">Community</span>
+                </a>
+            </div>
+            <div class="p-2">
+                <a href="/countdowns"
+                    class="flex items-center px-4 py-3 text-white hover:bg-white/10 rounded-lg transition-all duration-300 group backdrop-blur-sm">
+                    <i data-lucide="calendar-days" class="w-5 h-5 mr-3"></i>
+                    <span class="font-medium">Countdowns</span>
+                </a>
+            </div>
+            <div class="p-2">
+                <a href="https://github.com/kurumi406/kuudere"
+                    class="flex items-center px-4 py-3 text-white hover:bg-white/10 rounded-lg transition-all duration-300 group backdrop-blur-sm">
+                    <i data-lucide="github" class="w-5 h-5 mr-3"></i>
+                    <span class="font-medium">Github</span>
+                </a>
+            </div>
+
+            <!-- Main navigation with enhanced hover effects -->
+            <nav class="p-2 space-y-1">
+                <a href="/home"
+                    class="flex items-center px-4 py-2 text-white bg-red-500/20 rounded-lg backdrop-blur-sm border border-red-500/20">
+                    Home
+                </a>
+                <template x-for="(item, index) in [
+                    { name: 'Subbed Anime', url: '#' },
+                    { name: 'Dubbed Anime', url: '#' },
+                    { name: 'Most Popular', url: '#' },
+                    { name: 'Movies', url: '/search?type=Movie&sort=default' },
+                    { name: 'TV Series', url: '/search?type=TV&sort=default' },
+                    { name: 'OVAs', url: '/search?type=OVA&sort=default' },
+                    { name: 'ONAs', url: '/search?type=ONA&sort=default' },
+                    { name: 'Specials', url: '/search?type=Special&sort=default' },
+                    { name: 'Events', url: '/events' }
+                ]" :key="index">
+                    <a :href="item.url"
+                        class="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-300 backdrop-blur-sm"
+                        :style="{ 'animation-delay': `${index * 100}ms` }" x-text="item.name">
+                    </a>
+                </template>
+            </nav>            
+
+            <!-- Genre section with grid layout and glass effect -->
+            <div class="p-2">
+                <h3 class="px-4 py-2 text-sm font-semibold text-red-400 uppercase tracking-wider">Genre</h3>
+                <div class="grid grid-cols-2 gap-2 p-2 rounded-lg bg-white/5 backdrop-blur-sm">
+                    <template x-for="genre in ['Action', 'Adventure', 'Comedy', 'Drama', 'Fantasy', 'Horror']">
+                        <a href="#"
+                            class="px-4 py-2 text-sm text-gray-300 hover:text-white hover:bg-red-500/10 rounded-lg transition-all duration-300 hover:translate-x-1"
+                            x-text="genre">
+                        </a>
+                    </template>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom decoration -->
+        <div class="h-1 bg-gradient-to-r from-transparent via-red-500/50 to-transparent"></div>
+    </div>
+
+    <!-- Main content (add the blur effect when drawer is open) -->
+    <div :class="{ 'filter blur-sm': isDrawerOpen }" :style="isDrawerOpen ? 'overflow: hidden; height: 100vh;' : ''">
+        <header x-data="{ isSearchOpen: false }"
+            class="sticky top-0 z-50 border-b border-gray-800 bg-black/90 px-4 sm:px-6 py-4 backdrop-blur">
+            <div class="flex items-center justify-between">
+                <!-- Left Section (Logo and Search Icon) -->
+                <div class="flex items-center space-x-4 sm:space-x-6">
+                    <!-- Drawer toggle button -->
+                    <button @click="isDrawerOpen = !isDrawerOpen; if(isDrawerOpen) { animateDrawerItems();}"
+                        class="p-2 text-white hover:text-red-500 hover:shadow-lg hover:shadow-red-500/20"
+                        aria-label="Toggle menu">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white hover:text-red-500"
+                            fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    </button>
+                    <a href="/home">
+                        <img src="{{ url_for('static', filename='logo.png') }}" width="100px" class="lazyload">
+                    </a>
+
+                    <!-- Search Bar (visible on desktop) -->
+                    <div class="hidden sm:block">
+                        <form class="relative" action="/search" method="get" x-data="searchBar()"
+                            @click.away="clearResults">
+                            <input type="text" autocomplete="off" name="keyword" id="search" placeholder="Search..."
+                                class="w-64 bg-gray-900 pl-4 pr-4 py-2 text-sm rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                                x-model="searchQuery" @input="fetchResults" />
+                            <!-- Dropdown for search results -->
+                            <div x-cloak x-show="searchQuery.trim().length > 0 || isLoading"
+                                class="absolute left-0 mt-2 w-full bg-theme-black rounded-md shadow-lg z-10 overflow-hidden"
+                                @click.away="clearResults" x-transition:enter="transition ease-out duration-200"
+                                x-transition:enter-start="opacity-0 translate-y-2"
+                                x-transition:enter-end="opacity-100 translate-y-0"
+                                x-transition:leave="transition ease-in duration-150"
+                                x-transition:leave-start="opacity-100 translate-y-0"
+                                x-transition:leave-end="opacity-0 translate-y-2">
+                                <!-- Loading Indicator -->
+                                <div x-show="isLoading" class="flex justify-center items-center px-4 py-6">
+                                    <div class="flex space-x-2">
+                                        <div class="w-2 h-2 bg-red-500 rounded-full animate-bounce"></div>
+                                        <div class="w-2 h-2 bg-red-500 rounded-full animate-bounce delay-200"></div>
+                                        <div class="w-2 h-2 bg-red-500 rounded-full animate-bounce delay-400"></div>
+                                    </div>
+                                </div>
+                                <!-- If results are found -->
+                                <template x-if="!isLoading && searchResults.length > 0">
+                                    <div>
+                                        <template x-for="result in searchResults" :key="result.id">
+                                            <a :href="`/anime/${result.id}`"
+                                                class="flex items-center px-4 py-2 text-sm text-gray-200 hover:bg-theme-red/10 transition"
+                                                @mouseover="highlightItem($event)" @mouseleave="resetHighlight($event)">
+                                                <!-- Small Cover Image -->
+                                                <img :src="result.coverImage" alt="Cover Image"
+                                                    class="w-10 h-14 mr-3 rounded-md object-cover" />
+                                                <!-- Title and Details -->
+                                                <div>
+                                                    <p class="font-bold" x-text="result.title"></p>
+                                                    <p class="text-xs text-gray-400" x-text="result.details"></p>
+                                                </div>
+                                            </a>
+                                        </template>
+                                        <!-- View All Button -->
+                                        <a href="/search?keyword=" x-bind:href="`/search?keyword=${searchQuery}`"
+                                            class="block px-4 py-2 text-center text-sm font-bold text-red-500 bg-gray-700 hover:bg-gray-600 transition">
+                                            View All Results
+                                        </a>
+                                    </div>
+                                </template>
+                                <!-- If no results are found -->
+                                <template x-if="!isLoading && searchResults.length === 0">
+                                    <div class="px-4 py-6 text-center text-sm text-gray-400" @click.away="clearResults">
+                                        <p>Nothing Found</p>
+                                        <a href="/search"
+                                            class="mt-4 inline-block px-4 py-2 text-sm font-bold text-red-500 bg-gray-700 rounded-md hover:bg-gray-600 transition">
+                                            Find Out More
+                                        </a>
+                                    </div>
+                                </template>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="hidden lg:inline-block lg:grid grid-cols-3 gap-1 items-center mr-72">
+                    <a class="flex flex-col items-center justify-center hover:text-red-500">
+                        <i data-lucide="radio" class="w-6 h-6"></i>
+                        <p>Watch2gether</p>
+                    </a>
+                    <a href="https://github.com/kurumi406/kuudere" class="flex flex-col items-center justify-center hover:text-red-500">
+                        <i data-lucide="github" class="w-6 h-6"></i>
+                        <p>Github</p>
+                    </a>
+                    <a href="/community" class="flex flex-col items-center justify-center hover:text-red-500">
+                        <svg xmlns="http://www.w3.org/2000/svg"
+                        class="h-6 w-6 group-hover:scale-110 transition-transform" fill="none"
+                        viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                    <p>Community</p>
+                    </a>
+                </div>
+
+                <!-- Right Section (User Info or Login) -->
+                {% if userInfo %}
+                <div class="grid grid-cols-3 lg:grid-cols-2 gap-3 items-center">
+                    <!-- Search Icon (visible on mobile) -->
+                    <button @click="isSearchOpen = !isSearchOpen"
+                        class="theme-home-gray hover:text-theme-red lg:hidden transition-colors focus:outline-none"
+                        aria-label="Open menu">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                    </button>
+                    <div x-data="{ 
+                        isOpen: false,
+                        activeTab: 'community',
+                        isLoading: false,
+                        notifications: {
+                            community: [],
+                            anime: [],
+                            system: []
+                        },
+                        page: {
+                            community: 1,
+                            anime: 1,
+                            system: 1
+                        },
+                        hasMore: {
+                            community: true,
+                            anime: true,
+                            system: true
+                        },
+                        async fetchNotifications(type, loadMore = false) {
+                            if (!loadMore) {
+                                this.isLoading = true;
+                                this.notifications[type] = [];
+                                this.page[type] = 1;
+                                this.hasMore[type] = true;
+                            }
+                            try {
+                                const response = await fetch(`/api/notifications/${type}?page=${this.page[type]}`);
+                                const data = await response.json();
+                                if (loadMore) {
+                                    this.notifications[type] = [...this.notifications[type], ...data.notifications];
+                                } else {
+                                    this.notifications[type] = data.notifications;
+                                }
+                                this.hasMore[type] = data.has_more;
+                                this.page[type]++;
+                            } catch (error) {
+                                console.error('Error fetching notifications:', error);
+                            }
+                            this.isLoading = false;
+                            if (!loadMore) {
+                                this.$nextTick(() => this.animate());
+                            }
+                        },
+                        animate() {
+                            anime({
+                                targets: '.notification-item',
+                                translateY: [20, 0],
+                                opacity: [0, 1],
+                                duration: 300,
+                                easing: 'easeOutCubic',
+                                delay: anime.stagger(50)
+                            });
+                        },
+                        animateLoading() {
+                            anime({
+                                targets: '.loading-dot',
+                                scale: [0, 1],
+                                opacity: [0.5, 1],
+                                delay: anime.stagger(200),
+                                loop: true,
+                                direction: 'alternate',
+                                easing: 'easeInOutSine'
+                            });
+                        },
+                        handleScroll(e) {
+                            const bottom = e.target.scrollHeight - e.target.scrollTop === e.target.clientHeight;
+                            if (bottom && this.hasMore[this.activeTab] && !this.isLoading) {
+                                this.fetchNotifications(this.activeTab, true);
+                            }
+                        }
+                    }" @click.away="isOpen = false" class="">
+                        <!-- Notification Icon -->
+                        <button
+                            @click="isOpen = !isOpen; if(isOpen) { activeTab = 'anime'; fetchNotifications('anime') }"
+                            class="theme-home-gray  hover:text-theme-red transition-colors focus:outline-none relative"
+                            aria-label="Open notifications">
+                            <i data-lucide="bell" class="w-6 h-6"></i>
+                            <span
+                                class="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-theme-red rounded-full">3</span>
+                        </button>
+
+                        <!-- Notification Popup -->
+                        <div x-cloak x-show="isOpen" x-transition:enter="transition ease-out duration-200"
+                            x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
+                            class="absolute right-0 mt-2 w-64 rounded-lg bg-theme-dark shadow-lg overflow-hidden">
+                            <!-- Tabs -->
+                            <div class="flex relative border-b border-white/10">
+                                <button @click="activeTab = 'community'; fetchNotifications('community')"
+                                    :class="{'text-theme-red': activeTab === 'community', 'theme-home-gray ': activeTab !== 'community'}"
+                                    class="flex-1 py-3 text-sm font-medium transition-colors relative z-10 overflow-hidden">
+                                    <span class="relative z-10">Community</span>
+                                    <span x-show="activeTab === 'community'"
+                                        x-transition:enter="transition ease-out duration-300"
+                                        x-transition:enter-start="opacity-0 scale-90"
+                                        x-transition:enter-end="opacity-100 scale-100"
+                                        class="absolute inset-0 bg-white/10 rounded-t-lg tab-slide-enter"></span>
+                                </button>
+                                <button @click="activeTab = 'anime'; fetchNotifications('anime')"
+                                    :class="{'text-theme-red': activeTab === 'anime', 'theme-home-gray ': activeTab !== 'anime'}"
+                                    class="flex-1 py-3 text-sm font-medium transition-colors relative z-10 overflow-hidden">
+                                    <span class="relative z-10">Anime</span>
+                                    <span x-show="activeTab === 'anime'"
+                                        x-transition:enter="transition ease-out duration-300"
+                                        x-transition:enter-start="opacity-0 scale-90"
+                                        x-transition:enter-end="opacity-100 scale-100"
+                                        class="absolute inset-0 bg-white/10 rounded-t-lg tab-slide-enter"></span>
+                                </button>
+                                <button @click="activeTab = 'system'; fetchNotifications('system')"
+                                    :class="{'text-theme-red': activeTab === 'system', 'theme-home-gray ': activeTab !== 'system'}"
+                                    class="flex-1 py-3 text-sm font-medium transition-colors relative z-10 overflow-hidden">
+                                    <span class="relative z-10">System</span>
+                                    <span x-show="activeTab === 'system'"
+                                        x-transition:enter="transition ease-out duration-300"
+                                        x-transition:enter-start="opacity-0 scale-90"
+                                        x-transition:enter-end="opacity-100 scale-100"
+                                        class="absolute inset-0 bg-white/10 rounded-t-lg tab-slide-enter"></span>
+                                </button>
+                                <span
+                                    class="absolute bottom-0 left-0 h-0.5 bg-theme-red transition-all duration-300 ease-out"
+                                    :style="{ width: '33.333%', transform: `translateX(${activeTab === 'community' ? '0' : activeTab === 'anime' ? '100%' : '200%'})` }"></span>
+                            </div>
+
+                            <!-- Mark all as read button -->
+                            <div class="p-2 border-b border-white/10">
+                                <button @click="// Add mark all as read functionality here"
+                                    class="w-full py-1 px-3 text-xs font-medium theme-home-gray  hover:text-theme-red transition-colors focus:outline-none flex items-center justify-center">
+                                    <i data-lucide="check" class="w-4 h-4 mr-1"></i>
+                                    Mark all as read
+                                </button>
+                            </div>
+
+                            <!-- Notification Content -->
+                            <div class="max-h-[400px] min-h-[200px] overflow-y-auto scrollbar-thin border-t border-white/10"
+                                @scroll="handleScroll">
+                                <!-- Loading Animation -->
+                                <div x-show="isLoading" x-init="animateLoading()"
+                                    class="flex justify-center items-center h-32">
+                                    <div class="flex space-x-2">
+                                        <div class="loading-dot w-3 h-3 bg-theme-red rounded-full"></div>
+                                        <div class="loading-dot w-3 h-3 bg-theme-red rounded-full"></div>
+                                        <div class="loading-dot w-3 h-3 bg-theme-red rounded-full"></div>
+                                    </div>
+                                </div>
+                                <div x-show="!isLoading && notifications[activeTab].length === 0"
+                                    class="flex flex-col items-center justify-center py-12 px-4">
+                                    <i data-lucide="package-open" class="w-12 h-12 theme-home-gray mb-3"></i>
+                                    <p class="theme-home-gray  text-sm">No Notifications</p>
+                                </div>
+                                <!-- Notifications -->
+                                <template x-for="notification in notifications[activeTab]" :key="notification.id">
+                                    <div class="notification-item border-b border-white/10">
+                                        <div class="p-3">
+                                            <div class="flex gap-2">
+                                                <img :src="notification.image" class="w-8 h-8 rounded object-cover"
+                                                    alt="">
+                                                <div>
+                                                    <p class="theme-home-gray  text-xs" x-text="notification.message">
+                                                    </p>
+                                                    <p class="theme-home-gray /60 text-xs mt-0.5"
+                                                        x-text="notification.time"></p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </template>
+                                <!-- Load More -->
+                                <div x-show="hasMore[activeTab] && !isLoading" class="p-2 text-center">
+                                    <button @click="fetchNotifications(activeTab, true)"
+                                        class="text-xs theme-home-gray  hover:text-theme-red transition-colors focus:outline-none">
+                                        Load More
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div x-data="{ 
+                isOpen: false,
+                animate() {
+                    anime({
+                        targets: '.menu-item',
+                        translateY: [20, 0],
+                        opacity: [0, 1],
+                        delay: anime.stagger(100),
+                        easing: 'easeOutExpo',
+                        duration: 800
+                    });
+                }
+            }" @click.away="isOpen = false" class="relative">
+                        <!-- Profile Icon -->
+                        <button @click="isOpen = !isOpen; if(isOpen) setTimeout(() => animate(), 50)"
+                            class="theme-home-gray hover:text-theme-red transition-colors focus:outline-none"
+                            aria-label="Open menu">
+                            <i data-lucide="user-circle-2" class="w-6 h-6"></i>
+                        </button>
+
+                        <!-- Popup Menu -->
+                        <div x-cloak x-show="isOpen" x-transition:enter="transition ease-out duration-200"
+                            x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
+                            class="absolute right-0 mt-2 w-64  rounded-lg bg-theme-black border border-theme-home-gray/10 shadow-lg">
+                            <div class="py-2 space-y-1">
+                                <!-- Menu Items -->
+                                <a href="/profile"
+                                    class="menu-item flex items-center px-4 py-3 text-sm theme-home-gray hover:bg-theme-red/10 hover:text-white transition-colors">
+                                    <i data-lucide="user" class="w-5 h-5 mr-3"></i>
+                                    Profile
+                                </a>
+
+                                <a href="/user/continue-watching"
+                                    class="menu-item flex items-center px-4 py-3 text-sm theme-home-gray hover:bg-theme-red/10 hover:text-white transition-colors">
+                                    <i data-lucide="play-circle" class="w-5 h-5 mr-3"></i>
+                                    Continue Watching
+                                </a>
+
+                                <a href="/user/watchlist"
+                                    class="menu-item flex items-center px-4 py-3 text-sm theme-home-gray hover:bg-theme-red/10 hover:text-white transition-colors">
+                                    <i data-lucide="heart" class="w-5 h-5 mr-3"></i>
+                                    Watch List
+                                </a>
+
+                                <a href="/user/notifications"
+                                    class="menu-item flex items-center px-4 py-3 text-sm theme-home-gray hover:bg-theme-red/10 hover:text-white transition-colors">
+                                    <i data-lucide="bell" class="w-5 h-5 mr-3"></i>
+                                    Notification
+                                </a>
+
+                                <a href="/user/mal"
+                                    class="menu-item flex items-center px-4 py-3 text-sm theme-home-gray hover:bg-theme-red/10 hover:text-white transition-colors">
+                                    <i data-lucide="download" class="w-5 h-5 mr-3"></i>
+                                    MAL Import / Export
+                                </a>
+
+                                <a href="#"
+                                    class="menu-item flex items-center px-4 py-3 text-sm theme-home-gray hover:bg-theme-red/10 hover:text-white transition-colors">
+                                    <i data-lucide="settings" class="w-5 h-5 mr-3"></i>
+                                    Settings
+                                </a>
+
+                                <div class="border-t border-theme-home-gray/10 mt-2 pt-2">
+                                    <button onclick="logout()"
+                                        class="menu-item w-full flex items-center px-4 py-3 text-sm text-theme-red hover:bg-theme-red/10 hover:text-white transition-colors">
+                                        <i data-lucide="log-out" class="w-5 h-5 mr-3"></i>
+                                        Logout
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="flex items-center space-x-4">
+                    <!-- Search Icon (visible on mobile) -->
+                    <button @click="isSearchOpen = !isSearchOpen"
+                        class="sm:hidden text-gray-400 hover:text-white transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                    </button>
+                    <button @click="isAuthOpen = true"
+                        class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-md text-sm font-medium sm:block">
+                        Sign In
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Expandable Search Bar (visible on mobile when isSearchOpen is true) -->
+            <div x-cloak x-show="isSearchOpen" x-transition:enter="transition ease-out duration-300"
+                x-transition:enter-start="opacity-0 transform -translate-y-2"
+                x-transition:enter-end="opacity-100 transform translate-y-0"
+                x-transition:leave="transition ease-in duration-300"
+                x-transition:leave-start="opacity-100 transform translate-y-0"
+                x-transition:leave-end="opacity-0 transform -translate-y-2" class="sm:hidden mt-4" x-cloak>
+                <form class="relative" action="/search" method="get" x-data="searchBar()" @click.away="clearResults">
+                    <input type="text" autocomplete="off" name="keyword" id="mobile-search" placeholder="Search..."
+                        class="w-full bg-gray-900 pl-4 pr-4 py-2 text-sm rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                        x-model="searchQuery" @input="fetchResults" />
+                    <!-- Dropdown for search results (same as desktop version) -->
+                    <div x-show="searchQuery.trim().length > 0 || isLoading"
+                        class="absolute left-0 mt-2 w-full bg-theme-black rounded-md shadow-lg z-10 overflow-hidden"
+                        @click.away="clearResults" x-transition:enter="transition ease-out duration-200"
+                        x-transition:enter-start="opacity-0 translate-y-2"
+                        x-transition:enter-end="opacity-100 translate-y-0"
+                        x-transition:leave="transition ease-in duration-150"
+                        x-transition:leave-start="opacity-100 translate-y-0"
+                        x-transition:leave-end="opacity-0 translate-y-2">
+                        <!-- Loading Indicator -->
+                        <div x-show="isLoading" class="flex justify-center items-center px-4 py-6">
+                            <div class="flex space-x-2">
+                                <div class="w-2 h-2 bg-red-500 rounded-full animate-bounce"></div>
+                                <div class="w-2 h-2 bg-red-500 rounded-full animate-bounce delay-200"></div>
+                                <div class="w-2 h-2 bg-red-500 rounded-full animate-bounce delay-400"></div>
+                            </div>
+                        </div>
+                        <!-- If results are found -->
+                        <template x-if="!isLoading && searchResults.length > 0">
+                            <div>
+                                <template x-for="result in searchResults" :key="result.id">
+                                    <a :href="`/anime/${result.id}`"
+                                        class="flex items-center px-4 py-2 text-sm text-gray-200 hover:bg-theme-red/10 transition"
+                                        @mouseover="highlightItem($event)" @mouseleave="resetHighlight($event)">
+                                        <!-- Small Cover Image -->
+                                        <img :src="result.coverImage" alt="Cover Image"
+                                            class="w-10 h-14 mr-3 rounded-md object-cover" />
+                                        <!-- Title and Details -->
+                                        <div>
+                                            <p class="font-bold" x-text="result.title"></p>
+                                            <p class="text-xs text-gray-400" x-text="result.details"></p>
+                                        </div>
+                                    </a>
+                                </template>
+                                <!-- View All Button -->
+                                <a href="/search?keyword=" x-bind:href="`/search?keyword=${searchQuery}`"
+                                    class="block px-4 py-2 text-center text-sm font-bold text-red-500 bg-gray-700 hover:bg-gray-600 transition">
+                                    View All Results
+                                </a>
+                            </div>
+                        </template>
+                        <!-- If no results are found -->
+                        <template x-if="!isLoading && searchResults.length === 0">
+                            <div class="px-4 py-6 text-center text-sm text-gray-400" @click.away="clearResults">
+                                <p>Nothing Found</p>
+                                <a href="/search"
+                                    class="mt-4 inline-block px-4 py-2 text-sm font-bold text-red-500 bg-gray-700 rounded-md hover:bg-gray-600 transition">
+                                    Find Out More
+                                </a>
+                            </div>
+                        </template>
+                    </div>
+                </form>
+            </div>
+        </header>
+
+
+        <div x-cloak x-show="isAuthOpen" x-transition.opacity
+            class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+            @click.self="isAuthOpen = false"
+            @trigger-auth-modal.window="isAuthOpen = true">
+            <div x-data="authForm()" x-transition.scale @click.away="isAuthOpen = false"
+                class="relative w-full max-w-md bg-zinc-900 rounded-lg shadow-xl p-8 border border-zinc-800 overflow-hidden m-10">
+                <button @click="isAuthOpen = true" class="absolute top-4 right-4 text-zinc-400 hover:text-white z-50">
+                    ✕
+                </button>
+                <!-- Floating accent effect -->
+                <div class="absolute inset-0 bg-red-500/10 rounded-lg blur-3xl float-animation"></div>
+
+                <div class="relative z-10">
+                    <div class="text-center mb-8">
+                        <h1 class="text-2xl font-bold bg-gradient-to-r from-white to-zinc-400 bg-clip-text text-transparent"
+                            x-text="isLogin ? 'Welcome Back' : 'Create Account'"></h1>
+                        <p class="text-zinc-400 text-sm mt-2"
+                            x-text="isLogin ? 'Sign in to continue' : 'Create a new account'"></p>
+                    </div>
+
+                    <form @submit.prevent="submitForm" class="space-y-6">
+                        <div x-show="!isLogin" x-transition.duration.300ms.opacity.scale class="space-y-2">
+                            <label for="username" class="block text-zinc-300">Username</label>
+                            <div class="relative">
+                                <input id="username" type="text" x-model="formData.username"
+                                    class="w-full bg-zinc-800/50 border-zinc-700 text-white pl-10 pr-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                                    placeholder="Enter your username">
+                            </div>
+                        </div>
+
+                        <div class="space-y-2">
+                            <label for="email" class="block text-zinc-300">Email</label>
+                            <div class="relative">
+                                <input id="email" type="email" x-model="formData.email"
+                                    class="w-full bg-zinc-800/50 border-zinc-700 text-white pl-10 pr-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                                    placeholder="Enter your email">
+                            </div>
+                        </div>
+
+                        <div class="space-y-2">
+                            <label for="password" class="block text-zinc-300">Password</label>
+                            <div class="relative">
+                                <input id="password" :type="showPassword ? 'text' : 'password'"
+                                    x-model="formData.password"
+                                    class="w-full bg-zinc-800/50 border-zinc-700 text-white pl-10 pr-10 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                                    placeholder="Enter your password">
+                            </div>
+                        </div>
+
+                        <button type="submit" :disabled="loading"
+                            class="w-full bg-red-500 hover:bg-red-600 text-white py-2 rounded-md transition-colors">
+                            <span x-show="!loading" x-text="isLogin ? 'Sign In' : 'Create Account'"></span>
+                            <svg x-show="loading" class="animate-spin h-5 w-5 mx-auto" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                                    stroke-width="4">
+                                </circle>
+                                <path class="opacity-75" fill="currentColor"
+                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                                </path>
+                            </svg>
+                        </button>
+                    </form>
+
+
+                    <div class="text-center mt-4">
+                        <button @click="switchForms()"
+                            class="text-zinc-400 hover:text-red-400 text-sm transition-colors">
+                            <span x-text="isLogin ? 'Create new account' : 'Already have an account?'"></span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% block content %}{% endblock %}
+        <!-- Toast Notifications -->
+        <div x-data="toastNotifications()" @notify.window="addNotification($event.detail)"
+            class="fixed bottom-4 right-4 z-50">
+            <template x-for="notification in notifications" :key="notification.id">
+                <div x-show="notification.visible" x-transition:enter="transition ease-out duration-300"
+                    x-transition:enter-start="opacity-0 transform translate-y-2"
+                    x-transition:enter-end="opacity-100 transform translate-y-0"
+                    x-transition:leave="transition ease-in duration-300"
+                    x-transition:leave-start="opacity-100 transform translate-y-0"
+                    x-transition:leave-end="opacity-0 transform translate-y-2" :class="{
+                    'bg-red-500': notification.type === 'error',
+                    'bg-green-500': notification.type === 'success'
+                }" class="mb-4 p-4 text-white rounded-lg shadow-lg flex items-center justify-between"
+                    x-init="$nextTick(() => { animateNotification($el, notification.id) })">
+                    <div class="flex items-center">
+                        <svg x-show="notification.type === 'error'" class="w-6 h-6 mr-2" fill="none"
+                            stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <svg x-show="notification.type === 'success'" class="w-6 h-6 mr-2" fill="none"
+                            stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <span x-text="notification.message"></span>
+                    </div>
+                    <button @click="removeNotification(notification.id)" class="text-white hover:text-gray-200">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                            xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+            </template>
+        </div>
+        <footer
+            class="mt-12 border-t border-white/10 bg-black/40 hidden backdrop-blur-xl py-8 px-4 sm:px-6 relative overflow-hidden">
+            <div class="flex flex-col items-start justify-between space-y-4 sm:flex-row sm:space-y-0 relative z-10">
+                <div x-data="{ hover: false }" @mouseenter="hover = true" @mouseleave="hover = false" class="group">
+                    <img src="https://g-t9mgc8zy9ce.vusercontent.net/placeholder.svg?height=100&width=100&text=Fox"
+                        alt="Sleeping Fox"
+                        class="w-[50px] h-[50px] mb-2 transition-transform duration-300 transform group-hover:scale-110">
+                    <p class="text-sm text-gray-400 group-hover:text-white transition-colors duration-300">
+                        © 2024 Kuudere. All rights reserved.
+                    </p>
+                    <div x-show="hover" x-transition:enter="transition ease-out duration-300"
+                        x-transition:enter-start="opacity-0 scale-90" x-transition:enter-end="opacity-100 scale-100"
+                        x-transition:leave="transition ease-in duration-300"
+                        x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-90"
+                        class="absolute -inset-2 bg-red-500/10 rounded-lg blur-lg"></div>
+                </div>
+                <div x-data="{ hover: false }" @mouseenter="hover = true" @mouseleave="hover = false"
+                    class="text-left sm:text-right relative group">
+                    <p class="text-sm text-gray-400 group-hover:text-white transition-colors duration-300">
+                        Still looking for something to watch?
+                        <br>
+                        <span class="text-red-500 hover:text-red-400 transition-colors duration-300 cursor-pointer">
+                            Check out our help guide!
+                        </span>
+                    </p>
+                    <div x-show="hover" x-transition:enter="transition ease-out duration-300"
+                        x-transition:enter-start="opacity-0 scale-90" x-transition:enter-end="opacity-100 scale-100"
+                        x-transition:leave="transition ease-in duration-300"
+                        x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-90"
+                        class="absolute -inset-2 bg-red-500/10 rounded-lg blur-lg"></div>
+                </div>
+            </div>
+            <div class="absolute inset-0 bg-gradient-to-r from-transparent via-red-500/5 to-transparent opacity-0"
+                x-data x-init="
+                anime({
+                    targets: $el,
+                    opacity: [0, 1],
+                    translateX: ['100%', '-100%'],
+                    easing: 'easeInOutSine',
+                    duration: 5000,
+                    loop: true
+                })
+            "></div>
+        </footer>
+    </div>
+
+    <!-- ... (keep existing scripts) ... -->
+    <script src="{{ url_for('static', filename='js/socket.io.min.js') }}"></script>
+    <script>
+        lucide.createIcons();
+    </script>
+
+    <script>
+        // Alpine.js data and functions
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('footerAnimation', () => ({
+                init() {
+                    anime({
+                        targets: this.$el.querySelectorAll('img, p'),
+                        translateY: [20, 0],
+                        opacity: [0, 1],
+                        delay: anime.stagger(100),
+                        easing: 'easeOutExpo',
+                        duration: 1000
+                    });
+                }
+            }));
+        });
+
+        function authForm() {
+            return {
+                isAuthOpen: false,
+                isLogin: true,
+                showPassword: false,
+                loading: false,
+                formData: {
+                    username: '',
+                    email: '',
+                    password: ''
+                },
+                async submitForm() {
+                    this.loading = true;
+                    const url = this.isLogin ? '/login' : '/register'; // Adjust endpoint URLs as needed
+
+                    try {
+                        const response = await fetch(url, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(this.formData)
+                        });
+
+                        // Check if the response is OK
+                        if (response.ok) {
+                            const result = await response.json();
+                            window.dispatchEvent(new CustomEvent('notify', {
+                                detail: { message: 'Logged In successfully!', type: 'success' }
+                            }));
+                            window.location.reload();
+                        } else {
+                            // Handle the error response
+                            const result = await response.json(); // Parse the JSON response
+                            const errorMessage = result.message || 'An error occurred.'; // Get the error message
+                            window.dispatchEvent(new CustomEvent('notify', {
+                                detail: { message: errorMessage, type: 'error' }
+                            }));
+                        }
+                    } catch (error) {
+                        alert('Something went wrong: ' + error.message);
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+                switchForms() {
+                    this.isLogin = !this.isLogin;
+                    this.formData = { username: '', email: '', password: '' }; // Reset form data
+                }
+            };
+        }
+        function watch(id) {
+            window.location.href = `/watch/${id}/1`;
+        }
+        function searchBar() {
+            return {
+                searchQuery: '',
+                searchResults: [],
+                isLoading: false,  // Track loading state
+
+                // Fetch search results from Flask backend
+                async fetchResults() {
+                    if (this.searchQuery.trim().length === 0) {
+                        this.searchResults = [];
+                        this.isLoading = false;
+                        return;
+                    }
+
+                    // Start loading
+                    this.isLoading = true;
+
+                    try {
+                        const response = await fetch(`/search-api?q=${this.searchQuery}`);
+                        if (!response.ok) throw new Error('Network response was not ok');
+                        this.searchResults = await response.json();
+
+                        // Animate the dropdown items once results are loaded
+                        anime({
+                            targets: '.dropdown-item',
+                            opacity: [0, 1],
+                            translateY: [10, 0],
+                            delay: anime.stagger(100),
+                            easing: 'easeOutExpo',
+                            duration: 500,
+                        });
+                    } catch (error) {
+                        console.error('Error fetching search results:', error);
+                        this.searchResults = [];
+                    } finally {
+                        // Stop loading after results are fetched
+                        this.isLoading = false;
+                    }
+                },
+
+                // Clear search results on outside click
+                clearResults() {
+                    // If searchQuery is empty, clear everything
+                    if (!this.searchQuery.trim()) {
+                        this.searchResults = [];
+                        this.isLoading = false;
+                    } else {
+                        // If there's still a search term, reset only the results
+                        this.searchResults = [];
+                    }
+                    // Optionally reset searchQuery if you want to clear it after click away
+                    this.searchQuery = '';
+                },
+
+                // Highlight item on hover
+                highlightItem(event) {
+                    anime({
+                        targets: event.currentTarget,
+                        scale: 1.05,
+                        duration: 300,
+                        easing: 'easeOutQuad',
+                    });
+                },
+
+                // Reset item highlight
+                resetHighlight(event) {
+                    anime({
+                        targets: event.currentTarget,
+                        scale: 1,
+                        duration: 300,
+                        easing: 'easeOutQuad',
+                    });
+                },
+            };
+        }
+
+
+        function animateDrawerItems() {
+            anime({
+                targets: 'nav ul li',
+                translateX: [-50, 0],
+                opacity: [0, 1],
+                delay: anime.stagger(100),
+                easing: 'easeOutExpo',
+                duration: 800
+            });
+        }
+
+        function toastNotifications() {
+            return {
+                notifications: [],
+                addNotification({ message, type = 'error' }) {
+                    const id = Date.now();
+                    this.notifications.push({ id, message, type, visible: true });
+                    setTimeout(() => this.removeNotification(id), 5000);
+                },
+                removeNotification(id) {
+                    const index = this.notifications.findIndex(n => n.id === id);
+                    if (index > -1) {
+                        this.notifications[index].visible = false;
+                        setTimeout(() => {
+                            this.notifications = this.notifications.filter(n => n.id !== id);
+                        }, 300);
+                    }
+                },
+                animateNotification(el, id) {
+                    anime({
+                        targets: el,
+                        translateX: [50, 0],
+                        opacity: [0, 1],
+                        easing: 'easeOutElastic(1, .8)',
+                        duration: 800,
+                        complete: () => {
+                            setTimeout(() => {
+                                anime({
+                                    targets: el,
+                                    translateX: [0, 50],
+                                    opacity: 0,
+                                    easing: 'easeInElastic(1, .8)',
+                                    duration: 800,
+                                    complete: () => this.removeNotification(id)
+                                });
+                            }, 4200);
+                        }
+                    });
+                }
+            }
+        }
+        async function logout() {
+            this.loading = true;
+            const url = '/logout' // Adjust endpoint URLs as needed
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                });
+
+                // Check if the response is OK
+                if (response.ok) {
+                    const result = await response.json();
+                    window.dispatchEvent(new CustomEvent('notify', {
+                        detail: { message: 'Logged Out successfully!', type: 'success' }
+                    }));
+                    window.location.reload();
+                } else {
+                    // Handle the error response
+                    const result = await response.json(); // Parse the JSON response
+                    const errorMessage = result.message || 'An error occurred.'; // Get the error message
+                    window.dispatchEvent(new CustomEvent('notify', {
+                        detail: { message: errorMessage, type: 'error' }
+                    }));
+                }
+            } catch (error) {
+                alert('Something went wrong: ' + error.message);
+            } finally {
+                this.loading = false;
+            }
+        }
+    </script>
+</body>
+
+</html>

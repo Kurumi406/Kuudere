@@ -1,0 +1,545 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+    [x-cloak] {
+        display: none !important;
+    }
+
+    .glass {
+        background: rgba(17, 25, 40, 0.75);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.125);
+    }
+
+    .dropdown-content scrollbar-thin {
+        opacity: 0;
+        transform: translateY(-10px);
+        transition: opacity 300ms ease-out, transform 300ms ease-out;
+    }
+
+    .dropdown-content scrollbar-thin.show {
+        opacity: 1;
+        transform: translateY(0);
+    }
+</style>
+<div class="bg-black min-h-screen p-8">
+    <div class="max-w-7xl mx-auto" x-data="{
+        searchQuery: '',
+        selectedGenres: [],
+        selectedSeasons: [],
+        selectedYears: [],
+        selectedTypes: [],
+        selectedStatuses: [],
+        selectedLanguages: [],
+        selectedRatings: [],
+        viewMode: 'grid',
+        dropdownStates: {
+            genre: false,
+            season: false,
+            year: false,
+            type: false,
+            status: false,
+            language: false,
+            rating: false
+        },
+        toggleDropdown(dropdown) {
+            if (!this.dropdownStates[dropdown]) {
+                this.dropdownStates = Object.fromEntries(
+                    Object.entries(this.dropdownStates).map(([key, value]) => [key, key === dropdown])
+                );
+                this.$nextTick(() => {
+                    const dropdownElement = document.getElementById(`${dropdown}-dropdown`);
+                    dropdownElement.classList.add('show');
+                });
+            } else {
+                this.closeDropdown(dropdown);
+            }
+        },
+        closeDropdown(dropdown) {
+            const dropdownElement = document.getElementById(`${dropdown}-dropdown`);
+            dropdownElement.classList.remove('show');
+            setTimeout(() => {
+                this.dropdownStates[dropdown] = false;
+            }, 300);
+        },
+        submitForm() {
+            const params = new URLSearchParams();
+            if (this.searchQuery) params.append('keyword', this.searchQuery);
+            if (this.selectedGenres.length > 0) params.append('genres', this.selectedGenres.join(','));
+            if (this.selectedSeasons.length > 0) params.append('season', this.selectedSeasons.join(','));
+            if (this.selectedYears.length > 0) params.append('year', this.selectedYears.join(','));
+            if (this.selectedTypes.length > 0) params.append('type', this.selectedTypes.join(','));
+            if (this.selectedStatuses.length > 0) params.append('status', this.selectedStatuses.join(','));
+            if (this.selectedLanguages.length > 0) params.append('language', this.selectedLanguages.join(','));
+            if (this.selectedRatings.length > 0) params.append('rating', this.selectedRatings.join(','));
+            params.append('sort', 'default');
+            window.location.href = `/search?${params.toString()}`;
+        },
+        initializeFilters() {
+            const params = new URLSearchParams(window.location.search);
+    
+            // Populate fields from URL parameters
+            this.searchQuery = params.get('keyword') || '';
+            this.selectedGenres = (params.get('genres') || '').split(',').filter(Boolean);
+            this.selectedSeasons = (params.get('season') || '').split(',').filter(Boolean);
+            this.selectedYears = (params.get('year') || '').split(',').filter(Boolean);
+            this.selectedTypes = (params.get('type') || '').split(',').filter(Boolean);
+            this.selectedStatuses = (params.get('status') || '').split(',').filter(Boolean);
+            this.selectedLanguages = (params.get('language') || '').split(',').filter(Boolean);
+            this.selectedRatings = (params.get('rating') || '').split(',').filter(Boolean);
+        }
+    }" x-init="initializeFilters">
+        <h2 class="text-2xl font-bold text-white mb-6">Filter</h2>
+
+        <!-- Filter Controls -->
+        <form @submit.prevent="submitForm">
+            <div class="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                <!-- Search Input -->
+                <div class="glass rounded-lg">
+                    <input type="search" x-model="searchQuery" placeholder="Search..."
+                        class="w-full px-4 py-2 bg-transparent text-white placeholder-gray-400 rounded-lg focus:outline-red-500">
+                </div>
+
+                <!-- Genre Dropdown -->
+                <div class="relative">
+                    <button @click="toggleDropdown('genre')" type="button"
+                        class="w-full px-4 py-2 glass text-white rounded-lg flex justify-between items-center">
+                        <span
+                            x-text="selectedGenres.length ? `Genre (${selectedGenres.length})` : 'Select genre'">Select
+                            genre</span>
+                        <svg class="w-5 h-5 transition-transform duration-200"
+                            :class="{'rotate-180': dropdownStates.genre}" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+
+                    <!-- Genre Dropdown Menu -->
+                    <div id="genre-dropdown" x-show="dropdownStates.genre" x-cloak @click.away="closeDropdown('genre')"
+                        class="dropdown-content scrollbar-thin absolute z-40 mt-1 lg:w-[600px] max-h-[400px] overflow-y-auto glass rounded-lg">
+                        <div class="p-4 grid md:grid-cols-3 lg:grid-cols-3 grid-cols-1 gap-4">
+                            <template x-for="genreGroup in [
+                            ['Action', 'Adventure', 'Cars', 'Comedy'],
+                            ['Dementia', 'Demons', 'Drama', 'Ecchi'],
+                            ['Fantasy', 'Game', 'Harem', 'Historical'],
+                            ['Horror', 'Isekai', 'Josei', 'Kids'],
+                            ['Magic', 'Martial Arts', 'Mecha', 'Military'],
+                            ['Music', 'Mystery', 'Parody', 'Police'],
+                            ['Psychological', 'Romance', 'Samurai', 'School'],
+                            ['Sci-Fi', 'Seinen', 'Shoujo', 'Shoujo Ai'],
+                            ['Shounen', 'Shounen Ai', 'Slice of Life', 'Space'],
+                            ['Sports', 'Super Power', 'Supernatural', 'Thriller'],
+                            ['unknown', 'Vampire']
+                        ]">
+                                <div class="space-y-2">
+                                    <template x-for="genre in genreGroup">
+                                        <div class="flex items-center space-x-2">
+                                            <input type="checkbox" :id="genre" :value="genre" x-model="selectedGenres"
+                                                class="w-4 h-4 rounded border-slate-600 text-blue-500 focus:ring-blue-500 focus:ring-offset-slate-800 bg-slate-700">
+                                            <label :for="genre" x-text="genre"
+                                                class="text-sm text-slate-200 hover:text-white cursor-pointer"></label>
+                                        </div>
+                                    </template>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Season Dropdown -->
+                <div class="relative">
+                    <button @click="toggleDropdown('season')" type="button"
+                        class="w-full px-4 py-2 glass text-white rounded-lg flex justify-between items-center">
+                        <span
+                            x-text="selectedSeasons.length ? `Seasons (${selectedSeasons.length})` : 'Select seasons'">Select
+                            seasons</span>
+                        <svg class="w-5 h-5 transition-transform duration-200"
+                            :class="{'rotate-180': dropdownStates.season}" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+
+                    <div id="season-dropdown" x-show="dropdownStates.season" x-cloak
+                        @click.away="closeDropdown('season')"
+                        class="dropdown-content scrollbar-thin absolute z-40 mt-1 w-full glass rounded-lg">
+                        <div class="p-2">
+                            <template x-for="season in ['Winter', 'Spring', 'Summer', 'Fall']">
+                                <div class="flex items-center space-x-2 mb-2">
+                                    <input type="checkbox" :id="'season_' + season" :value="season"
+                                        x-model="selectedSeasons"
+                                        class="w-4 h-4 rounded border-slate-600 text-blue-500 focus:ring-blue-500 focus:ring-offset-slate-800 bg-slate-700">
+                                    <label :for="'season_' + season" x-text="season"
+                                        class="text-sm text-slate-200 hover:text-white cursor-pointer"></label>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Year Dropdown -->
+                <div class="relative">
+                    <button @click="toggleDropdown('year')" type="button"
+                        class="w-full px-4 py-2 glass text-white rounded-lg flex justify-between items-center">
+                        <span x-text="selectedYears.length ? `Years (${selectedYears.length})` : 'Select years'">Select
+                            years</span>
+                        <svg class="w-5 h-5 transition-transform duration-200"
+                            :class="{'rotate-180': dropdownStates.year}" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+
+                    <div id="year-dropdown" x-show="dropdownStates.year" x-cloak @click.away="closeDropdown('year')"
+                        class="dropdown-content scrollbar-thin absolute z-40 mt-1 w-full max-h-60 overflow-y-auto glass rounded-lg">
+                        <div class="p-2">
+                            <template x-for="year in Array.from({length: 50}, (_, i) => 2024 - i)">
+                                <div class="flex items-center space-x-2 mb-2">
+                                    <input type="checkbox" :id="'year_' + year" :value="year" x-model="selectedYears"
+                                        class="w-4 h-4 rounded border-slate-600 text-blue-500 focus:ring-blue-500 focus:ring-offset-slate-800 bg-slate-700">
+                                    <label :for="'year_' + year" x-text="year"
+                                        class="text-sm text-slate-200 hover:text-white cursor-pointer"></label>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Language Dropdown -->
+                <div class="relative">
+                    <button @click="toggleDropdown('language')" type="button"
+                        class="w-full px-4 py-2 glass text-white rounded-lg flex justify-between items-center">
+                        <span class="line-clamp-1"
+                            x-text="selectedLanguages.length ? `Languages (${selectedLanguages.length})` : 'Select languages'">Select
+                            languages</span>
+                        <svg class="w-5 h-5 transition-transform duration-200"
+                            :class="{'rotate-180': dropdownStates.language}" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+
+                    <div id="language-dropdown" x-show="dropdownStates.language" x-cloak
+                        @click.away="closeDropdown('language')"
+                        class="dropdown-content scrollbar-thin absolute z-40 mt-1 w-full glass rounded-lg">
+                        <div class="p-2">
+                            <template x-for="language in ['Japanese', 'English', 'Korean', 'Chinese']">
+                                <div class="flex items-center space-x-2 mb-2">
+                                    <input type="checkbox" :id="'language_' + language" :value="language"
+                                        x-model="selectedLanguages"
+                                        class="w-4 h-4 rounded border-slate-600 text-blue-500 focus:ring-blue-500 focus:ring-offset-slate-800 bg-slate-700">
+                                    <label :for="'language_' + language" x-text="language"
+                                        class="text-sm text-slate-200 hover:text-white cursor-pointer"></label>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Rating Dropdown -->
+                <div class="relative">
+                    <button @click="toggleDropdown('rating')" type="button"
+                        class="w-full px-4 py-2 glass text-white rounded-lg flex justify-between items-center">
+                        <span
+                            x-text="selectedRatings.length ? `Ratings (${selectedRatings.length})` : 'Select ratings'">Select
+                            ratings</span>
+                        <svg class="w-5 h-5 transition-transform duration-200"
+                            :class="{'rotate-180': dropdownStates.rating}" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+
+                    <div id="rating-dropdown" x-show="dropdownStates.rating" x-cloak
+                        @click.away="closeDropdown('rating')"
+                        class="dropdown-content scrollbar-thin absolute z-40 mt-1 w-full glass rounded-lg">
+                        <div class="p-2">
+                            <template x-for="rating in ['G', 'PG', 'PG-13', 'R', 'R+']">
+                                <div class="flex items-center space-x-2 mb-2">
+                                    <input type="checkbox" :id="'rating_' + rating" :value="rating"
+                                        x-model="selectedRatings"
+                                        class="w-4 h-4 rounded border-slate-600 text-blue-500 focus:ring-blue-500 focus:ring-offset-slate-800 bg-slate-700">
+                                    <label :for="'rating_' + rating" x-text="rating"
+                                        class="text-sm text-slate-200 hover:text-white cursor-pointer"></label>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Type Dropdown -->
+                <div class="relative">
+                    <button @click="toggleDropdown('type')" type="button"
+                        class="w-full px-4 py-2 glass text-white rounded-lg flex justify-between items-center">
+                        <span x-text="selectedTypes.length ? `Types (${selectedTypes.length})` : 'Select types'">Select
+                            types</span>
+                        <svg class="w-5 h-5 transition-transform duration-200"
+                            :class="{'rotate-180': dropdownStates.type}" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+
+                    <div id="type-dropdown" x-show="dropdownStates.type" x-cloak @click.away="closeDropdown('type')"
+                        class="dropdown-content scrollbar-thin absolute z-40 mt-1 w-full glass rounded-lg">
+                        <div class="p-2">
+                            <template x-for="type in ['TV', 'Movie', 'OVA', 'ONA', 'Special']">
+                                <div class="flex items-center space-x-2 mb-2">
+                                    <input type="checkbox" :id="'type_' + type" :value="type" x-model="selectedTypes"
+                                        class="w-4 h-4 rounded border-slate-600 text-blue-500 focus:ring-blue-500 focus:ring-offset-slate-800 bg-slate-700">
+                                    <label :for="'type_' + type" x-text="type"
+                                        class="text-sm text-slate-200 hover:text-white cursor-pointer"></label>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Status Dropdown -->
+                <div class="relative">
+                    <button @click="toggleDropdown('status')" type="button"
+                        class="w-full px-4 py-2 glass text-white rounded-lg flex justify-between items-center">
+                        <span class="line-clamp-1"
+                            x-text="selectedStatuses.length ? `Statuses (${selectedStatuses.length})` : 'Select statuses'">Select
+                            statuses</span>
+                        <svg class="w-5 h-5 transition-transform duration-200"
+                            :class="{'rotate-180': dropdownStates.status}" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+
+                    <div id="status-dropdown" x-show="dropdownStates.status" x-cloak
+                        @click.away="closeDropdown('status')"
+                        class="dropdown-content scrollbar-thin absolute z-40 mt-1 w-full glass rounded-lg">
+                        <div class="p-2">
+                            <template x-for="status in ['Airing', 'Completed', 'Upcoming']">
+                                <div class="flex items-center space-x-2 mb-2">
+                                    <input type="checkbox" :id="'status_' + status" :value="status.toLowerCase()"
+                                        x-model="selectedStatuses"
+                                        class="w-4 h-4 rounded border-slate-600 text-blue-500 focus:ring-blue-500 focus:ring-offset-slate-800 bg-slate-700">
+                                    <label :for="'status_' + status" x-text="status"
+                                        class="text-sm text-slate-200 hover:text-white cursor-pointer"></label>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit"
+                class="px-6 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg flex items-center justify-center gap-2 transition-colors md:max-w-[300px] max-w-full">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                </svg>
+                Apply Filters
+            </button>
+        </form>
+
+        <section class="mt-12">
+            <div class="mb-6 flex items-center justify-between">
+                <h2 class="text-xl sm:text-2xl text-white font-semibold">Results: {{ total }}</h2>
+                <a href="#" class="text-sm text-gray-400 hover:text-white"></a>
+            </div>
+            <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+                {% for anime in result %}
+                <a href="/anime/{{ anime.id }}" class="anime-card relative aspect-[3/4] overflow-visible rounded-md"
+                    @mouseenter="$store.animeData.hoveredCard = {{ loop.index0 }}"
+                    @mouseleave="$store.animeData.hoveredCard = null">
+                    <div
+                        class="relative h-full w-full overflow-hidden rounded-md transition-transform duration-300 ease-in-out hover:scale-105">
+                        <img src="{{ anime.cover }}" alt="{{ anime.english }}" class="w-full h-full object-cover">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent">
+                        </div>
+                        <div class="absolute left-2 top-2 flex flex-wrap gap-1">
+                            <span
+                                class="bg-black/50 backdrop-blur-sm text-white text-[10px] uppercase px-2 py-1 rounded-full">{{
+                                anime.type }}</span>
+                            <span
+                                class="bg-black/50 backdrop-blur-sm text-white text-[10px] uppercase px-2 py-1 rounded-full flex items-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1 text-yellow-400"
+                                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                    stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect>
+                                    <line x1="7" y1="2" x2="7" y2="22"></line>
+                                    <line x1="17" y1="2" x2="17" y2="22"></line>
+                                    <line x1="2" y1="12" x2="22" y2="12"></line>
+                                    <line x1="2" y1="7" x2="7" y2="7"></line>
+                                    <line x1="2" y1="17" x2="7" y2="17"></line>
+                                    <line x1="17" y1="17" x2="22" y2="17"></line>
+                                    <line x1="17" y1="7" x2="22" y2="7"></line>
+                                </svg>
+                                {{ anime.epCount }}
+                            </span>
+                            <span
+                                class="bg-black/50 backdrop-blur-sm text-white text-[10px] uppercase px-2 py-1 rounded-full flex items-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1 text-blue-400"
+                                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                    stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                                    <line x1="12" y1="19" x2="12" y2="23"></line>
+                                    <line x1="8" y1="23" x2="16" y2="23"></line>
+                                </svg>
+                                {{ anime.dubbedCount }}
+                            </span>
+                        </div>
+                        <div class="absolute bottom-2 left-2 right-2">
+                            <h3 class="text-sm font-medium text-white line-clamp-2">{{ anime.english }}</h3>
+                            <p class="mt-1 text-xs text-gray-300">Episodes {{ anime.epCount }}</p>
+                        </div>
+                    </div>
+                    <div x-show="$store.animeData.hoveredCard === {{ loop.index0 }} && $store.animeData.isDesktop"
+                        x-cloak
+                        class="anime-info absolute left-0 top-full z-60 mt-2 w-full sm:left-full sm:top-0 sm:mt-0  sm:ml-2 sm:w-72">
+                        <div class="anime-info-content rounded-lg bg-gray-900/95 p-4 shadow-xl">
+                            <div class="flex items-start justify-between gap-2">
+                                <div class="space-y-1">
+                                    <h4 class="font-medium text-white">{{ anime.english }}</h4>
+                                    <p class="text-xs text-gray-400">{{ anime.native }}</p>
+                                </div>
+                                <div class="flex gap-1">
+                                    <span
+                                        class="bg-pink-500/20 text-pink-500 text-[10px] px-2 py-1 rounded-full">HD</span>
+                                    <span
+                                        class="bg-emerald-500/20 text-emerald-500 text-[10px] px-2 py-1 rounded-full">{{
+                                        anime.subbedCount }}</span>
+                                    <span class="bg-white/20 text-white text-[10px] px-2 py-1 rounded-full">TV</span>
+                                </div>
+                            </div>
+                            <p class="mt-2 text-xs leading-relaxed text-gray-300 line-clamp-2">{{
+                                anime.description }}</p>
+                            <div class="mt-3 space-y-1 text-xs text-gray-400">
+                                <p>Aired: {{ anime.startDate }}</p>
+                                <p>Status: {{ anime.status }}</p>
+                                <p>Genres: {{ anime.genres | join(', ') }}</p>
+                            </div>
+                            <div class="mt-4 flex items-center gap-2">
+                                <button
+                                    class="flex-1 bg-pink-600 hover:bg-pink-700 px-4 py-2 rounded-md text-sm font-medium flex items-center justify-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none"
+                                        viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    Watch now
+                                </button>
+                                <button class="bg-gray-800 hover:bg-gray-700 p-2 rounded-md">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
+                                        viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+            <div class="mt-8 flex justify-center gap-2" 
+                x-data="{ 
+                    currentPage: {{ page }}, 
+                    totalPages: {{ (total / results_per_page) | round(0, 'ceil') | int }},
+                    getPageNumbers() {
+                        let pages = [];
+                        let start = Math.max(1, this.currentPage - 2);
+                        let end = Math.min(this.totalPages, start + 2);
+                        
+                        if (end - start < 4) {
+                            start = Math.max(1, end - 2);
+                        }
+                        
+                        for (let i = start; i <= end; i++) {
+                            pages.push(i);
+                        }
+                        return pages;
+                    }
+                }">
+                <nav class="flex items-center gap-2">
+                    <!-- First page button -->
+                    <button 
+                        @click="window.location.href = updateURLParameter(window.location.href, 'page', 1)"
+                        :disabled="currentPage === 1"
+                        class="w-10 h-10 rounded-full glass text-gray-300 hover:text-white flex items-center justify-center text-sm font-medium transition-all duration-200"
+                        :class="{ 'opacity-50 cursor-not-allowed': currentPage === 1 }"
+                    >
+                        «
+                    </button>
+
+                    <!-- Previous page button -->
+                    <button 
+                        @click="if(currentPage > 1) window.location.href = updateURLParameter(window.location.href, 'page', currentPage - 1)"
+                        :disabled="currentPage === 1"
+                        class="w-10 h-10 rounded-full glass text-gray-300 hover:text-white flex items-center justify-center text-sm font-medium transition-all duration-200"
+                        :class="{ 'opacity-50 cursor-not-allowed': currentPage === 1 }"
+                    >
+                        ‹
+                    </button>
+
+                    <!-- Page numbers -->
+                    <template x-for="pageNum in getPageNumbers()">
+                        <button 
+                            @click="window.location.href = updateURLParameter(window.location.href, 'page', pageNum)"
+                            :class="{
+                                'bg-red-500 text-white': currentPage === pageNum,
+                                'glass text-gray-300 hover:text-white': currentPage !== pageNum
+                            }"
+                            class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium transition-all duration-200"
+                            x-text="pageNum">
+                        </button>
+                    </template>
+
+                    <!-- Next page button -->
+                    <button 
+                        @click="if(currentPage < totalPages) window.location.href = updateURLParameter(window.location.href, 'page', currentPage + 1)"
+                        :disabled="currentPage === totalPages"
+                        class="w-10 h-10 rounded-full glass text-gray-300 hover:text-white flex items-center justify-center text-sm font-medium transition-all duration-200"
+                        :class="{ 'opacity-50 cursor-not-allowed': currentPage === totalPages }"
+                    >
+                        ›
+                    </button>
+
+                    <!-- Last page button -->
+                    <button 
+                        @click="window.location.href = updateURLParameter(window.location.href, 'page', totalPages)"
+                        :disabled="currentPage === totalPages"
+                        class="w-10 h-10 rounded-full glass text-gray-300 hover:text-white flex items-center justify-center text-sm font-medium transition-all duration-200"
+                        :class="{ 'opacity-50 cursor-not-allowed': currentPage === totalPages }"
+                    >
+                        »
+                    </button>
+                </nav>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        // Initialize anime.js animations
+        document.addEventListener('alpine:initialized', () => {
+            anime({
+                targets: '.anime-card',
+                scale: [0.9, 1],
+                opacity: [0, 1],
+                delay: anime.stagger(100),
+                duration: 800,
+                easing: 'easeOutElastic(1, .6)'
+            });
+        });
+        function updateURLParameter(url, param, value) {
+            var regex = new RegExp("([?&])" + param + "=.*?(&|$)", "i");
+            var separator = url.indexOf('?') !== -1 ? "&" : "?";
+            if (url.match(regex)) {
+                return url.replace(regex, '$1' + param + "=" + value + '$2');
+            }
+            else {
+                return url + separator + param + "=" + value;
+            }
+        }
+    </script>
+</div>
+{% endblock %}

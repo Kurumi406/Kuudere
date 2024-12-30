@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-time User Count</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        .float-counter {
+            background: rgba(0, 0, 0, 0.9);
+            box-shadow: 0 8px 32px 0 rgba(192, 16, 16, 0.37);
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+        .number-animation {
+            transition: transform 0.3s ease-out;
+        }
+        .number-up {
+            color: #ff4444;
+            transform: translateY(-20px);
+        }
+        .number-down {
+            color: #ff0000;
+            transform: translateY(20px);
+        }
+    </style>
+</head>
+<body>
+    <div x-data="counter()" 
+         class="float-counter fixed bottom-8 right-8 rounded-full p-4 text-white flex items-center gap-2 z-50 cursor-pointer hover:scale-105 transition-transform duration-300"
+         @mouseover="pulse()"
+         x-init="initializeSocket()">
+        <div class="relative overflow-hidden h-8">
+            <span x-text="formatCount(count)" 
+                  class="number-animation inline-block text-xl font-bold"
+                  :class="{'number-up': increasing, 'number-down': decreasing}"></span>
+        </div>
+        <div class="w-2 h-2 rounded-full bg-red-500 animate-ping"></div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/socket.io.min.js') }}"></script>
+    <script>
+        function counter() {
+            return {
+                count: 0,
+                previousCount: 0,
+                increasing: false,
+                decreasing: false,
+                socket: null,
+                currentRoom: null,
+
+                initializeSocket() {
+                    this.socket = io({ transports: ['websocket'] });
+                    
+                    this.socket.on('connect', () => {
+                        console.log('Connected to server');
+                        this.joinRoom();
+                    });
+
+                    this.socket.on('all_room_counts', (data) => {
+                        this.previousCount = this.count;
+                        this.count = data[this.currentRoom] || 0;
+                        
+                        if (this.count > this.previousCount) {
+                            this.animateCountChange('up');
+                        } else if (this.count < this.previousCount) {
+                            this.animateCountChange('down');
+                        }
+                    });
+                },
+
+                joinRoom() {
+                    if (this.currentRoom) {
+                        this.socket.emit('leave', { room: this.currentRoom });
+                    }
+                    const data = { other_id: 'home' };
+                    this.socket.emit('join', data);
+                    this.currentRoom = "home";
+                },
+
+                formatCount(num) {
+                    return num > 999 ? (num/1000).toFixed(1) + 'k' : num;
+                },
+
+                animateCountChange(direction) {
+                    if (direction === 'up') {
+                        this.increasing = true;
+                        this.decreasing = false;
+                    } else {
+                        this.increasing = false;
+                        this.decreasing = true;
+                    }
+
+                    setTimeout(() => {
+                        this.increasing = false;
+                        this.decreasing = false;
+                    }, 300);
+                },
+
+                pulse() {
+                    anime({
+                        targets: '.float-counter',
+                        scale: [1, 1.1],
+                        duration: 300,
+                        easing: 'easeInOutQuad',
+                        direction: 'alternate'
+                    });
+                }
+            }
+        }
+    </script>
+</body>
+</html>

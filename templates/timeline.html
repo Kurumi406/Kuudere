@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kuudare Development Updates</title>
+    <script src="https://unpkg.com/alpinejs" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#000000',
+                        secondary: '#1A1A1A',
+                        accent: '#FF4B4B',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-primary text-white min-h-screen" x-data="{ activeUpdate: null }">
+    <!-- Moving elements container -->
+    <div id="moving-elements" class="fixed inset-0 overflow-hidden pointer-events-none"></div>
+
+    <div class="relative container mx-auto px-4 py-12 max-w-4xl">
+        <div class="backdrop-blur-md bg-white/5 rounded-xl p-8 shadow-2xl">
+            <!-- Timeline Container -->
+            <div class="space-y-8"></div>
+                <!-- Timeline Item 3 -->
+                <div class="relative pl-8 border-l-2 border-accent/30 group hover:border-accent transition-colors">
+                    <div class="absolute -left-1.5 top-0 w-4 h-4 rounded-full bg-accent/50"></div>
+                    <div class="backdrop-blur-sm bg-white/5 p-6 rounded-lg shadow-lg border border-accent/20 transition-all duration-300 hover:border-accent/40">
+                        <div class="flex items-center gap-3 mb-2">
+                            <h3 class="text-xl font-bold">Kuudere Source code Now Available</h3>
+                        </div>
+                        <p class="text-sm text-gray-400 mb-3">Released on December 29th, 2024</p>
+                        <p class="text-gray-300 mb-4">Now You can contribute to our system through our <a class="hover:text-red-500" href="https://github.com/kurumi406/kuudere">github</a> </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Moving elements animation
+        function createMovingElement(color) {
+            const element = document.createElement('div');
+            element.className = `absolute rounded-full opacity-20`;
+            element.style.backgroundColor = color;
+            element.style.width = `${Math.random() * 50 + 20}px`;
+            element.style.height = element.style.width;
+            document.getElementById('moving-elements').appendChild(element);
+            return element;
+        }
+
+        function animateElement(element) {
+            anime({
+                targets: element,
+                translateX: () => anime.random(-window.innerWidth, window.innerWidth),
+                translateY: () => anime.random(-window.innerHeight, window.innerHeight),
+                scale: () => anime.random(0.2, 1.5),
+                duration: () => anime.random(4000, 8000),
+                easing: 'easeInOutQuad',
+                complete: () => animateElement(element)
+            });
+        }
+
+        // Create and animate background elements
+        for (let i = 0; i < 20; i++) {
+            const color = i % 2 === 0 ? '#FF4B4B' : '#FFD700';
+            const element = createMovingElement(color);
+            animateElement(element);
+        }
+
+        // Add hover animations for timeline items
+        document.querySelectorAll('.group').forEach(item => {
+            item.addEventListener('mouseenter', () => {
+                anime({
+                    targets: item.querySelector('.backdrop-blur-sm'),
+                    scale: 1.02,
+                    duration: 300,
+                    easing: 'easeOutQuad'
+                });
+            });
+
+            item.addEventListener('mouseleave', () => {
+                anime({
+                    targets: item.querySelector('.backdrop-blur-sm'),
+                    scale: 1,
+                    duration: 300,
+                    easing: 'easeOutQuad'
+                });
+            });
+        });
+    </script>
+</body>
+</html>

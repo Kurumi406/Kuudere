@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anime Profile Dashboard</title>
+    <script src="https://unpkg.com/alpinejs" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'anime-red': '#DC143C',
+                        'anime-black': '#000000',
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .glass {
+            @apply bg-white bg-opacity-10 backdrop-filter backdrop-blur-lg;
+        }
+        .glass-hover {
+            @apply transition-all duration-300 hover:bg-opacity-20;
+        }
+        .tab-content {
+            @apply opacity-0 translate-y-4 transition-all duration-500 ease-out;
+        }
+        .tab-content.active {
+            @apply opacity-100 translate-y-0;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-anime-black to-gray-900 text-gray-200 min-h-screen">
+    <div x-data="{ 
+        activeTab: 'profile',
+        user: {
+            name: 'Kmax',
+            email: 'kisarakithmuka21@gmail.com',
+            joined: '2024-05-30',
+            verified: true
+        },
+        watchlistTab: 'all',
+        watchlist: [
+            { title: 'Don\'t Toy with Me, Miss Nagatoro', type: 'TV', duration: '24m', current: 12, total: 12, image: '/placeholder.svg', status: 'watching' },
+            { title: 'Isekai Cheat Magician', type: 'TV', duration: '23m', current: 12, total: 12, image: '/placeholder.svg', status: 'completed' },
+            { title: 'Date A Bullet: Nightmare or Queen', type: 'Movie', duration: '29m', current: 1, total: 1, image: '/placeholder.svg', rating: '18+', status: 'plan-to-watch' },
+            { title: 'Anime Title 4', type: 'TV', duration: '24m', current: 6, total: 12, image: '/placeholder.svg', status: 'on-hold' },
+            { title: 'Anime Title 5', type: 'OVA', duration: '45m', current: 0, total: 3, image: '/placeholder.svg', status: 'dropped' }
+        ],
+        filteredWatchlist() {
+            return this.watchlistTab === 'all' 
+                ? this.watchlist 
+                : this.watchlist.filter(anime => anime.status === this.watchlistTab);
+        },
+        switchTab(tab) {
+            this.activeTab = tab;
+        },
+        switchWatchlistTab(tab) {
+            this.watchlistTab = tab;
+        },
+        notifications: [
+            { title: 'New Episode Available', message: 'Episode 13 of Anime Title 1 is now ready to watch' },
+            { title: 'Friend Request', message: 'User AnimeWatcher wants to connect' },
+            { title: 'Season Finale', message: 'Don\'t miss the epic conclusion of Anime Title 3 tonight!' }
+        ],
+        malStats: {
+            watching: 24,
+            completed: 142,
+            planToWatch: 56
+        },
+        switchTab(tab) {
+            const oldTab = this.activeTab;
+            this.activeTab = tab;
+            anime({
+                targets: `.tab-content[x-show='${oldTab}']`,
+                opacity: 0,
+                translateY: 20,
+                duration: 300,
+                easing: 'easeInOutQuad',
+                complete: (anim) => {
+                    anime({
+                        targets: `.tab-content[x-show='${tab}']`,
+                        opacity: [0, 1],
+                        translateY: [20, 0],
+                        duration: 500,
+                        easing: 'easeOutElastic(1, .8)'
+                    });
+                }
+            });
+        }
+    }" class="font-sans">
+        <!-- Header -->
+        <header class=" top-0 w-full z-50 px-6 py-4 glass bg-white bg-opacity-5 bg-blur-md">
+            <div class="max-w-6xl mx-auto">
+                <div class="flex flex-col items-center gap-4">
+                    <h1 class="text-2xl font-bold">Hi, <span x-text="user.name" class="text-anime-red"></span></h1>
+                    <nav class="flex flex-wrap justify-center gap-6">
+                        <template x-for="(label, tab) in {
+                            'profile': 'Profile',
+                            'continue': 'Continue Watching',
+                            'watchlist': 'Watch List',
+                            'notifications': 'Notifications',
+                            'settings': 'Settings',
+                            'mal': 'MAL'
+                        }">
+                            <button 
+                                @click="switchTab(tab)"
+                                :class="{'text-anime-red border-anime-red': activeTab === tab}"
+                                class="nav-item flex items-center gap-2 border-b-2 border-transparent hover:text-anime-red transition-all duration-300 px-2 py-1 relative overflow-hidden">
+                                <span x-text="label"></span>
+                                <span 
+                                    class="absolute bottom-0 left-0 w-full h-0.5 bg-anime-red transform scale-x-0 transition-transform duration-300"
+                                    :class="{'scale-x-100': activeTab === tab}"
+                                ></span>
+                            </button>
+                        </template>
+                    </nav>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="pt-8 px-6 pb-12">
+            <div class="max-w-4xl mx-auto">
+                <!-- Profile Tab -->
+                <div x-show="activeTab === 'profile'" class="tab-content" :class="{'active': activeTab === 'profile'}">
+                    <div class="glass rounded-2xl p-8 shadow-lg glass-hover bg-white bg-opacity-5">
+                        <div class="flex justify-between items-start">
+                            <div class="flex-1">
+                                <h2 class="text-3xl font-bold mb-8 text-anime-red">Edit Profile</h2>
+                                <div class="space-y-6">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-400 mb-2">EMAIL ADDRESS</label>
+                                        <input 
+                                            type="email" 
+                                            x-model="user.email" 
+                                            class="w-full bg-gray-800 bg-opacity-50 rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-anime-red focus:outline-none"
+                                            readonly
+                                        >
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-400 mb-2">YOUR NAME</label>
+                                        <input 
+                                            type="text" 
+                                            x-model="user.name"
+                                            class="w-full bg-gray-800 bg-opacity-50 rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-anime-red focus:outline-none"
+                                        >
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-400 mb-2">JOINED</label>
+                                        <input 
+                                            type="text" 
+                                            x-model="user.joined"
+                                            class="w-full bg-gray-800 bg-opacity-50 rounded-lg px-4 py-3 text-white"
+                                            readonly
+                                        >
+                                    </div>
+                                    <button class="text-anime-red hover:text-red-400 flex items-center gap-2 transition-colors duration-300">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                                        </svg>
+                                        Change password
+                                    </button>
+                                    <button class="w-full bg-anime-red bg-opacity-20 hover:bg-opacity-30 text-anime-red hover:text-white rounded-lg py-3 transition-all duration-300">
+                                        Save
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="ml-8">
+                                <div class="relative">
+                                    <img src="https://cdn.noitatnemucod.net/avatar/100x100/spy_family/06.png" alt="Avatar" class="w-32 h-32 rounded-full border-4 border-anime-red animate-pulse-slow">
+                                    <button class="absolute bottom-0 right-0 bg-anime-red rounded-full p-2 border-4 border-black hover:bg-red-600 transition-colors duration-300">
+                                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Continue Watching Tab -->
+                <div x-show="activeTab === 'continue'" class="tab-content" :class="{'active': activeTab === 'continue'}">
+                    <div class="glass rounded-2xl p-8 shadow-lg glass-hover">
+                        <h2 class="text-3xl font-bold mb-8 text-anime-red">Continue Watching</h2>
+                        <div class="swiper mySwiper">
+                            <div class="swiper-wrapper">
+                                <template x-for="item in watchlist">
+                                    <div class="swiper-slide glass rounded-lg p-4">
+                                        <div class="aspect-video bg-gray-900 rounded-lg mb-4 overflow-hidden">
+                                            <div class="w-full h-full bg-gradient-to-br from-anime-red to-pink-500 opacity-30"></div>
+                                        </div>
+                                        <h3 x-text="item.title" class="font-bold text-lg"></h3>
+                                        <p class="text-sm text-gray-400">
+                                            Episode <span x-text="item.progress"></span>/<span x-text="item.episodes"></span>
+                                        </p>
+                                        <button class="mt-2 bg-anime-red bg-opacity-20 hover:bg-opacity-30 text-anime-red hover:text-white px-4 py-2 rounded-full transition-all duration-300">
+                                            Continue
+                                        </button>
+                                    </div>
+                                </template>
+                            </div>
+                            <div class="swiper-pagination"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Watchlist Tab -->
+                <div x-show="activeTab === 'watchlist'" class="tab-content" :class="{'active': activeTab === 'watchlist'}">
+                    <div class="glass rounded-2xl p-8 shadow-lg">
+                        <div class="flex justify-between items-center mb-8">
+                            <div class="flex items-center gap-3">
+                                <svg class="w-6 h-6 text-anime-red" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                                </svg>
+                                <h2 class="text-3xl font-bold text-white">Watch List</h2>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-sm text-gray-400">Public</span>
+                                <button class="bg-pink-600 rounded-full px-3 py-1 text-xs font-medium text-white">ON</button>
+                            </div>
+                        </div>
+                
+                        <!-- Filter Tabs -->
+                        <div class="flex flex-wrap gap-2 mb-6">
+                            <template x-for="[status, label] in [
+                                ['all', 'All'],
+                                ['watching', 'Watching'],
+                                ['on-hold', 'On-Hold'],
+                                ['plan-to-watch', 'Plan to watch'],
+                                ['dropped', 'Dropped'],
+                                ['completed', 'Completed']
+                            ]">
+                                <button 
+                                    @click="switchWatchlistTab(status)"
+                                    class="px-4 py-2 rounded-md text-sm transition-all duration-300"
+                                    :class="{'bg-pink-200 text-pink-800': watchlistTab === status, 'bg-gray-700 bg-opacity-50 text-gray-300 hover:bg-opacity-75': watchlistTab !== status}"
+                                >
+                                    <span x-text="label"></span>
+                                </button>
+                            </template>
+                        </div>
+                
+                        <!-- Anime Grid -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+                            <template x-for="anime in filteredWatchlist()">
+                                <div class="relative group">
+                                    <div class="relative aspect-[3/4] rounded-lg overflow-hidden bg-gray-800">
+                                        <img 
+                                            :src="anime.image" 
+                                            :alt="anime.title"
+                                            class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                        >
+                                        <!-- Episode Badges -->
+                                        <div class="absolute bottom-2 left-2 flex gap-1">
+                                            <div class="flex items-center gap-1 bg-black bg-opacity-75 rounded px-1.5 py-0.5">
+                                                <svg class="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 24 24">
+                                                    <path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/>
+                                                </svg>
+                                                <span x-text="anime.current" class="text-xs font-medium text-white"></span>
+                                            </div>
+                                            <div class="flex items-center gap-1 bg-black bg-opacity-75 rounded px-1.5 py-0.5">
+                                                <svg class="w-4 h-4 text-blue-400" fill="currentColor" viewBox="0 0 24 24">
+                                                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>
+                                                </svg>
+                                                <span x-text="anime.total" class="text-xs font-medium text-white"></span>
+                                            </div>
+                                        </div>
+                                        <!-- Age Rating Badge -->
+                                        <template x-if="anime.rating">
+                                            <div class="absolute top-2 right-2 bg-red-600 text-white text-xs font-bold px-1.5 py-0.5 rounded">
+                                                <span x-text="anime.rating"></span>
+                                            </div>
+                                        </template>
+                                        <!-- Menu Button -->
+                                        <button class="absolute top-2 right-2 p-1 rounded-full bg-black bg-opacity-50 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                                                <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                    <div class="mt-2">
+                                        <h3 class="font-medium text-sm text-gray-100 line-clamp-2" x-text="anime.title"></h3>
+                                        <div class="flex items-center gap-2 mt-1">
+                                            <span class="text-xs text-gray-400" x-text="anime.type"></span>
+                                            <span class="text-xs text-gray-400">•</span>
+                                            <span class="text-xs text-gray-400" x-text="anime.duration"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+                
+                
+
+                <!-- Notifications Tab -->
+                <div x-show="activeTab === 'notifications'" class="tab-content" :class="{'active': activeTab === 'notifications'}">
+                    <div class="glass rounded-2xl p-8 shadow-lg glass-hover">
+                        <h2 class="text-3xl font-bold mb-8 text-anime-red">Notifications</h2>
+                        <div class="space-y-4">
+                            <template x-for="notification in notifications">
+                                <div class="glass rounded-lg p-4 hover:bg-opacity-20 transition-all duration-300 cursor-pointer">
+                                    <h3 x-text="notification.title" class="font-bold text-lg"></h3>
+                                    <p x-text="notification.message" class="text-sm text-gray-400"></p>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Settings Tab -->
+                <div x-show="activeTab === 'settings'" class="tab-content" :class="{'active': activeTab === 'settings'}">
+                    <div class="glass rounded-2xl p-8 shadow-lg glass-hover">
+                        <h2 class="text-2xl font-bold text-white mb-6">Settings</h2>
+                    <div class="space-y-4">
+                        <template x-for="(value, key) in settings" :key="key">
+                            <div x-show="['autoNext', 'autoPlay', 'autoSkipIntro', 'enableDub', 'playOriginalAudio', 'publicWatchList'].includes(key)"
+                                class="flex items-center justify-between">
+                                <label :for="key" class="text-white" x-text="formatSettingName(key)"></label>
+                                <div
+                                    class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+                                    <input type="checkbox" :id="key" :name="key" :checked="value"
+                                        @change="updateSetting(key, $event.target.checked)"
+                                        class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer" />
+                                    <label :for="key"
+                                        class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label>
+                                </div>
+                            </div>
+                        </template>
+                        <div class="space-y-2">
+                            <label for="animeNameLanguage" class="text-white">Anime Name Language</label>
+                            <select id="animeNameLanguage" x-model="settings.animeNameLanguage"
+                                class="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-red-500">
+                                <option value="english">English</option>
+                                <option value="japanese">Japanese</option>
+                            </select>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-white">Notification Ignore Folders</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                <template x-for="folder in notificationFolders" :key="folder.id">
+                                    <div class="flex items-center space-x-2">
+                                        <input type="checkbox" :id="folder.id" :value="folder.id"
+                                            x-model="settings.notificationIgnoreFolders"
+                                            class="rounded bg-zinc-800 border-zinc-700 text-red-500 focus:ring-red-500">
+                                        <label :for="folder.id" class="text-white" x-text="folder.label"></label>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                        <div class="space-y-2">
+                            <label for="notificationIgnoreLanguage" class="text-white">Notification Ignore
+                                Language</label>
+                            <select id="notificationIgnoreLanguage" x-model="settings.notificationIgnoreLanguage"
+                                class="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-red-500">
+                                <option value="none">None</option>
+                                <option value="sub">SUB</option>
+                                <option value="dub">DUB</option>
+                            </select>
+                        </div>
+                        <button @click="saveSettings"
+                            class="w-full bg-red-500 hover:bg-red-600 text-white py-2 rounded-md transition duration-300">
+                            Save Settings
+                        </button>
+                    </div>
+                    </div>
+                </div>
+
+                <!-- MAL Tab -->
+                <div x-show="activeTab === 'mal'" class="tab-content" :class="{'active': activeTab === 'mal'}">
+                    <div class="glass bg-white bg-opacity-5 rounded-2xl p-8 shadow-lg glass-hover">
+                        <h2 class="text-2xl font-bold text-white mb-6">Sync & Export</h2>
+
+                    <div class="space-y-6">
+                        <div class="bg-zinc-800/50 p-4 rounded-lg">
+                            <h3 class="text-lg font-semibold text-white mb-4">Sync with External Services</h3>
+                            <div class="space-y-4">
+                                <button @click="syncMAL"
+                                    class="w-full bg-zinc-700 hover:bg-zinc-600 text-white py-2 px-4 rounded-md flex items-center justify-center space-x-2 transition-colors">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20"
+                                        fill="currentColor">
+                                        <path fill-rule="evenodd"
+                                            d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
+                                            clip-rule="evenodd" />
+                                    </svg>
+                                    <span>Sync with MyAnimeList</span>
+                                </button>
+                                <button @click="syncAniList"
+                                    class="w-full bg-zinc-700 hover:bg-zinc-600 text-white py-2 px-4 rounded-md flex items-center justify-center space-x-2 transition-colors">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20"
+                                        fill="currentColor">
+                                        <path fill-rule="evenodd"
+                                            d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
+                                            clip-rule="evenodd" />
+                                    </svg>
+                                    <span>Sync with AniList</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="bg-zinc-800/50 p-4 rounded-lg">
+                            <h3 class="text-lg font-semibold text-white mb-4">Import Watchlist</h3>
+                            <div class="space-y-4">
+                                <div class="flex items-center justify-center w-full">
+                                    <label for="dropzone-file"
+                                        class="flex flex-col items-center justify-center w-full h-32 border-2 border-zinc-600 border-dashed rounded-lg cursor-pointer bg-zinc-700 hover:bg-zinc-600 transition-colors">
+                                        <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                                            <svg class="w-8 h-8 mb-4 text-zinc-400" aria-hidden="true"
+                                                xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
+                                                <path stroke="currentColor" stroke-linecap="round"
+                                                    stroke-linejoin="round" stroke-width="2"
+                                                    d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2" />
+                                            </svg>
+                                            <p class="mb-2 text-sm text-zinc-400"><span class="font-semibold">Click to
+                                                    upload</span> or drag and drop</p>
+                                            <p class="text-xs text-zinc-400">TXT, XML, or JSON (MAX. 10MB)</p>
+                                        </div>
+                                        <input id="dropzone-file" type="file" class="hidden" @change="handleFileImport"
+                                            accept=".txt,.xml,.json" />
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-zinc-800/50 p-4 rounded-lg">
+                            <h3 class="text-lg font-semibold text-white mb-4">Export Watchlist</h3>
+                            <div class="grid grid-cols-3 gap-4">
+                                <button @click="exportWatchlist('text')"
+                                    class="bg-zinc-700 hover:bg-zinc-600 text-white py-2 px-4 rounded-md flex items-center justify-center space-x-2 transition-colors">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20"
+                                        fill="currentColor">
+                                        <path fill-rule="evenodd"
+                                            d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z"
+                                            clip-rule="evenodd" />
+                                    </svg>
+                                    <span>TEXT</span>
+                                </button>
+                                <button @click="exportWatchlist('xml')"
+                                    class="bg-zinc-700 hover:bg-zinc-600 text-white py-2 px-4 rounded-md flex items-center justify-center space-x-2 transition-colors">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20"
+                                        fill="currentColor">
+                                        <path fill-rule="evenodd"
+                                            d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z"
+                                            clip-rule="evenodd" />
+                                    </svg>
+                                    <span>XML</span>
+                                </button>
+                                <button @click="exportWatchlist('json')"
+                                    class="bg-zinc-700 hover:bg-zinc-600 text-white py-2 px-4 rounded-md flex items-center justify-center space-x-2 transition-colors">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20"
+                                        fill="currentColor">
+                                        <path fill-rule="evenodd"
+                                            d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z"
+                                            clip-rule="evenodd" />
+                                    </svg>
+                                    <span>JSON</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Initialize Swiper
+        const swiper = new Swiper(".mySwiper", {
+            slidesPerView: 1,
+            spaceBetween: 20,
+            pagination: {
+                el: ".swiper-pagination",
+                clickable: true,
+            },
+            breakpoints: {
+                640: {
+                    slidesPerView: 2,
+                },
+                768: {
+                    slidesPerView: 3,
+                },
+            },
+        });
+
+        // Animate elements on page load
+        anime({
+            targets: '.glass',
+            translateY: [20, 0],
+            opacity: [0, 1],
+            duration: 800,
+            easing: 'easeOutElastic',
+            delay: anime.stagger(100)
+        });
+
+        // Animate progress bars
+        anime({
+            targets: '.bg-anime-red',
+            width: (el) => el.style.width,
+            easing: 'easeInOutQuad',
+            duration: 1000,
+            delay: anime.stagger(200)
+        });
+
+        // Hover animation for glass elements
+        document.querySelectorAll('.glass-hover').forEach(el => {
+            el.addEventListener('mouseenter', () => {
+                anime({
+                    targets: el,
+                    scale: 1.02,
+                    boxShadow: '0 4px 20px rgba(220, 20, 60, 0.2)',
+                    duration: 300,
+                    easing: 'easeOutElastic'
+                });
+            });
+            el.addEventListener('mouseleave', () => {
+                anime({
+                    targets: el,
+                    scale: 1,
+                    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                    duration: 300,
+                    easing: 'easeOutElastic'
+                });
+            });
+        });
+    </script>
+</body>
+</html>

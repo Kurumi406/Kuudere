@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anime Community</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/swiper@8/swiper-bundle.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@8/swiper-bundle.min.css" />
+    <style>
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .glass-hover:hover {
+            background: rgba(255, 255, 255, 0.06);
+            box-shadow: 0 8px 32px 0 rgba(255, 0, 0, 0.1);
+        }
+
+        .post-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .post-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px -5px rgba(255, 0, 0, 0.1);
+        }
+
+        .red-glow {
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.15);
+        }
+
+        body {
+            background: radial-gradient(circle at center, #1a0808 0%, #000000 100%);
+            min-height: 100vh;
+            background-attachment: fixed;
+        }
+
+        .like-button:hover svg {
+            filter: drop-shadow(0 0 5px rgba(255, 0, 0, 0.5));
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(255, 0, 0, 0.3);
+            border-radius: 3px;
+        }
+    </style>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'theme-red': '#ff0000',
+                        'theme-dark': '#0a0a0a'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="text-gray-200 custom-scrollbar" x-data="{ activeTab: 'All' }, joinCommunity()" x-init="initializeSocket()" @join-room.window="joinRoom()">
+    <!-- Animated background particles -->
+    <div class="fixed inset-0 -z-10">
+        <div class="absolute inset-0" id="particles"></div>
+    </div>
+
+    <div class="max-w-4xl mx-auto p-4 md:p-6 space-y-6 relative">
+        <!-- Header -->
+        <header class="glass rounded-xl p-4 flex items-center justify-between">
+            <h1 class="text-2xl font-bold tracking-tight text-red-500">アニメ Community</h1>
+            <button 
+                class="bg-red-500 bg-opacity-10 text-red-500 px-6 py-2 rounded-lg transition-all duration-300 hover:bg-opacity-20 red-glow"
+                style="animation: float 3s ease-in-out infinite">
+                New Post +
+            </button>
+        </header>
+        
+        <!-- Navigation -->
+        <nav class="glass rounded-xl p-2 flex flex-wrap gap-2">
+            <template x-for="tab in ['All', 'Anime', 'Manga', 'Cosplay', 'Art', 'Discussion']">
+                <button 
+                    class="px-4 py-2 rounded-lg transition-all duration-300 glass-hover"
+                    :class="{ 
+                        'bg-red-500 bg-opacity-10 text-red-500 red-glow': activeTab === tab,
+                        'hover:text-red-400': activeTab !== tab 
+                    }"
+                    @click="activeTab = tab"
+                    x-text="tab"
+                ></button>
+            </template>
+        </nav>
+        
+        <!-- Posts Container -->
+        <div class="space-y-4" id="postsContainer">
+            <template x-for="post in [1, 2, 3]" :key="post">
+                <article class="post-card glass rounded-xl p-6 space-y-4" 
+                    x-data="{ liked: false, likeCount: Math.floor(Math.random() * 1000) }">
+                    <header class="flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-full overflow-hidden red-glow">
+                            <img src="https://picsum.photos/seed/anime/200" alt="Avatar" 
+                                class="w-full h-full object-cover transition-transform duration-300 hover:scale-110">
+                        </div>
+                        <div class="flex-1">
+                            <h2 class="font-medium text-red-400">Anime Enthusiast</h2>
+                            <p class="text-xs text-gray-400">2 hours ago</p>
+                        </div>
+                        <span class="px-3 py-1 text-xs rounded-full bg-red-500 bg-opacity-10 text-red-400" 
+                            x-text="activeTab"></span>
+                    </header>
+
+                    <div class="space-y-2">
+                        <h3 class="text-lg font-semibold">Latest Anime Discussion</h3>
+                        <p class="text-gray-400 text-left">
+                            Just finished watching the latest episode. The animation quality and story development were incredible!
+                            What are your thoughts on the new character reveals?
+                        </p>
+                    </div>
+
+                    <footer class="flex items-center justify-between pt-2">
+                        <div class="flex items-center gap-4">
+                            <button 
+                                class="like-button flex items-center gap-2 transition-all duration-300"
+                                :class="{ 'text-red-500': liked, 'text-gray-400 hover:text-red-400': !liked }"
+                                @click="liked = !liked; likeCount += liked ? 1 : -1"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" 
+                                    :class="{ 'fill-current': liked, 'stroke-current': !liked }">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                        d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                                </svg>
+                                <span x-text="likeCount"></span>
+                            </button>
+                            <button class="flex items-center gap-2 text-gray-400 hover:text-red-400 transition-all duration-300">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                        d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                </svg>
+                                <span>45</span>
+                            </button>
+                        </div>
+                        <button class="flex items-center gap-2 text-gray-400 hover:text-red-400 transition-all duration-300">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                    d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                            </svg>
+                            <span>Share</span>
+                        </button>
+                    </footer>
+                </article>
+            </template>
+        </div>
+    </div>
+
+    <script>
+        // Particle animation
+        function createParticle() {
+            const particle = document.createElement('div');
+            particle.className = 'absolute w-1 h-1 bg-red-500 rounded-full opacity-0';
+            particle.style.left = Math.random() * 100 + 'vw';
+            particle.style.top = Math.random() * 100 + 'vh';
+            document.getElementById('particles').appendChild(particle);
+
+            anime({
+                targets: particle,
+                opacity: [0, 0.3, 0],
+                scale: [0, 1],
+                translateY: -50,
+                duration: 3000,
+                easing: 'easeOutExpo',
+                complete: () => {
+                    particle.remove();
+                    createParticle();
+                }
+            });
+        }
+
+        // Create initial particles
+        for (let i = 0; i < 20; i++) {
+            setTimeout(createParticle, i * 200);
+        }
+
+        // Post animations
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    anime({
+                        targets: entry.target,
+                        opacity: [0, 1],
+                        translateY: [20, 0],
+                        duration: 800,
+                        easing: 'spring(1, 80, 10, 0)',
+                        delay: anime.stagger(150)
+                    });
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.post-card').forEach(post => {
+            observer.observe(post);
+        });
+        function joinCommunity(){
+            console.log("lol")
+            return{
+            socket: null,
+            currentRoom: null,
+            initializeSocket() {
+                        this.socket = io({ transports: ['websocket'] });
+
+                        this.socket.on('connect', () => {
+                            console.log('Connected to server');
+                            this.joinRoom();
+                        });
+                    },
+                    joinRoom() {
+                    const part = 'community'
+                    console.log(part);
+                    if (this.currentRoom) {
+                        this.socket.emit('leave', { room: this.currentRoom });
+                    }
+                    this.currentRoom = part;
+                    this.socket.emit('join', { other_id: this.currentRoom });
+                    this.socket.emit('get_current_room_count', { room: this.currentRoom }); // Request count for the current room
+                }
+                }
+            }
+            window.dispatchEvent(new Event('join-room'));
+    </script>
+</body>
+</html>
+

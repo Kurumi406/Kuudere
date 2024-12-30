@@ -1,0 +1,879 @@
+{% extends "base.html" %}
+{% block content %}
+
+
+<body class="bg-black scrollbar-ass text-gray-100 h-full">
+    <style>
+    @keyframes likeAnimation {
+        0% {
+            transform: scale(1);
+        }
+
+        50% {
+            transform: scale(1.2);
+        }
+
+        100% {
+            transform: scale(1);
+        }
+    }
+
+    .like-button.animate {
+        animation: likeAnimation 0.3s ease-in-out;
+    }
+
+    @keyframes dislikeAnimation {
+        0% {
+            transform: scale(1) rotate(0deg);
+        }
+
+        50% {
+            transform: scale(1.2) rotate(-20deg);
+        }
+
+        100% {
+            transform: scale(1) rotate(0deg);
+        }
+    }
+
+    .dislike-button.animate {
+        animation: dislikeAnimation 0.3s ease-in-out;
+    }
+</style>
+    <div x-data="animePlayer()" x-init="fetchInitialData()" class="h-full">
+        <!-- Loading Overlay -->
+        <div x-show="isLoading" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+            <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-red-600"></div>
+        </div>
+
+        <div class="flex flex-col lg:flex-row h-full">
+            <!-- Main Content Area -->
+            <div class="lg:w-3/4 space-y-6 p-4">
+                <!-- Video Player Section -->
+                <div x-show="currentVideoLink" class="relative aspect-video rounded-lg overflow-hidden shadow-2xl">
+                    <!-- Video Loading Overlay -->
+                    <div x-show="isVideoLoading"
+                        class="absolute inset-0 bg-black bg-opacity-75 flex items-center justify-center z-10">
+                        <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-red-600"></div>
+                    </div>
+
+                    <iframe x-ref="videoPlayer" :src="currentVideoLink" class="w-full h-full" allowfullscreen
+                        x-on:load="isVideoLoading = false"></iframe>
+                </div>
+
+                <!-- Watching Status Bar -->
+                <div class="bg-gray-900/50 p-4 rounded-lg flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <div x-data="counter()" x-init="initializeSocket()" @join-room.window="joinRoom()"
+                            class="flex items-center gap-2">
+                            <!-- Display the current room's listener count -->
+                            <span x-text="formatCount(count)" class="number-animation inline-block"
+                                :class="{'number-up': increasing, 'number-down': decreasing}">
+                            </span>
+                            <span class="text-red-500">●</span>
+                            watching
+                        </div>
+                        <div x-data="likeSystem()" class="flex items-center gap-2">
+                            <button @click="like()" :class="{'text-red-500': liked, 'text-gray-500': !liked}"
+                                class="like-button hover:text-gray-300 transition-colors p-1"
+                                x-bind:style="liked ? 'color: rgb(239, 68, 68);' : ''">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
+                                </svg>
+                            </button>
+                            <span x-text="likes" class="likes text-sm font-medium text-gray-500"></span>
+                            <button @click="dislike()" :class="{'text-blue-500': disliked, 'text-gray-500': !disliked}"
+                                class="dislike-button hover:text-gray-300 transition-colors p-1"
+                                x-bind:style="disliked ? 'color: rgb(59, 130, 246);' : ''">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018a2 2 0 01.485.06l3.76.94m-7 10v5a2 2 0 002 2h.096c.5 0 .905-.405.905-.904 0-.715.211-1.413.608-2.008L17 13V4m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5" />
+                                </svg>
+                            </button>
+                            <span x-text="dislikes" class="dislikes text-sm font-medium text-gray-500"></span>
+                        </div>
+                    </div>
+                    <button class="hover:bg-gray-800 p-2 rounded-full">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path
+                                d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" />
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="flex flex-col xl:flex-row">
+                    <div class="bg-pink-200 p-4 rounded-lg w-full xl:w-64 mb-4 xl:mb-0">
+                        <div class="text-black text-center">
+                            <div class="font-medium">You are watching</div>
+                            <div class="font-bold mb-2">Episode <span id="epn"></span></div>
+                            <div class="text-sm">
+                                If current server doesn't work<br />
+                                please try other servers<br />
+                                beside.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quality Selection -->
+                    <div class="flex-1 xl:ml-4 bg-[#1a1a1a] rounded-lg p-4">
+                        <div class="space-y-4">
+                            <!-- SUB Options -->
+                            <div
+                                class="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
+                                <div class="flex items-center text-gray-300 mb-2 sm:mb-0">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none"
+                                        viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M4 6h16M4 12h16m-7 6h7" />
+                                    </svg>
+                                    SUB:
+                                </div>
+                                <div class="space-x-1 dub-options overflow-x-auto pb-2 sm:pb-0 grid-cols-4 space-y-3">
+                                    <template x-for="link in episodeLinks.filter(l => l.dataType === 'sub')"
+                                        :key="link.$id">
+                                        <button @click="selectServer(link)"
+                                            :class="{'bg-red-500 text-white': currentServer === link,'bg-gray-800 text-gray-300 hover:bg-gray-700': currentServer !== link}"
+                                            class="px-4 py-1 text-white rounded hover:bg-[#3a3a3a] transition-colors server-button">
+                                            <span x-text="link.serverName"></span>
+                                        </button>
+                                    </template>
+                                </div>
+                            </div>
+
+                            <!-- DUB Options -->
+                            <div
+                                class="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
+                                <div class="flex items-center text-gray-300 mb-2 sm:mb-0">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none"
+                                        viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                                    </svg>
+                                    DUB:
+                                </div>
+                                <div class="space-x-1 dub-options overflow-x-auto pb-2 sm:pb-0 grid-cols-4 space-y-3">
+                                    <template x-for="link in episodeLinks.filter(l => l.dataType === 'dub')"
+                                        :key="link.$id">
+                                        <button @click="selectServer(link)" :class="{
+                    'bg-red-500 text-white': currentServer === link,
+                    'bg-gray-800 text-gray-300 hover:bg-gray-700': currentServer !== link
+                  }" class="px-4 py-1 text-white rounded hover:bg-[#3a3a3a] transition-colors server-button">
+                                            <span x-text="link.serverName"></span>
+                                        </button>
+                                    </template>
+                                </div>
+                            </div>
+                            <!-- DUB Options -->
+                            <div
+                                class="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
+                                <div class="flex items-center text-gray-300 mb-2 sm:mb-0">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none"
+                                        viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                                    </svg>
+                                    DUB2:
+                                </div>
+                                <div class="space-x-1 dub-options overflow-x-auto pb-2 sm:pb-0 grid-cols-4 space-y-3">
+                                    <template x-for="link in episodeLinks.filter(l => l.dataType === 'korean-dub')"
+                                        :key="link.$id">
+                                        <button @click="selectServer(link)" :class="{
+                    'bg-red-500 text-white': currentServer === link,
+                    'bg-gray-800 text-gray-300 hover:bg-gray-700': currentServer !== link
+                  }" class="px-4 py-1 text-white rounded hover:bg-[#3a3a3a] transition-colors server-button">
+                                            <span x-text="link.serverName"></span>
+                                        </button>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-8 bg-[#1a1a1a] rounded-lg p-6" x-data="comments()">
+                    <h2 class="text-2xl font-semibold mb-4 text-white">Comments</h2>
+                    <form class="mb-6" @submit.prevent="postComment">
+                        <div class="relative">
+                            <textarea x-model="newComment"
+                                class="w-full bg-[#2a2a2a] text-white rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-[#FF0000]"
+                                rows="4" placeholder="Add a comment..."></textarea>
+                            <div class="absolute right-2 bottom-2">
+                                <button @click="toggleEmojiPicker" type="button"
+                                    class="text-[#808080] hover:text-white transition-colors duration-200">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none"
+                                        viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </button>
+                                <div x-show="showEmojiPicker" @click.away="showEmojiPicker = false"
+                                    class="absolute bottom-full right-0 mb-2 bg-[#2a2a2a] bg-opacity-70 backdrop-filter backdrop-blur-lg rounded-lg shadow-lg p-4 z-10"
+                                    x-transition:enter="transition ease-out duration-300"
+                                    x-transition:enter-start="opacity-0 transform scale-95"
+                                    x-transition:enter-end="opacity-100 transform scale-100"
+                                    x-transition:leave="transition ease-in duration-200"
+                                    x-transition:leave-start="opacity-100 transform scale-100"
+                                    x-transition:leave-end="opacity-0 transform scale-95">
+                                    <div id="emoji-picker"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div
+                            class="w-full flex justify-between items-center p-3 text-center bg-[#2a2a2a] mt-2 rounded-lg">
+                            <div>
+                                <input class="form-check-input" type="checkbox" x-model="isSpoiler" id="spoilerCheck" />
+                                <label class="form-check-label text-[#808080]" for="spoilerCheck"> Spoiler?</label>
+                            </div>
+                            <button type="submit"
+                                class="bg-[#FF0000] text-white py-2 px-6 rounded hover:bg-opacity-80 transition-colors duration-200">
+                                Post Comment
+                            </button>
+                        </div>
+                    </form>
+                    <div
+                        class="max-h-[400px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-[#FF0000] scrollbar-track-[#2a2a2a]">
+                        <template x-for="(comment, index) in comments" :key="comment.id">
+                            <div class="py-4 border-b border-[#2a2a2a] last:border-b-0"
+                                x-intersect="$el._x_intersected = true" x-effect="if ($el._x_intersected) anime({
+                                    targets: $el,
+                                    translateY: [20, 0],
+                                    opacity: [0, 1],
+                                    duration: 600,
+                                    easing: 'easeOutExpo'
+                                })">
+                                <div class="flex items-start">
+                                    <div class="w-10 h-10 bg-[#FF0000] rounded-full flex items-center justify-center font-bold mr-3 text-white flex-shrink-0"
+                                        x-text="comment.author.charAt(0)">
+                                    </div>
+                                    <div class="flex-grow">
+                                        <div class="flex items-center justify-between mb-1">
+                                            <p class="font-semibold text-white" x-text="comment.author"></p>
+                                            <p class="text-xs text-[#808080]" x-text="comment.time"></p>
+                                        </div>
+                                        <p class="text-[#808080] mb-2" x-text="comment.content"></p>
+                                        <div class="flex items-center space-x-4">
+                                            <button @click="toggleReply(comment.id)"
+                                                class="text-[#FF0000] text-sm hover:underline">Reply</button>
+                                            <button x-show="comment.replies.length > 0"
+                                                @click="toggleReplies(comment.id)"
+                                                class="text-[#FF0000] text-sm hover:underline flex items-center">
+                                                <span x-text="comment.showReplies ? 'Hide' : 'Show'"></span>
+                                                <span class="ml-1"
+                                                    x-text="comment.replies.length + (comment.replies.length === 1 ? ' reply' : ' replies')"></span>
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-1"
+                                                    :class="{'rotate-180': comment.showReplies}" fill="none"
+                                                    viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2" d="M19 9l-7 7-7-7" />
+                                                </svg>
+                                            </button>
+                                        </div>
+
+                                        <!-- Reply Form -->
+                                        <div x-show="comment.showReplyForm" class="mt-2">
+                                            <form @submit.prevent="postReply(comment.id)">
+                                                <div class="relative">
+                                                    <textarea x-model="comment.replyContent"
+                                                        class="w-full bg-[#2a2a2a] text-white rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF0000]"
+                                                        rows="2" placeholder="Write a reply..."></textarea>
+                                                    <div class="absolute right-2 bottom-2">
+                                                        <button @click="toggleReplyEmojiPicker(comment.id)"
+                                                            type="button"
+                                                            class="text-[#808080] hover:text-white transition-colors duration-200">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
+                                                                fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                <path stroke-linecap="round" stroke-linejoin="round"
+                                                                    stroke-width="2"
+                                                                    d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                            </svg>
+                                                        </button>
+                                                        <div x-show="comment.showReplyEmojiPicker"
+                                                            @click.away="comment.showReplyEmojiPicker = false"
+                                                            class="absolute bottom-full right-0 mb-2 bg-[#2a2a2a] bg-opacity-70 backdrop-filter backdrop-blur-lg rounded-lg shadow-lg p-4 z-10"
+                                                            x-transition:enter="transition ease-out duration-300"
+                                                            x-transition:enter-start="opacity-0 transform scale-95"
+                                                            x-transition:enter-end="opacity-100 transform scale-100"
+                                                            x-transition:leave="transition ease-in duration-200"
+                                                            x-transition:leave-start="opacity-100 transform scale-100"
+                                                            x-transition:leave-end="opacity-0 transform scale-95">
+                                                            <div :id="'emoji-picker-reply-' + comment.id"></div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="flex justify-end mt-2">
+                                                    <button type="submit"
+                                                        class="bg-[#FF0000] text-white py-1 px-4 rounded text-sm hover:bg-opacity-80 transition-colors duration-200">
+                                                        Post Reply
+                                                    </button>
+                                                </div>
+                                            </form>
+                                        </div>
+
+                                        <!-- Replies -->
+                                        <div x-show="comment.showReplies"
+                                            x-transition:enter="transition ease-out duration-300"
+                                            x-transition:enter-start="opacity-0 transform -translate-y-4"
+                                            x-transition:enter-end="opacity-100 transform translate-y-0"
+                                            x-transition:leave="transition ease-in duration-300"
+                                            x-transition:leave-start="opacity-100 transform translate-y-0"
+                                            x-transition:leave-end="opacity-0 transform -translate-y-4">
+                                            <template x-for="reply in comment.replies" :key="reply.id">
+                                                <div class="ml-8 mt-2 py-2 border-t border-[#2a2a2a]">
+                                                    <div class="flex items-start">
+                                                        <div class="w-8 h-8 bg-[#FF0000] rounded-full flex items-center justify-center font-bold mr-2 text-white flex-shrink-0 text-sm"
+                                                            x-text="reply.author.charAt(0)">
+                                                        </div>
+                                                        <div class="flex-grow">
+                                                            <div class="flex items-center justify-between mb-1">
+                                                                <p class="font-semibold text-white text-sm"
+                                                                    x-text="reply.author"></p>
+                                                                <p class="text-xs text-[#808080]" x-text="reply.time">
+                                                                </p>
+                                                            </div>
+                                                            <p class="text-[#808080] text-sm" x-text="reply.content">
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Episodes Section -->
+            <aside class="lg:w-1/4 space-y-6 p-4 scrollbar-thin scrollbar-thumb-[#FF0000] scrollbar-track-[#2a2a2a]"
+                id="episode-container">
+                <div class="flex flex-col bg-[#1a1a1a] rounded-lg p-6 shadow-lg  mb-6">
+                    <h2 class="text-2xl font-semibold mb-4 text-white">Episodes</h2>
+
+                    <!-- Search Input -->
+                    <div class="mb-4">
+                        <input x-model="searchInput" @input="searchEpisodes" type="text"
+                            placeholder="Search by episode number or title..."
+                            class="w-full p-2 rounded-lg border border-[#808080] bg-black text-gray-300 focus:outline-none focus:ring-2 focus:ring-[#FF0000]">
+                    </div>
+
+                    <!-- Episodes List -->
+                    <div
+                        class="space-y-4 max-h-[calc(100vh-200px)] lg:max-h-[600px] overflow-y-auto pr-4 scrollbar-thin scrollbar-thumb-[#FF0000] scrollbar-track-[#1a1a1a]">
+                        <template x-for="episode in filteredEpisodes" :key="episode.id">
+                            <button @click="selectEpisode(episode.number)" class="w-full text-left group">
+                                <div class="episode bg-black p-4 rounded-lg cursor-pointer hover:bg-[#412c2c] transition-colors duration-200"
+                                    :class="{
+                                        'border-2 border-red-600': currentEpisode === episode.number,
+                                        'border-2 border-transparent hover:border-gray-700': currentEpisode !== episode.number
+                                    }">
+                                    <div class="flex items-center">
+                                        <div
+                                            class="w-16 h-9 bg-[#1a1a1a] rounded-md flex-shrink-0 mr-4 overflow-hidden border border-[#808080]">
+                                            <img :src="episode.thumbnail || 'https://g-t9mgc8zy9ce.vusercontent.net/placeholder.svg?height=90&width=160'"
+                                                class="w-full h-full object-cover"
+                                                :alt="episode.titles + episode.number">
+                                        </div>
+                                        <div>
+                                            <h3 class="font-semibold text-white"
+                                                x-text="episode.number +'. ' + episode.titles[0]"></h3>
+                                            <p class="text-sm text-[#808080]">49m</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </button>
+                        </template>
+                    </div>
+                </div>
+                <div class="bg-[#1a1a1a] rounded-lg p-6 shadow-lg mb-4" x-data="{ showFullDescription: false }">
+                    <div class="flex items-start mb-4">
+                        <img src="{{animeInfo.cover}}?height=150&width=100" alt="Anime Cover"
+                            class="w-24 h-36 object-cover rounded-md mr-4" />
+                        <div>
+                            <h2 class="text-xl font-semibold text-white mb-2">{{animeInfo.english}}</h2>
+                            <div class="flex items-center mb-2">
+                                <svg class="w-5 h-5 text-yellow-400 mr-1" fill="currentColor" viewBox="0 0 20 20"
+                                    xmlns="http://www.w3.org/2000/svg">
+                                    <path
+                                        d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z">
+                                    </path>
+                                </svg>
+                                <span class="text-white font-semibold">{{animeInfo.malScore}}</span>
+                                <span class="text-gray-400 text-sm ml-1">(MAL Rating)</span>
+                            </div>
+                            <p class="text-gray-400 text-sm">
+                                <span>Genres: </span>
+                                <span class="text-white">{{ animeInfo.genres | join(', ') }}</span>
+                            </p>
+                            <p class="text-gray-400 text-sm">
+                                <span>Studios: </span>
+                                <span class="text-white">{{ animeInfo.studios | join(', ') }}</span>
+                            </p>
+                        </div>
+                    </div>
+                    <p class="text-gray-300 text-sm line-clamp-3" x-show="!showFullDescription">
+                        {{animeInfo.description}}
+                        <button @click="showFullDescription = true" class="text-[#FF0000] hover:underline ml-1">Read
+                            more</button>
+                    </p>
+                    <p class="text-gray-300 text-sm" x-show="showFullDescription">
+                        {{animeInfo.description}}
+                        <button @click="showFullDescription = false" class="text-[#FF0000] hover:underline ml-1">Read
+                            less</button>
+                    </p>
+                </div>
+            </aside>
+        </div>
+    </div>
+    <script src="{{ url_for('static', filename='js/emoji.js') }}"></script>
+    <script>
+        function animePlayer() {
+            return {
+                animeId: '{{ anime_id }}',
+                currentEpisode: {{ ep_number }},
+        animeInfo: { },
+        allEpisodes: [],
+            episodeLinks: [],
+                comments: [],
+                    currentServer: null,
+                        currentVideoLink: '',
+                            isLoading: false,
+                                isVideoLoading: false,
+                                    searchInput: '',
+                                        newComment: '',
+                                            isSpoiler: false,
+                                                showEmojiPicker: false,
+
+                                                    init() {
+            this.initEmojiPicker();
+        },
+
+        initEmojiPicker() {
+            const picker = new EmojiMart.Picker({
+                onEmojiSelect: (emoji) => {
+                    this.newComment += emoji.native;
+                    this.showEmojiPicker = false;
+                }
+            });
+            document.getElementById('emoji-picker').appendChild(picker);
+        },
+
+        toggleEmojiPicker() {
+            this.showEmojiPicker = !this.showEmojiPicker;
+        },
+
+        toggleReplyEmojiPicker(commentId) {
+            const comment = this.comments.find(c => c.id === commentId);
+            if (comment) {
+                comment.showReplyEmojiPicker = !comment.showReplyEmojiPicker;
+                if (comment.showReplyEmojiPicker) {
+                    this.$nextTick(() => {
+                        const replyPicker = new EmojiMart.Picker({
+                            onEmojiSelect: (emoji) => {
+                                comment.replyContent += emoji.native;
+                                comment.showReplyEmojiPicker = false;
+                            }
+                        });
+                        document.getElementById(`emoji-picker-reply-${commentId}`).appendChild(replyPicker);
+                    });
+                }
+            }
+        },
+        
+                async fetchInitialData() {
+            try {
+                await this.fetchEpisodeData(this.currentEpisode);
+            } catch (error) {
+                console.error('Initial data fetch failed:', error);
+            }
+        },
+        
+                async fetchEpisodeData(episodeNumber) {
+            this.isLoading = true;
+
+            try {
+                history.pushState(null, '', `/watch/${this.animeId}/${episodeNumber}`);
+
+                const response = await fetch(`/watch-api/${this.animeId}/${episodeNumber}`);
+                const data = await response.json();
+
+                this.animeInfo = data.anime_info || {};
+                this.allEpisodes = (data.all_episodes || []).sort((a, b) => a.number - b.number);
+                this.episodeLinks = data.episode_links || [];
+                this.comments = data.episode_comments || [];
+                this.currentEpisode = episodeNumber;
+                document.getElementById('epn').innerText = episodeNumber
+
+                if (this.episodeLinks.length) {
+                    this.selectServer(this.episodeLinks[0]);
+                } else {
+                    this.currentVideoLink = '';
+                }
+            } catch (error) {
+                console.error('Error fetching episode data:', error);
+                this.animeInfo = {};
+                this.allEpisodes = [];
+                this.episodeLinks = [];
+                this.currentVideoLink = '';
+            } finally {
+                this.isLoading = false;
+            }
+        },
+
+        selectServer(server) {
+            this.isVideoLoading = true;
+            this.currentServer = server;
+            this.currentVideoLink = server.dataLink;
+
+            const iframe = this.$refs.videoPlayer;
+            if (iframe) {
+                iframe.onload = () => {
+                    this.isVideoLoading = false;
+                };
+
+                setTimeout(() => {
+                    this.isVideoLoading = false;
+                }, 5000);
+            }
+        },
+        
+                async selectEpisode(episodeNumber) {
+            if (this.currentEpisode !== episodeNumber) {
+                await this.fetchEpisodeData(episodeNumber);
+            }
+        },
+
+        playEpisode() {
+            // Scroll to video player if it exists
+            const videoPlayer = this.$refs.videoPlayer;
+            if (videoPlayer) {
+                videoPlayer.scrollIntoView({ behavior: 'smooth' });
+            }
+        },
+
+        searchEpisodes() {
+            const searchTerm = this.searchInput.toLowerCase();
+            return this.allEpisodes.filter(episode =>
+                episode.number.toString().includes(searchTerm) ||
+                (episode.title && episode.title.toLowerCase().includes(searchTerm))
+            );
+        },
+        
+                get filteredEpisodes() {
+            if (!this.searchInput) return this.allEpisodes;
+            return this.searchEpisodes();
+        },
+        postComment() {
+            if (this.newComment.trim() !== '') {
+                const newComment = {
+                    id: this.comments.length + 1,
+                    author: 'User' + Math.floor(Math.random() * 1000),
+                    time: 'Just now',
+                    content: this.newComment,
+                    ep: this.currentEpisode,
+                    anime: this.animeId,
+                    showReplyForm: false,
+                    showReplies: false,
+                    replyContent: '',
+                    replies: []
+                };
+
+                // Send the new comment as JSON to the server
+                fetch('/anime/comment/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(newComment)
+                })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log('Server response:', data.data.comment);
+                        const newCommentl = {
+                            id: data.data.commentId,
+                            author: data.data.username,
+                            time: 'Just now',
+                            content: this.newComment,
+                            ep: this.currentEpisode,
+                            anime: this.animeId,
+                            showReplyForm: false,
+                            showReplies: false,
+                            replyContent: '',
+                            replies: []
+                        };
+                        // Add the comment to the UI only after successful server response
+                        this.comments.unshift(newCommentl);
+                        this.newComment = '';
+                        this.isSpoiler = false;
+
+                        // Animate new comment
+                        anime({
+                            targets: this.$el.querySelector('.max-h-[400px] > div:first-child'),
+                            translateY: [20, 0],
+                            opacity: [0, 1],
+                            duration: 600,
+                            easing: 'easeOutExpo'
+                        });
+                    })
+                    .catch(error => {
+                        console.error('Error posting comment:', error);
+                    });
+            }
+        },
+
+        toggleReply(commentId) {
+            const comment = this.comments.find(c => c.id === commentId);
+            if (comment) {
+                comment.showReplyForm = !comment.showReplyForm;
+            }
+        },
+        toggleReplies(commentId) {
+            const comment = this.comments.find(c => c.id === commentId);
+            if (comment) {
+                comment.showReplies = !comment.showReplies;
+            }
+        },
+                async postReply(commentId) {
+            const comment = this.comments.find(c => c.id === commentId);
+            if (comment && comment.replyContent.trim() !== '') {
+                try {
+                    // Send the reply data to the server
+                    const response = await fetch('/anime/comments/reply', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            commentId: commentId,
+                            content: comment.replyContent
+                        })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Failed to send the reply.');
+                    }
+
+                    const reply = await response.json(); // Assuming the server returns the new reply data
+
+                    // Add the reply to the comment's replies
+                    comment.replies.push({
+                        id: reply.id || comment.replies.length + 1,
+                        author: reply.author || 'User' + Math.floor(Math.random() * 1000),
+                        time: reply.time || 'Just now',
+                        content: reply.content || comment.replyContent
+                    });
+
+                    // Clear reply input and adjust UI state
+                    comment.replyContent = '';
+                    comment.showReplyForm = false;
+                    comment.showReplies = true;
+
+                    // Animate the new reply
+                    this.$nextTick(() => {
+                        anime({
+                            targets: comment.$el.querySelector('.ml-8:last-child'),
+                            translateY: [20, 0],
+                            opacity: [0, 1],
+                            duration: 600,
+                            easing: 'easeOutExpo'
+                        });
+                    });
+                } catch (error) {
+                    console.error('Error posting reply:', error);
+                    alert('Failed to post reply. Please try again later.');
+                }
+            }
+        }
+            }
+        }
+        function counter() {
+            return {
+                count: 0,
+                previousCount: 0,
+                increasing: false,
+                decreasing: false,
+                socket: null,
+                currentRoom: null,
+
+                initializeSocket() {
+                    this.socket = io({ transports: ['websocket'] });
+
+                    this.socket.on('connect', () => {
+                        console.log('Connected to server');
+                        this.joinRoom();
+                    });
+
+                    // Listen for updates specific to the current room
+                    this.socket.on('current_room_count', (data) => {
+                        if (data.room === this.currentRoom) {
+                            this.previousCount = this.count;
+                            this.count = data.count || 0;
+
+                            if (this.count > this.previousCount) {
+                                this.animateCountChange('up');
+                            } else if (this.count < this.previousCount) {
+                                this.animateCountChange('down');
+                            }
+                        }
+                    });
+
+                    // Optional: Listen for general room updates if needed
+                    this.socket.on('update_counts', (data) => {
+                        if (data.room === this.currentRoom) {
+                            this.previousCount = this.count;
+                            this.count = data.count || 0;
+
+                            if (this.count > this.previousCount) {
+                                this.animateCountChange('up');
+                            } else if (this.count < this.previousCount) {
+                                this.animateCountChange('down');
+                            }
+                        }
+                    });
+                },
+
+                joinRoom() {
+                    const currentUrl = window.location.href;
+                    const url = new URL(currentUrl);
+                    const pathname = url.pathname;
+                    const part = pathname.substring(pathname.indexOf('/watch'), pathname.lastIndexOf('/') + 1);
+
+                    console.log(part);
+                    if (this.currentRoom) {
+                        this.socket.emit('leave', { room: this.currentRoom });
+                    }
+                    this.currentRoom = part;
+                    this.socket.emit('join', { other_id: this.currentRoom });
+                    this.socket.emit('get_current_room_count', { room: this.currentRoom }); // Request count for the current room
+                },
+
+                formatCount(num) {
+                    return num > 999 ? (num / 1000).toFixed(1) + 'k' : num;
+                },
+
+                animateCountChange(direction) {
+                    if (direction === 'up') {
+                        this.increasing = true;
+                        this.decreasing = false;
+                    } else {
+                        this.increasing = false;
+                        this.decreasing = true;
+                    }
+
+                    setTimeout(() => {
+                        this.increasing = false;
+                        this.decreasing = false;
+                    }, 300);
+                },
+
+                pulse() {
+                    anime({
+                        targets: '.float-counter',
+                        scale: [1, 1.1],
+                        duration: 300,
+                        easing: 'easeInOutQuad',
+                        direction: 'alternate',
+                    });
+                },
+            };
+        }
+        function likeSystem() {
+            const userInfo = {{ userInfo | tojson | safe }};
+            console.log(this.userInfo);
+            return {
+                likes: {{ animeInfo.likes }},
+                dislikes: {{ animeInfo.dislikes }},
+                liked: {{ animeInfo.userLiked | tojson }},
+                disliked: {{ animeInfo.userUnliked | tojson }},
+                anime: {{ animeInfo.id | tojson }},
+                
+                async like() {
+                    if (typeof userInfo === "undefined" || userInfo === null) {
+                        window.dispatchEvent(new CustomEvent('trigger-auth-modal'));
+                    } else {
+                        // If the user hasn't liked before, like the anime
+                        if (!this.liked) {
+                            const response = await fetch(`/api/anime/respond/${this.anime}`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({
+                                    type: 'like', // Action type is 'like'
+                                }),
+                            });
+                            if (response.ok) {
+                                this.likes++;
+                                this.liked = true;
+
+                                // If the user previously disliked, cancel that action
+                                if (this.disliked) {
+                                    this.dislikes--;
+                                    this.disliked = false;
+                                }
+
+                                this.animateButton('like-button');
+                            }
+                        }
+                    }
+                },
+
+                async dislike() {
+                    if (typeof userInfo === "undefined" || userInfo === null) {
+                        window.dispatchEvent(new CustomEvent('trigger-auth-modal'));
+                    } else {
+                        // If the user hasn't disliked before, dislike the anime
+                        if (!this.disliked) {
+                            const response = await fetch(`/api/anime/respond/${this.anime}`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({
+                                    type: 'dislike', // Action type is 'dislike'
+                                }),
+                            });
+                            if (response.ok) {
+                                this.dislikes++;
+                                this.disliked = true;
+
+                                // If the user previously liked, cancel that action
+                                if (this.liked) {
+                                    this.likes--;
+                                    this.liked = false;
+                                }
+
+                                this.animateButton('dislike-button');
+                            }
+                        }
+                    }
+                },
+
+                animateButton(buttonClass) {
+                    const button = document.querySelector(`.${buttonClass}`);
+                    button.classList.add('animate');
+                    setTimeout(() => {
+                        button.classList.remove('animate');
+                    }, 300);
+                }
+            };
+        }
+
+
+    </script>
+    <script>
+        function triggerJoinRoom() {
+            window.dispatchEvent(new Event('join-room'));
+        }
+    </script>
+
+</body>
+{% endblock %}

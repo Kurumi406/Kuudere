@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-time Room Listeners</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        #roomInfo {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Real-time Room Listeners</h1>
+    <div>
+        <label for="roomType">Room Type:</label>
+        <select id="roomType">
+            <option value="doc">Document</option>
+            <option value="chat">Chat</option>
+        </select>
+    </div>
+    <div>
+        <label for="roomId">Room ID:</label>
+        <input type="text" id="roomId" placeholder="Enter room ID">
+    </div>
+    <button onclick="joinRoom()">Join Room</button>
+    <div id="roomInfo">
+        <p>Current Room: <span id="currentRoom">None</span></p>
+        <p>Listeners: <span id="listenerCount">0</span></p>
+    </div>
+    <h2>Log</h2>
+    <div id="log"></div>
+
+    <script src="{{ url_for('static', filename='js/socket.io.min.js') }}"></script>
+<script>
+    const socket = io({ transports: ['websocket'] }); 
+    let currentRoom = null;
+    const fhhc = document.getElementById('log'); // The log container
+
+    function joinRoom() {
+        const roomType = document.getElementById('roomType').value;
+        const roomId = document.getElementById('roomId').value;
+
+        if (currentRoom) {
+            socket.emit('leave', { room: currentRoom });
+        }
+
+        const data = roomType === 'doc' ? { doc_id: roomId } : { chatId: roomId };
+        socket.emit('join', data);
+        currentRoom = roomId;
+        document.getElementById('currentRoom').textContent = roomId;
+    }
+
+    socket.on('connect', () => {
+        console.log('Connected to server');
+    });
+
+    socket.on('update_room_count', (data) => {
+        if (data.room === currentRoom) {
+            document.getElementById('listenerCount').textContent = data.count;
+        }
+    });
+
+    socket.on('new_data', (data) => {
+        console.log('Received new data:', data);
+        if (typeof data === 'object') {
+            fhhc.appendChild(createTable(data)); // Append the table to the log
+        } else {
+            const p = document.createElement('p');
+            p.textContent = data;
+            fhhc.appendChild(p);
+        }
+    });
+
+    // Function to create a table from an object
+    function createTable(data) {
+        const table = document.createElement('table');
+        table.style.width = '100%';
+        table.style.borderCollapse = 'collapse';
+
+        // Add table header
+        const headerRow = document.createElement('tr');
+        const headers = ['Key', 'Value'];
+        headers.forEach(headerText => {
+            const th = document.createElement('th');
+            th.textContent = headerText;
+            th.style.border = '1px solid #ccc';
+            th.style.padding = '8px';
+            th.style.textAlign = 'left';
+            th.style.backgroundColor = '#f2f2f2';
+            headerRow.appendChild(th);
+        });
+        table.appendChild(headerRow);
+
+        // Add table rows
+        Object.entries(data).forEach(([key, value]) => {
+            const row = document.createElement('tr');
+
+            const keyCell = document.createElement('td');
+            keyCell.textContent = key;
+            keyCell.style.border = '1px solid #ccc';
+            keyCell.style.padding = '8px';
+
+            const valueCell = document.createElement('td');
+            valueCell.style.border = '1px solid #ccc';
+            valueCell.style.padding = '8px';
+
+            // Handle value rendering
+            if (Array.isArray(value)) {
+                valueCell.textContent = value.join(', ');
+            } else if (value === null || value === undefined) {
+                valueCell.textContent = 'N/A';
+            } else {
+                valueCell.textContent = value;
+            }
+
+            row.appendChild(keyCell);
+            row.appendChild(valueCell);
+            table.appendChild(row);
+        });
+
+        return table;
+    }
+</script>

@@ -1,0 +1,124 @@
+
+{% extends "base.html" %}
+{% block content %}
+ 
+ <style>
+        [x-cloak] { display: none !important; }
+        .anime-card {
+            transition: transform 0.3s ease-in-out;
+        }
+        .anime-card:hover {
+            transform: scale(1.05);
+        }
+        .episode-number {
+            opacity: 0;
+            transform: translateY(20px) scale(0.8);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .anime-card:hover .episode-number {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    </style>
+</head>
+<div class="bg-black min-h-screen p-4 md:p-8">
+    <div class="max-w-7xl mx-auto">
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            {% for anime in animes %}
+            <div class="anime-card relative aspect-[3/4] rounded-md overflow-hidden bg-theme-gray" 
+                 x-data="animeCountdown({{ anime.target_date }})">
+                <img src="{{ anime.cover }}" alt="{{ anime.title }}" class="w-full h-full object-cover">
+                <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
+                
+                <!-- Title at top with dark layer -->
+                <div class="absolute inset-x-0 top-0">
+                    <div class="">
+                        <div class="text-theme-white text-sm font-bold line-clamp-2 text-center">{{ anime.title }}</div>
+                    </div>
+                </div>
+
+                <!-- Episode number in middle with hover animation -->
+                <div class="episode-number absolute inset-0 flex items-center justify-center">
+                    <div class="bg-theme-red text-theme-white px-4 py-2 rounded-full shadow-lg flex items-center space-x-2 backdrop-blur-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+                        </svg>
+                        <span class="text-lg font-bold">Episode {{ anime.episode }}</span>
+                    </div>
+                </div>
+
+                <!-- Countdown at bottom -->
+                <div class="absolute inset-x-0 bottom-0 p-3">
+                    <div class="grid grid-cols-4 gap-1 text-center">
+                        <div class="space-y-1">
+                            <div class="text-lg font-bold tabular-nums text-theme-white" x-text="countdown.days"></div>
+                            <div class="text-[10px] uppercase text-theme-red">Days</div>
+                        </div>
+                        <div class="space-y-1">
+                            <div class="text-lg font-bold tabular-nums text-theme-white" x-text="countdown.hours"></div>
+                            <div class="text-[10px] uppercase text-theme-red">Hours</div>
+                        </div>
+                        <div class="space-y-1">
+                            <div class="text-lg font-bold tabular-nums text-theme-white" x-text="countdown.minutes"></div>
+                            <div class="text-[10px] uppercase text-theme-red">Mins</div>
+                        </div>
+                        <div class="space-y-1">
+                            <div class="text-lg font-bold tabular-nums text-theme-white" x-text="countdown.seconds"></div>
+                            <div class="text-[10px] uppercase text-theme-red">Secs</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <script>
+        function animeCountdown(targetDate) {
+            return {
+                countdown: { days: 0, hours: 0, minutes: 0, seconds: 0 },
+                init() {
+                    this.updateCountdown();
+                    setInterval(() => this.updateCountdown(), 1000);
+
+                    anime({
+                        targets: this.$el.querySelectorAll('.text-lg'),
+                        innerHTML: [0, el => el.innerHTML],
+                        easing: 'linear',
+                        round: 1,
+                        duration: 1000
+                    });
+                },
+                updateCountdown() {
+                    const now = new Date().getTime();
+                    const distance = targetDate - now;
+
+                    if (distance < 0) {
+                        this.countdown = { days: 0, hours: 0, minutes: 0, seconds: 0 };
+                        return;
+                    }
+
+                    this.countdown = {
+                        days: Math.floor(distance / (1000 * 60 * 60 * 24)),
+                        hours: Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
+                        minutes: Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60)),
+                        seconds: Math.floor((distance % (1000 * 60)) / 1000)
+                    };
+                }
+            }
+        }
+
+        // Initial animation for episode numbers
+        document.addEventListener('DOMContentLoaded', () => {
+            anime({
+                targets: '.episode-number',
+                scale: [0.8, 1],
+                opacity: [0, 1],
+                translateY: [20, 0],
+                delay: anime.stagger(100, {start: 300}),
+                duration: 500,
+                easing: 'spring(1, 80, 10, 0)'
+            });
+        });
+    </script>
+{% endblock %}

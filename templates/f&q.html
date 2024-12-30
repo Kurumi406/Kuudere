@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kuudere - FAQ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="https://unpkg.com/swiper/swiper-bundle.min.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/swiper/swiper-bundle.min.css" />
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'theme-black': '#000000',
+                        'theme-red': '#FF0000',
+                        'theme-yellow': '#FFFF00',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .ball {
+            position: fixed;
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        /* Custom scrollbar styles */
+        .scrollbar-thin-swiper::-webkit-scrollbar {
+            width: 0px;
+        }
+
+        /* Custom scrollbar styles */
+        .scrollbar-thin::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .scrollbar-thin::-webkit-scrollbar-track {
+            background: #2a2a2a;
+        }
+
+        .scrollbar-thin::-webkit-scrollbar-thumb {
+            background-color: #FF0000;
+            border-radius: 3px;
+        }
+    </style>
+
+</head>
+
+<body
+    class="bg-theme-black text-white min-h-screen relative overflow-x-hidden scrollbar-thin scrollbar-thumb-[#FF0000] scrollbar-track-[#2a2a2a]"
+    x-data="faqPage">
+    <!-- Moving Balls Container -->
+    <div id="moving-elements" class="fixed inset-0 overflow-hidden pointer-events-none"></div>
+
+    <div class="container mx-auto px-4 py-12 relative z-10">
+        <h1 class="text-4xl font-bold mb-8 text-center">Frequently Asked Questions</h1>
+
+        <!-- Search Bar -->
+        <div class="mb-12 max-w-2xl mx-auto">
+            <input type="text" x-model="searchQuery" @input="filterFaqs" placeholder="Search FAQs..."
+                class="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 focus:outline-none focus:border-theme-red">
+        </div>
+
+        <!-- Popular Questions Slider -->
+        <div class="mb-12">
+            <h2 class="text-2xl font-semibold mb-4">Popular Questions</h2>
+            <div class="swiper-container scrollbar-thin-swiper overflow-auto">
+                <div class="swiper-wrapper">
+                    <template x-for="question in popularQuestions" :key="question">
+                        <div class="swiper-slide bg-white/5 rounded-lg p-4 cursor-pointer hover:bg-white/10 transition-colors duration-300"
+                            @click="scrollToQuestion(question)">
+                            <p x-text="question" class="text-sm"></p>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </div>
+
+        <!-- FAQ Accordion -->
+        <div class="space-y-4">
+            <template x-for="(faq, index) in filteredFaqs" :key="index">
+                <div class="bg-white/5 rounded-lg overflow-hidden" :id="'faq-' + index">
+                    <button @click="toggleFaq(index)" class="flex justify-between items-center w-full p-4 text-left"
+                        :class="{ 'bg-theme-red/20': openIndex === index }">
+                        <span x-text="faq.question" class="font-medium"></span>
+                        <svg class="w-5 h-5 transition-transform duration-300"
+                            :class="{ 'rotate-180': openIndex === index }" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7">
+                            </path>
+                        </svg>
+                    </button>
+                    <div x-show="openIndex === index" x-transition:enter="transition ease-out duration-300"
+                        x-transition:enter-start="opacity-0 transform -translate-y-4"
+                        x-transition:enter-end="opacity-100 transform translate-y-0"
+                        x-transition:leave="transition ease-in duration-300"
+                        x-transition:leave-start="opacity-100 transform translate-y-0"
+                        x-transition:leave-end="opacity-0 transform -translate-y-4" class="p-4 bg-white/5">
+                        <p x-text="faq.answer" class="text-gray-300 mb-2"></p>
+                        <template x-if="faq.references && faq.references.length > 0">
+                            <div class="mt-4">
+                                <p class="text-sm font-semibold text-theme-red">References:</p>
+                                <ul class="list-disc list-inside text-sm text-gray-400">
+                                    <template x-for="ref in faq.references" :key="ref.url">
+                                        <li>
+                                            <a :href="ref.url" target="_blank" rel="noopener noreferrer"
+                                                class="hover:text-theme-red transition-colors duration-300"
+                                                x-text="ref.title"></a>
+                                        </li>
+                                    </template>
+                                </ul>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </template>
+        </div>
+
+        <script>
+            document.addEventListener('alpine:init', () => {
+                Alpine.data('faqPage', () => ({
+                    faqs: [
+                        {
+                            question: "What is Kuudere?",
+                            answer: "Kuudere is an anime streaming platform that offers a wide variety of anime series and movies.",
+                        },
+                        {
+                            question: "Is Kuudere free to use?",
+                            answer: "Yes, our platform is 100% free to use ",
+                        },
+                        {
+                            question: "Why site takes too much timme to load?",
+                            answer: "It is bcz we are based on TOR & I2P to protect site from takedowns",
+                        },
+                        {
+                            question: "Why there not ads everywhere??",
+                            answer: "Bcz I hate ads & If it is not neccerery I won't add ads, If you can donate I gladly remove ads on player too",
+                        },
+                        {
+                            question: "Does Kuudere sell our data?",
+                            answer: "Absoultely NOT!, ",
+                        },
+                        {
+                            question: "How Kuudere earn money then?",
+                            answer: "Actually, we don't. We only loose money ",
+                        },
+                        {
+                            question: "Which Kuudere collect from us?",
+                            answer: "We collect your IP address to count views & We have planned to collect your Device ID(Hashed) in our upcoming Android App to ban API Abusers in future",
+                        },
+                        {
+                            question: "How often is new content added?",
+                            answer: "We add new episodes and series weekly, usually within 24 hours of their original air date in Japan.",
+                        },
+                        {
+                            question: "Can I download episodes for offline viewing?",
+                            answer: "No, currently we don't offer downloads but you can use external downloads",
+                        },
+                        {
+                            question: "Does Kuudare support continue watching?",
+                            answer: "Kuudere currenly does not support this freature but we planned to add this soon (between update 1.0.0 - 2.0.0 )",
+                            references: [
+                                { title: "Update timeline", url: "/timeline" }
+                            ]
+                        },
+                        {
+                            question: "Is Kuudere available worldwide?",
+                            answer: "Kuudere is available in most countries, even if your ISP blocked us you can still access us through our I2P or TOR ",
+                            references: [
+                                { title: "I2P", url: "https://kuudere.com/availability" },
+                                { title: "TOR", url: "https://kuudere.com/availability" }
+                            ]
+                        },
+                        {
+                            question: "How can I report a technical issue?",
+                            answer: "You can report technical issues through our community page.",
+                        },
+                        {
+                            question: "Do you offer dubbed anime?",
+                            answer: "Yes, we offer both subbed and dubbed versions for many of our anime series.",
+                        },
+                        {
+                            question: "How can I request an anime to be added to Kuudere?",
+                            answer: "You can submit anime requests through our community page",
+                            references: [
+                                { title: "Kuudere Anime Request", url: "https://kuudere.com/request" }
+                            ]
+                        },
+                        {
+                            question: "How can I become mod?",
+                            answer: "You can upload anime that not avaiable in our site,comment to anime,posts,rate,anime,like & collect points if you collect 2M+ Points you can become mod",
+                        },
+                        {
+                            question: "Can we add fan DUB/SUB too?",
+                            answer: "Why Not!?",
+                        },
+                    ],
+                    popularQuestions: [
+                        "What is Kuudere?",
+                        "Is Kuudere free to use?",
+                        "Does Kuudere sell our data?",
+                        "How can I become mod?",
+                        "How often is new content added?",
+                        "Can I download episodes for offline viewing?"
+                    ],
+                    openIndex: null,
+                    searchQuery: '',
+                    filteredFaqs: [],
+                    email: '',
+                    question: '',
+
+                    init() {
+                        this.filteredFaqs = this.faqs;
+                        this.initSwiper();
+                        this.animateEntrance();
+                        this.initMovingBalls();
+                    },
+
+                    toggleFaq(index) {
+                        this.openIndex = this.openIndex === index ? null : index;
+                    },
+
+                    filterFaqs() {
+                        const query = this.searchQuery.toLowerCase();
+                        this.filteredFaqs = this.faqs.filter(faq =>
+                            faq.question.toLowerCase().includes(query) ||
+                            faq.answer.toLowerCase().includes(query)
+                        );
+                    },
+
+                    scrollToQuestion(question) {
+                        const index = this.faqs.findIndex(faq => faq.question === question);
+                        if (index !== -1) {
+                            this.openIndex = index;
+                            const element = document.getElementById(`faq-${index}`);
+                            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
+                    },
+
+                    submitQuestion() {
+                        console.log('Submitted question:', this.question, 'from:', this.email);
+                        alert('Thank you for your question. We will get back to you soon!');
+                        this.email = '';
+                        this.question = '';
+                    },
+
+                    initSwiper() {
+                        new Swiper('.swiper-container', {
+                            slidesPerView: 1,
+                            spaceBetween: 10,
+                            pagination: {
+                                el: '.swiper-pagination',
+                                clickable: true,
+                            },
+                            breakpoints: {
+                                640: {
+                                    slidesPerView: 2,
+                                    spaceBetween: 20,
+                                },
+                                768: {
+                                    slidesPerView: 3,
+                                    spaceBetween: 30,
+                                },
+                            }
+                        });
+                    },
+                }));
+                function createMovingElement(color) {
+                    const element = document.createElement('div');
+                    element.className = `absolute rounded-full opacity-20`;
+                    element.style.backgroundColor = color;
+                    element.style.width = `${Math.random() * 50 + 20}px`;
+                    element.style.height = element.style.width;
+                    document.getElementById('moving-elements').appendChild(element);
+                    return element;
+                }
+
+                function animateElement(element) {
+                    anime({
+                        targets: element,
+                        translateX: () => anime.random(-window.innerWidth, window.innerWidth),
+                        translateY: () => anime.random(-window.innerHeight, window.innerHeight),
+                        scale: () => anime.random(0.2, 1.5),
+                        duration: () => anime.random(4000, 8000),
+                        easing: 'easeInOutQuad',
+                        complete: () => animateElement(element)
+                    });
+                }
+
+                // Create and animate background elements
+                for (let i = 0; i < 20; i++) {
+                    const color = i % 2 === 0 ? '#FF4B4B' : '#FFD700';
+                    const element = createMovingElement(color);
+                    animateElement(element);
+                }
+            });
+        </script>
+</body>
+
+</html>

@@ -111,20 +111,16 @@
                 </div>
                 <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
                     {% for anime in latest_eps %}
-                    <a href="/anime/{{ anime.id }}" class="anime-card relative aspect-[3/4] overflow-visible rounded-md"
+                    <div class="anime-card relative aspect-[3/4] overflow-visible rounded-md"
                         @mouseenter="$store.animeData.hoveredCard = {{ loop.index0 }}"
-                        @mouseleave="$store.animeData.hoveredCard = null">
-                        <div
-                            class="relative h-full w-full overflow-hidden rounded-md transition-transform duration-300 ease-in-out hover:scale-105">
+                        @mouseleave="$store.animeData.hoveredCard = null"
+                        @click="window.location.href='/anime/{{ anime.id }}'">
+                        <div class="relative h-full w-full overflow-hidden rounded-md transition-transform duration-300 ease-in-out hover:scale-105">
                             <img src="{{ anime.cover }}" alt="{{ anime.english }}" class="w-full h-full object-cover">
-                            <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent">
-                            </div>
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent"></div>
                             <div class="absolute left-2 top-2 flex flex-wrap gap-1">
-                                <span
-                                    class="bg-black/50 backdrop-blur-sm text-white text-[10px] uppercase px-2 py-1 rounded-full">{{
-                                    anime.type }}</span>
-                                <span
-                                    class="bg-black/50 backdrop-blur-sm text-white text-[10px] uppercase px-2 py-1 rounded-full flex items-center">
+                                <span class="bg-black/50 backdrop-blur-sm text-white text-[10px] uppercase px-2 py-1 rounded-full">{{ anime.type }}</span>
+                                <span class="bg-black/50 backdrop-blur-sm text-white text-[10px] uppercase px-2 py-1 rounded-full flex items-center">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1 text-yellow-400"
                                         viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                                         stroke-linecap="round" stroke-linejoin="round">
@@ -139,8 +135,7 @@
                                     </svg>
                                     {{ anime.epCount }}
                                 </span>
-                                <span
-                                    class="bg-black/50 backdrop-blur-sm text-white text-[10px] uppercase px-2 py-1 rounded-full flex items-center">
+                                <span class="bg-black/50 backdrop-blur-sm text-white text-[10px] uppercase px-2 py-1 rounded-full flex items-center">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1 text-blue-400"
                                         viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                                         stroke-linecap="round" stroke-linejoin="round">
@@ -159,7 +154,8 @@
                         </div>
                         <div x-show="$store.animeData.hoveredCard === {{ loop.index0 }} && $store.animeData.isDesktop"
                             x-cloak
-                            class="anime-info absolute left-0 top-full z-60 mt-2 w-full sm:left-full sm:top-0 sm:mt-0 sm:ml-2 sm:w-72">
+                            class="anime-info absolute left-0 top-full z-60 mt-2 w-full sm:left-full sm:top-0 sm:mt-0  sm:ml-2 sm:w-72">
+                            <!-- Info content here -->
                             <div class="anime-info-content rounded-lg bg-gray-900/95 p-4 shadow-xl">
                                 <div class="flex items-start justify-between gap-2">
                                     <div class="space-y-1">
@@ -184,7 +180,7 @@
                                     <p>Genres: {{ anime.genres | join(', ') }}</p>
                                 </div>
                                 <div class="mt-4 flex items-center gap-2">
-                                    <button onclick="watch('{{anime.id}}')"
+                                    <a href="/watch/{{ anime.id }}/1"
                                         class="flex-1 bg-pink-600 hover:bg-pink-700 px-4 py-2 rounded-md text-sm font-medium flex items-center justify-center">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none"
                                             viewBox="0 0 24 24" stroke="currentColor">
@@ -194,7 +190,7 @@
                                                 d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                         </svg>
                                         Watch now
-                                    </button>
+                                    </a>
                                     <button class="bg-gray-800 hover:bg-gray-700 p-2 rounded-md">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
                                             viewBox="0 0 24 24" stroke="currentColor">
@@ -205,7 +201,7 @@
                                 </div>
                             </div>
                         </div>
-                    </a>
+                    </div>
                     {% endfor %}
                 </div>
             </section>
@@ -220,18 +216,14 @@
                     {% for anime in last_updated %}
                     <div class="anime-card relative aspect-[3/4] overflow-visible rounded-md"
                         @mouseenter="$store.animeData.hoveredCard = {{ loop.index0 }}"
-                        @mouseleave="$store.animeData.hoveredCard = null">
-                        <a href="/anime/{{ anime.id }}"
-                            class="relative h-full w-full overflow-hidden rounded-md transition-transform duration-300 ease-in-out hover:scale-105">
+                        @mouseleave="$store.animeData.hoveredCard = null"
+                        @click="window.location.href='/anime/{{ anime.id }}'">
+                        <div class="relative h-full w-full overflow-hidden rounded-md transition-transform duration-300 ease-in-out hover:scale-105">
                             <img src="{{ anime.cover }}" alt="{{ anime.english }}" class="w-full h-full object-cover">
-                            <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent">
-                            </div>
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent"></div>
                             <div class="absolute left-2 top-2 flex flex-wrap gap-1">
-                                <span
-                                    class="bg-black/50 backdrop-blur-sm text-white text-[10px] uppercase px-2 py-1 rounded-full">{{
-                                    anime.type }}</span>
-                                <span
-                                    class="bg-black/50 backdrop-blur-sm text-white text-[10px] uppercase px-2 py-1 rounded-full flex items-center">
+                                <span class="bg-black/50 backdrop-blur-sm text-white text-[10px] uppercase px-2 py-1 rounded-full">{{ anime.type }}</span>
+                                <span class="bg-black/50 backdrop-blur-sm text-white text-[10px] uppercase px-2 py-1 rounded-full flex items-center">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1 text-yellow-400"
                                         viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                                         stroke-linecap="round" stroke-linejoin="round">
@@ -246,8 +238,7 @@
                                     </svg>
                                     {{ anime.epCount }}
                                 </span>
-                                <span
-                                    class="bg-black/50 backdrop-blur-sm text-white text-[10px] uppercase px-2 py-1 rounded-full flex items-center">
+                                <span class="bg-black/50 backdrop-blur-sm text-white text-[10px] uppercase px-2 py-1 rounded-full flex items-center">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1 text-blue-400"
                                         viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                                         stroke-linecap="round" stroke-linejoin="round">
@@ -263,10 +254,11 @@
                                 <h3 class="text-sm font-medium text-white line-clamp-2">{{ anime.english }}</h3>
                                 <p class="mt-1 text-xs text-gray-300">Episodes {{ anime.epCount }}</p>
                             </div>
-                        </a>
+                        </div>
                         <div x-show="$store.animeData.hoveredCard === {{ loop.index0 }} && $store.animeData.isDesktop"
                             x-cloak
                             class="anime-info absolute left-0 top-full z-60 mt-2 w-full sm:left-full sm:top-0 sm:mt-0  sm:ml-2 sm:w-72">
+                            <!-- Info content here -->
                             <div class="anime-info-content rounded-lg bg-gray-900/95 p-4 shadow-xl">
                                 <div class="flex items-start justify-between gap-2">
                                     <div class="space-y-1">

@@ -318,74 +318,84 @@
             </section>
 
             <section class="mt-12 rounded-lg bg-gray-900/50 p-4 sm:p-6 overflow-hidden" x-data="schedule()">
-                <div class="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between">
-                    <div>
-                        <h2 class="text-2xl font-bold text-white mb-1">Estimated Schedule</h2>
-                        <p class="text-sm text-gray-400"
-                            x-text="`${selectedDate} (${new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long' })})`">
-                        </p>
+                <!-- Loading Animation -->
+                <div x-show="isLoading" class="flex items-center justify-center h-64">
+                    <div class="flex space-x-2">
+                        <div class="loading-dot w-3 h-3 bg-theme-red rounded-full"></div>
+                        <div class="loading-dot w-3 h-3 bg-theme-red rounded-full"></div>
+                        <div class="loading-dot w-3 h-3 bg-theme-red rounded-full"></div>
                     </div>
                 </div>
-                <div class="relative mb-6">
-                    <div class="absolute left-0 top-1/2 -translate-y-1/2 z-10">
-                        <button @click="scrollDates('left')"
-                            class="p-2 rounded-full bg-gray-800 hover:bg-gray-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
-                                stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M15 19l-7-7 7-7" />
-                            </svg>
-                        </button>
-                    </div>
-                    <div class="overflow-x-auto scrollbar-ass" x-ref="dateScroller">
-                        <div class="inline-flex space-x-2 p-2">
-                            <template x-for="date in dates" :key="date">
-                                <button @click="setSelectedDate(date)" :class="{
-                                        'bg-red-600 text-white': date === selectedDate,
-                                        'bg-gray-800 text-gray-400 hover:bg-gray-700': date !== selectedDate
-                                    }"
-                                    class="flex-shrink-0 text-center py-2 px-4 rounded-lg text-sm font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 flex flex-col items-center justify-center w-16">
-                                    <span x-text="new Date(date).toLocaleDateString('en-US', { weekday: 'short' })"
-                                        class="block text-xs"></span>
-                                    <span x-text="new Date(date).getDate()" class="block text-lg font-bold mt-1"></span>
-                                </button>
-                            </template>
+            
+                <!-- Schedule Content -->
+                <div x-show="!isLoading">
+                    <div class="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between">
+                        <div>
+                            <h2 class="text-2xl font-bold text-white mb-1">Estimated Schedule</h2>
+                            <p class="text-sm text-gray-400"
+                                x-text="`${selectedDate} (${new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long' })})`">
+                            </p>
                         </div>
                     </div>
-                    <div class="absolute right-0 top-1/2 -translate-y-1/2 z-10">
-                        <button @click="scrollDates('right')"
-                            class="p-2 rounded-full bg-gray-800 hover:bg-gray-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
-                                stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M9 5l7 7-7 7" />
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-                <div class="space-y-4" x-data="{ hoveredItem: null }">
-                    <template x-for="(item, index) in scheduleData[selectedDate]" :key="index">
-                        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between rounded-lg bg-gray-800/50 p-4 transition-all duration-300 ease-in-out hover:bg-gray-700/50"
-                            @mouseenter="hoveredItem = index" @mouseleave="hoveredItem = null"
-                            :class="{ 'transform scale-[1.02]': hoveredItem === index }">
-                            <div class="flex items-start sm:items-center gap-4 mb-2 sm:mb-0">
-                                <div class="text-red-500 font-bold text-lg sm:text-base" x-text="item.time">
-                                </div>
-                                <div>
-                                    <h3 class="font-medium text-white text-lg sm:text-base" x-text="item.title">
-                                    </h3>
-                                    <p class="text-sm text-gray-400" x-text="`Episode ${item.episode}`"></p>
-                                </div>
-                            </div>
-                            <div class="flex items-center gap-2 mt-2 sm:mt-0">
-                                <span class="bg-red-500/20 text-red-500 text-xs px-2 py-1 rounded-full">New</span>
-                                <button
-                                    class="bg-red-600 hover:bg-red-700 text-white text-sm px-4 py-2 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500">
-                                    Watch
-                                </button>
+                    <div class="relative mb-6">
+                        <div class="absolute left-0 top-1/2 -translate-y-1/2 z-10">
+                            <button @click="scrollDates('left')"
+                                class="p-2 rounded-full bg-gray-800 hover:bg-gray-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="overflow-x-auto scrollbar-ass" x-ref="dateScroller">
+                            <div class="inline-flex space-x-2 p-2">
+                                <template x-for="date in dates" :key="date">
+                                    <button @click="setSelectedDate(date)" :class="{
+                                            'bg-red-600 text-white': date === selectedDate,
+                                            'bg-gray-800 text-gray-400 hover:bg-gray-700': date !== selectedDate
+                                        }"
+                                        class="flex-shrink-0 text-center py-2 px-4 rounded-lg text-sm font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 flex flex-col items-center justify-center w-16">
+                                        <span x-text="new Date(date).toLocaleDateString('en-US', { weekday: 'short' })"
+                                            class="block text-xs"></span>
+                                        <span x-text="new Date(date).getDate()" class="block text-lg font-bold mt-1"></span>
+                                    </button>
+                                </template>
                             </div>
                         </div>
-                    </template>
+                        <div class="absolute right-0 top-1/2 -translate-y-1/2 z-10">
+                            <button @click="scrollDates('right')"
+                                class="p-2 rounded-full bg-gray-800 hover:bg-gray-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="space-y-4" x-data="{ hoveredItem: null }">
+                        <template x-for="(item, index) in scheduleData[selectedDate]" :key="index">
+                            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between rounded-lg bg-gray-800/50 p-4 transition-all duration-300 ease-in-out hover:bg-gray-700/50"
+                                @mouseenter="hoveredItem = index" @mouseleave="hoveredItem = null"
+                                :class="{ 'transform scale-[1.02]': hoveredItem === index }">
+                                <div class="flex items-start sm:items-center gap-4 mb-2 sm:mb-0">
+                                    <div class="text-red-500 font-bold text-lg sm:text-base" x-text="item.time">
+                                    </div>
+                                    <div>
+                                        <h3 class="font-medium text-white text-md sm:text-base" x-text="item.title">
+                                        </h3>
+                                        <p class="text-sm text-gray-400" x-text="`Episode ${item.episode}`"></p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-2 mt-2 sm:mt-0">
+                                    <span class="bg-red-500/20 text-red-500 text-xs px-2 py-1 rounded-full">New</span>
+                                    <button
+                                        class="bg-red-600 hover:bg-red-700 text-white text-sm px-4 py-2 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500">
+                                        Watch
+                                    </button>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
                 </div>
             </section>
             <section class="mt-12">
@@ -519,13 +529,14 @@
                         <template x-for="(anime, index) in filteredAnime" :key="anime.title">
                             <div class="glass-effect grid grid-cols-[48px_60px_1fr] items-start gap-4 rounded-xl p-4"
                                 x-init="$nextTick(() => {
-                                    anime({
-                                        targets: $el,
-                                        translateY: [20, 0],
-                                        opacity: [0, 1],
-                                        delay: index * 100,
-                                        easing: 'easeOutExpo'
-                                    })
+                                     anime({
+                                    targets: $el,
+                                    translateY: [20, 0],
+                                    opacity: [0, 1],
+                                    delay: anime.stagger(100),
+                                    easing: 'easeOutExpo',
+                                    duration: 800
+                                });
                                 })">
                                 <!-- Ranking Number -->
                                 <span class="text-2xl font-bold text-gray-500"
@@ -877,58 +888,39 @@
         });
 
         Alpine.data('schedule', () => ({
-            selectedDate: '2024-01-10',
-            dates: ['2024-01-09', '2024-01-10', '2024-01-11', '2024-01-12', '2024-01-13', '2024-01-14', '2024-01-15', '2024-01-16', '2024-01-17', '2024-01-18', '2024-01-19', '2024-01-20'],
-            scheduleData: {
-                '2024-01-09': [
-                    { time: '18:00', title: 'Black Clover', episode: 170 },
-                    { time: '19:30', title: 'Boruto: Naruto Next Generations', episode: 200 },
-                    { time: '21:00', title: 'Tokyo Revengers', episode: 24 },
-                ],
-                '2024-01-10': [
-                    { time: '18:00', title: 'Attack on Titan Final Season', episode: 87 },
-                    { time: '19:30', title: 'My Hero Academia Season 6', episode: 138 },
-                    { time: '21:00', title: 'Demon Slayer: Swordsmith Village Arc', episode: 1 },
-                ],
-                '2024-01-11': [
-                    { time: '18:00', title: 'Jujutsu Kaisen Season 2', episode: 1 },
-                    { time: '19:30', title: 'One Piece', episode: 1090 },
-                    { time: '21:00', title: 'Spy x Family Part 2', episode: 13 },
-                ],
-                '2024-01-12': [
-                    { time: '18:00', title: 'Chainsaw Man', episode: 12 },
-                    { time: '19:30', title: 'The Promised Neverland', episode: 1 },
-                    { time: '21:00', title: 'Dr. STONE', episode: 1 },
-                ],
-                '2024-01-13': [
-                    { time: '18:00', title: 'Haikyuu!!', episode: 25 },
-                    { time: '19:30', title: 'Mob Psycho 100 III', episode: 12 },
-                    { time: '21:00', title: 'Vinland Saga Season 2', episode: 1 },
-                ],
-                '2024-01-14': [
-                    { time: '18:00', title: 'Re:Zero - Starting Life in Another World', episode: 50 },
-                    { time: '19:30', title: 'The Rising of the Shield Hero', episode: 25 },
-                    { time: '21:00', title: 'That Time I Got Reincarnated as a Slime', episode: 48 },
-                ],
-                '2024-01-15': [
-                    { time: '18:00', title: 'Overlord', episode: 52 },
-                    { time: '19:30', title: 'Classroom of the Elite', episode: 38 },
-                    { time: '21:00', title: 'Made in Abyss', episode: 25 },
-                ],
-            },
-            setSelectedDate(date) {
-                this.selectedDate = date;
-            },
-            scrollDates(direction) {
-                const scroller = this.$refs.dateScroller;
-                const scrollAmount = scroller.offsetWidth * 0.8;
-                if (direction === 'left') {
-                    scroller.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
-                } else {
-                    scroller.scrollBy({ left: scrollAmount, behavior: 'smooth' });
-                }
+        selectedDate: '',
+        dates: [],
+        scheduleData: {},
+        isLoading: true,
+        async fetchData() {
+            try {
+                const response = await fetch('/api/schedule'); // Replace with your API URL
+                const data = await response.json();
+                this.dates = Object.keys(data);
+                this.scheduleData = data;
+                this.selectedDate = this.dates[0]; // Set the first date as selected by default
+            } catch (error) {
+                console.error('Error fetching schedule:', error);
+            } finally {
+                this.isLoading = false; // Hide the loader once data is fetched
             }
-        }));
+        },
+        setSelectedDate(date) {
+            this.selectedDate = date;
+        },
+        scrollDates(direction) {
+            const scroller = this.$refs.dateScroller;
+            const scrollAmount = scroller.offsetWidth * 0.8;
+            if (direction === 'left') {
+                scroller.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+            } else {
+                scroller.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+            }
+        },
+        init() {
+            this.fetchData();
+        }
+    }));
     });
 
     // Swiper initialization

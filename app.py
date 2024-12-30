@@ -904,7 +904,6 @@ def filter_results():
                     collection_id=os.getenv('Anime'),
                     queries=query_list
                 )
-                print(result)
                 
                 # Break if results found
                 if result['total'] > 0:
@@ -1717,8 +1716,6 @@ def search_api():
                     collection_id=os.getenv('Anime'),
                     queries=query_list
                 )
-
-                print(result)
 
                 # Break if results are found
                 if result['total'] > 0:
@@ -2911,7 +2908,7 @@ def view_post(post_id):
             'userLiked':isLiked,
             'userUnliked':isUnliked,
             'likes': likes['total'],
-            'comments': 2,
+            'comments': comms['total'],
             'time': format_relative_time(result.get("added"))
         }
         print(result.get("postId"))
@@ -3776,7 +3773,6 @@ def countdowns():
     animes = []
 
     for anii in count:
-        print(anii)
 
         img = databases.get_document(
                 database_id = os.getenv('TEST_DB'),
@@ -3798,6 +3794,58 @@ def countdowns():
 
     return render_template('countdowns.html', animes=animes,userInfo=userInfo)
 
+@app.route('/api/schedule', methods=['GET'])
+def get_schedule():
+    date = request.args.get('date')
+    
+    # Initialize Appwrite client and databases service
+    client = get_client()
+    databases = Databases(client)
+
+    # Query data from Appwrite database
+    try:
+        response = databases.list_documents(
+            database_id=os.getenv('TEST_DB'),
+            collection_id=os.getenv('Anime'),
+            queries=[
+                Query.equal("public", True),
+                Query.is_not_null("airingAt"),
+                Query.select(["mainId", "english", "romaji", "airingAt", "nextAiringEpisode"]),
+                Query.order_asc("airingAt"),
+            ]
+        )
+        documents = response.get('documents', [])
+    except Exception as e:
+        return jsonify({"error": "Failed to fetch data", "details": str(e)}), 500
+
+    # Process data
+    animes_by_date = {}
+    for anime in documents:
+        airing_timestamp = anime.get("airingAt")
+        if not airing_timestamp:
+            continue
+
+        # Convert timestamp to date string
+        airing_date = datetime.utcfromtimestamp(airing_timestamp).strftime('%Y-%m-%d')
+
+        if date and airing_date != date:
+            continue
+
+        # Prepare anime details
+        anime_data = {
+            "time": datetime.utcfromtimestamp(airing_timestamp).strftime('%H:%M'),
+            "title": anime.get("english") or anime.get("romaji"),
+            "episode": anime.get("nextAiringEpisode"),
+        }
+
+        # Group by date
+        if airing_date not in animes_by_date:
+            animes_by_date[airing_date] = []
+        animes_by_date[airing_date].append(anime_data)
+
+    # Return response
+    
+    return jsonify(animes_by_date)
 
 def comment_filter(comment):
     """
@@ -3904,6 +3952,7 @@ def update_profile():
 @app.route('/auth/callback')
 def callback():
     print(request)
+    
 @app.route('/realtime')
 def realtime():
     return render_template('rtest.html')

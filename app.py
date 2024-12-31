@@ -1850,7 +1850,7 @@ def fetch_episode_info(anime_id,ep_number):
                 "serverName": links.get("serverName"),
                 "episodeNumber": links.get("episodeNumber"),
                 "dataType": links.get("dataType"),
-                "dataLink":  links.get("dataLink").replace("https://", "/player/Hianime/")
+                "dataLink":  links.get("dataLink").replace("https://hianime.to/watch/", "/player/Hianime/")
             }
         else:    
             link_info = {

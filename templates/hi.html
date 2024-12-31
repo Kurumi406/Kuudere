@@ -162,52 +162,46 @@
             filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.7));
         }
 
-        #video-container {
-            position: relative;
-            width: 100%;
-            height: 100vh;
-            /* Adjust to parent container as needed */
-            max-width: none;
-        }
-
-        #video {
-            width: 100%;
-            height: 100%;
-            /* Fill the container */
-            object-fit: cover;
-            /* Ensure the video fits nicely */
-        }
-
-        @media (max-width: 768px) {
-            #video {
-                border-radius: 0;
-                /* Remove rounded corners for full-screen look */
-            }
-
+        @media (max-width: 640px) {
             #controls {
-                flex-direction: column;
-                /* Stack controls vertically */
-                padding: 4px;
+                padding: 0.5rem;
             }
 
             #progress {
-                width: 100%;
-                /* Full width for progress bar */
-                margin: 8px 0;
+                height: 0.5rem;
             }
 
-            button svg {
-                width: 20px;
-                /* Smaller icons */
-                height: 20px;
+            .control-button {
+                padding: 0.25rem;
             }
+
+            #time {
+                font-size: 0.75rem;
+            }
+
+            #status-for-nerds {
+                font-size: 0.625rem;
+                padding: 0.5rem;
+            }
+        }
+
+        .control-button {
+            @apply text-white p-1 focus:outline-none;
+        }
+
+        .control-button svg {
+            @apply w-4 h-4 sm:w-6 sm:h-6;
+        }
+
+        #volume {
+            @apply w-16 sm:w-20;
         }
     </style>
 </head>
 
-<body class="flex items-center justify-center h-screen overflow-hidden">
-    <div id="video-container" class="relative video w-full max-w-4xl">
-        <video id="video" class="w-full h-full bg-black cursor-pointer">
+<body class="bg-black flex items-center justify-center h-screen w-full">
+    <div id="video-container" class="relative video w-full max-w-full">
+        <video id="video" class="w-full max-w-full bg-black cursor-pointer" style="display: none;">
             Your browser does not support the video tag.
         </video>
         <div id="video-cover" class="absolute inset-0 bg-black flex items-center justify-center">
@@ -330,6 +324,12 @@
                                 <label for="0" class="ml-2">Auto</label>
                             </div>
                         </div>
+                        <div id="subtitle-selector" class="px-3 py-2">
+                            <div class="flex items-center text-white">
+                                <input type="radio" name="subtitle" id="subtitle-off" checked>
+                                <label for="subtitle-off" class="ml-2">Off</label>
+                            </div>
+                        </div>
                         <div data-popper-arrow></div>
                     </div>
                     <button id="pip" class="text-white mr-2">
@@ -359,6 +359,7 @@
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/flowbite@2.5.1/dist/flowbite.min.js"></script>
     <script>
         const video = document.getElementById("video");
         const statusForNerds = document.getElementById("status-for-nerds");
@@ -391,46 +392,69 @@
         let hls;
 
         const videoSrc =
-            "https://DB3nhnDiJ9.cdn-centaurus.com/hls2/01/00477/it8j0vxjj5sh_h/master.m3u8?t=Gk6p8D98OylDSuVJsia0wSYyQ2YnelbSPUIXc6ZkU1k&s=1734870084&e=129600&f=32335776&srv=81cjh64633yue&i=0.4&sp=500&p1=81cjh64633yue&p2=81cjh64633yue&asn=8849";
+            "{{ video_url }}";
 
-        function initializePlayer() {
-            if (Hls.isSupported()) {
-                hls = new Hls();
-                hls.loadSource(videoSrc);
-                hls.attachMedia(video);
-                hls.on(Hls.Events.MANIFEST_PARSED, function (event, data) {
-                    const qualities = data.levels.map((level, index) => {
-                        return { index: index, height: level.height };
+            function initializePlayer() {
+                if (Hls.isSupported()) {
+                    hls = new Hls();
+                    hls.loadSource(videoSrc);
+                    hls.attachMedia(video);
+                    hls.on(Hls.Events.MANIFEST_PARSED, function (event, data) {
+                        const qualities = data.levels.map((level, index) => {
+                            return { index: index, height: level.height };
+                        });
+                        updateQualitySelector(qualities);
+
+                        const audioTracks = hls.audioTracks;
+                        if (audioTracks.length <= 0) {
+                            audioSelector.style.display = "none";
+                            audioTab.style.display = "none";
+                        }
+                        updateAudioSelector(audioTracks);
+
+                        // Create subtitle tracks and update subtitle selector
+                        createSubtitleTracks({{ subtitles|tojson|safe }});
+                        updateSubtitleSelector({{ subtitles|tojson|safe }});
+
+                        hideLoadingShowPlay();
+                        loadProgress(); // Add this line
                     });
-                    updateQualitySelector(qualities);
+                } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+                    video.src = videoSrc;
+                    video.addEventListener("loadedmetadata", () => {
+                        // Create subtitle tracks and update subtitle selector
+                        createSubtitleTracks({{ subtitles|tojson|safe }});
+                        updateSubtitleSelector({{ subtitles|tojson|safe }});
 
-                    const audioTracks = hls.audioTracks;
-                    if (audioTracks.length <= 0) {
-                        audioSelector.style.display = "none";
-                        audioTab.style.display = "none";
-                    }
-                    updateAudioSelector(audioTracks);
+                        hideLoadingShowPlay();
+                        loadProgress(); // Add this line
+                    });
+                }
 
-                    loadingIndicator.classList.add("hidden");
-                    playButton.classList.remove("hidden");
-                });
-            } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
-                video.src = videoSrc;
-                video.addEventListener("loadedmetadata", () => {
-                    loadingIndicator.classList.add("hidden");
-                    playButton.classList.remove("hidden");
-                });
+                video.addEventListener('canplay', hideLoadingShowPlay);
             }
-        }
 
-        window.addEventListener("load", initializePlayer);
+            function hideLoadingShowPlay() {
+                loadingIndicator.classList.add("hidden");
+                playButton.classList.remove("hidden");
+                videoCover.classList.remove("hidden");
+                video.style.display = "block"; // Ensure video is visible
+            }
 
-        function startPlaying() {
-            video.play();
-            videoCover.classList.add("hidden");
-        }
+            function startPlaying() {
+                video.play();
+                videoCover.classList.add("hidden");
+                playButton.classList.add("hidden");
+            }
 
-        playButton.addEventListener("click", startPlaying);
+            playButton.addEventListener("click", startPlaying);
+
+            video.addEventListener("playing", () => {
+                videoCover.classList.add("hidden");
+                playButton.classList.add("hidden");
+            });
+
+            window.addEventListener("load", initializePlayer);
 
         function togglePlayPause() {
             if (video.paused) {
@@ -474,15 +498,91 @@
             }
         }
 
-        // Function to toggle subtitles
-        function toggleSubtitles() {
-            const track = video.textTracks[0];
-            if (track.mode === 'showing') {
-                track.mode = 'disabled';
-                subtitlesBtn.classList.add('disabled');  // Update button UI
+        function createSubtitleTracks(subtitles) {
+            subtitles.forEach((subtitle, index) => {
+                if (subtitle.kind !== 'thumbnails') {
+                    const track = document.createElement('track');
+                    track.kind = subtitle.kind;
+                    track.label = subtitle.label;
+                    track.srclang = subtitle.label.split(' ')[0].toLowerCase();
+                    // Use the proxy route for subtitle URL
+                    track.src = `/proxy/subtitle/${encodeURIComponent(subtitle.file)}`;
+                    if (subtitle.default) {
+                        track.default = true;
+                    }
+                    video.appendChild(track);
+                }
+            });
+        }
+
+        function updateSubtitleSelector(subtitles) {
+            const subtitleSelector = document.getElementById('subtitle-selector');
+            subtitleSelector.innerHTML = '';
+
+            const offContainer = document.createElement("div");
+            offContainer.classList.add("flex", "items-center", "text-white", "mb-2");
+
+            const offRadio = document.createElement("input");
+            offRadio.type = "radio";
+            offRadio.name = "subtitle";
+            offRadio.id = "subtitle-off";
+            offRadio.checked = true;
+            offRadio.classList.add("mr-2");
+
+            const offLabel = document.createElement("label");
+            offLabel.htmlFor = "subtitle-off";
+            offLabel.textContent = "Off";
+
+            offContainer.appendChild(offRadio);
+            offContainer.appendChild(offLabel);
+            subtitleSelector.appendChild(offContainer);
+
+            subtitles.forEach((subtitle, index) => {
+                if (subtitle.kind !== 'thumbnails') {
+                    const container = document.createElement("div");
+                    container.classList.add("flex", "items-center", "text-white", "mb-2");
+
+                    const radio = document.createElement("input");
+                    radio.type = "radio";
+                    radio.name = "subtitle";
+                    radio.id = `subtitle-${index}`;
+                    radio.dataset.src = `/proxy/subtitle/${encodeURIComponent(subtitle.file)}`;
+                    radio.classList.add("mr-2");
+
+                    const label = document.createElement("label");
+                    label.htmlFor = `subtitle-${index}`;
+                    label.textContent = subtitle.label;
+
+                    container.appendChild(radio);
+                    container.appendChild(label);
+                    subtitleSelector.appendChild(container);
+                }
+            });
+        }
+
+        // Add a function to handle fullscreen changes
+        function handleFullscreenChange() {
+            if (document.fullscreenElement) {
+                videoContainer.classList.add('fixed', 'inset-0', 'z-50');
             } else {
-                track.mode = 'showing';
-                subtitlesBtn.classList.remove('disabled');  // Update button UI
+                videoContainer.classList.remove('fixed', 'inset-0', 'z-50');
+            }
+        }
+
+        function toggleSubtitles() {
+            const subtitleSelector = document.getElementById('subtitle-selector');
+            const selectedSubtitle = subtitleSelector.querySelector('input[name="subtitle"]:checked');
+            
+            for (let i = 0; i < video.textTracks.length; i++) {
+                const track = video.textTracks[i];
+                
+                if (selectedSubtitle.id === 'subtitle-off') {
+                    track.mode = 'disabled';
+                } else if (track.label === selectedSubtitle.nextElementSibling.textContent) {
+                    track.mode = 'showing';
+                } else {
+                    track.mode = 'disabled';
+                }
             }
         }
         function toggleFullscreen() {
@@ -527,41 +627,21 @@
         }
 
         function updateQualitySelector(qualities) {
-            qualitySelector.innerHTML = ''; // Clear existing content
-
-            // Add "Auto" radio button
-            const autoContainer = document.createElement("div");
-            autoContainer.classList.add("flex", "items-center", "text-white");
-
-            const autoRadio = document.createElement("input");
-            autoRadio.type = "radio";
-            autoRadio.name = "quality"; // Use the same name for mutual exclusion
-            autoRadio.id = "0";
-            autoRadio.checked = true; // Default selection
-
-            const autoLabel = document.createElement("label");
-            autoLabel.htmlFor = "0";
-            autoLabel.classList.add("ml-2");
-            autoLabel.textContent = "Auto";
-
-            autoContainer.appendChild(autoRadio);
-            autoContainer.appendChild(autoLabel);
-            qualitySelector.appendChild(autoContainer);
-
-            // Add radio buttons for each quality
-            qualities.forEach((quality) => {
+            qualitySelector.innerHTML = '';
+            qualities.forEach((quality, index) => {
                 const container = document.createElement("div");
-                container.classList.add("flex", "items-center", "text-white");
+                container.classList.add("flex", "items-center", "text-white", "mb-2");
 
                 const radio = document.createElement("input");
                 radio.type = "radio";
-                radio.name = "quality"; // Use the same name for mutual exclusion
-                radio.id = quality.index;
+                radio.name = "quality";
+                radio.id = `quality-${quality.index}`;
+                radio.value = quality.index;
+                radio.classList.add("mr-2");
 
                 const label = document.createElement("label");
-                label.htmlFor = quality.index;
-                label.classList.add("ml-2");
-                label.textContent = `${quality.height}p`;
+                label.htmlFor = `quality-${quality.index}`;
+                label.textContent = quality.height ? `${quality.height}p` : "Auto";
 
                 container.appendChild(radio);
                 container.appendChild(label);
@@ -662,11 +742,11 @@
         });
 
         qualitySelector.addEventListener("change", (e) => {
-            hls.currentLevel = parseInt(e.target.id);
+            hls.currentLevel = parseInt(e.target.value);
         });
 
         audioSelector.addEventListener("change", (e) => {
-            hls.audioTrack = parseInt(e.target.id);
+            hls.audioTrack = parseInt(e.target.value);
         });
 
         controls.addEventListener("mouseover", () => {
@@ -745,10 +825,88 @@
 
         // Update status when video metadata is loaded
         video.addEventListener("loadedmetadata", updateStatus);
+        // Add event listener for subtitle selection
+        document.getElementById('subtitle-selector').addEventListener('change', toggleSubtitles);
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+
+        function handleFullscreenChange() {
+            if (document.fullscreenElement) {
+                videoContainer.classList.add('fixed', 'inset-0', 'z-50');
+            } else {
+                videoContainer.classList.remove('fixed', 'inset-0', 'z-50');
+            }
+        }
+
+        // Add event listener for fullscreen changes
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+
+        // Update toggleFullscreen function to work with iframes
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                if (videoContainer.requestFullscreen) {
+                    videoContainer.requestFullscreen();
+                } else if (videoContainer.mozRequestFullScreen) { // Firefox
+                    videoContainer.mozRequestFullScreen();
+                } else if (videoContainer.webkitRequestFullscreen) { // Chrome, Safari and Opera
+                    videoContainer.webkitRequestFullscreen();
+                } else if (videoContainer.msRequestFullscreen) { // IE/Edge
+                    videoContainer.msRequestFullscreen();
+                }
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.mozCancelFullScreen) { // Firefox
+                    document.mozCancelFullScreen();
+                } else if (document.webkitExitFullscreen) { // Chrome, Safari and Opera
+                    document.webkitExitFullscreen();
+                } else if (document.msExitFullscreen) { // IE/Edge
+                    document.msExitFullscreen();
+                }
+            }
+        }
+
+        // Call toggleSubtitles initially to set the default state
+        window.addEventListener('load', toggleSubtitles);
         // Initial setup
         setControlsTimeout();
         updateMuteButton();
+
+
+        // Function to save progress
+        function saveProgress() {
+            const currentTime = video.currentTime;
+            const duration = video.duration;
+            const progress = {
+                currentTime: currentTime,
+                duration: duration
+            };
+            sessionStorage.setItem(window.location.href, JSON.stringify(progress));
+        }
+
+        // Function to load progress
+        function loadProgress() {
+            const savedProgress = sessionStorage.getItem(window.location.href);
+            if (savedProgress) {
+                const progress = JSON.parse(savedProgress);
+                if (progress.currentTime && progress.duration) {
+                    video.currentTime = progress.currentTime;
+                }
+            }
+        }
+
+        // Save progress every 5 seconds and when the video is paused
+        setInterval(saveProgress, 5000);
+        video.addEventListener('pause', saveProgress);
+
+        // Load progress when the video is loaded
+        video.addEventListener('loadedmetadata', loadProgress);
+
+        // Clear progress when the video ends
+        video.addEventListener('ended', () => {
+            sessionStorage.removeItem(window.location.href);
+        });
     </script>
 </body>
 
 </html>
+

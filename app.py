@@ -1,8 +1,9 @@
 from datetime import datetime, timezone
 import hashlib
-from flask import Flask, request, jsonify, session, render_template,make_response,redirect,send_from_directory,url_for
+from flask import Flask, request, jsonify, session, render_template,make_response,redirect,send_from_directory,url_for,abort
 from appwrite.services.databases import Databases
 from flask_limiter.util import get_remote_address
+from flask import Response
 from flask_socketio import SocketIO, join_room, leave_room, rooms
 from appwrite.services.account import Account
 from collections import defaultdict
@@ -11,6 +12,7 @@ from appwrite.services.users import Users
 from appwrite.services.teams import Teams
 from dateutil.relativedelta import relativedelta
 from appwrite.exception import AppwriteException
+from nacl.public import PrivateKey, Box
 from flask_compress import Compress
 from flask_sitemap import Sitemap
 from flask_limiter import Limiter
@@ -24,11 +26,13 @@ from flask_cors import CORS
 from appwrite.id import ID
 import websockets
 import threading
+import requests
 import asyncio
 import dotenv
 import json
 import time
 import math
+import base64
 import os
 import re
 
@@ -1839,14 +1843,24 @@ def fetch_episode_info(anime_id,ep_number):
     likass = bitch.get("documents", [])
 
     for links in likass:
-        link_info = {
-            "$id": links.get("$id"),
-            "serverId": links.get("serverId"),
-            "serverName": links.get("serverName"),
-            "episodeNumber": links.get("episodeNumber"),
-            "dataType": links.get("dataType"),
-            "dataLink": links.get("dataLink")
-        }
+        if links.get("serverName") == "Hianime":
+            link_info = {
+                "$id": links.get("$id"),
+                "serverId": links.get("serverId"),
+                "serverName": links.get("serverName"),
+                "episodeNumber": links.get("episodeNumber"),
+                "dataType": links.get("dataType"),
+                "dataLink":  links.get("dataLink").replace("https://", "/player/Hianime/")
+            }
+        else:    
+            link_info = {
+                "$id": links.get("$id"),
+                "serverId": links.get("serverId"),
+                "serverName": links.get("serverName"),
+                "episodeNumber": links.get("episodeNumber"),
+                "dataType": links.get("dataType"),
+                "dataLink": links.get("dataLink")
+            }
         ep_links.append(link_info)
 
     ep_links.sort(key=lambda x: x['serverId'])
@@ -3957,9 +3971,37 @@ def callback():
 def realtime():
     return render_template('rtest.html')
 
-@app.route('/player')
-def player():
-    return render_template('hi.html')
+@app.route('/player/<type>/<id>')
+def player(type, id):
+    if type == "Hianime":
+        ep = request.args.get('ep')
+        server = request.args.get('server')
+        category =request.args.get('category')
+            # Con\struct the URL to get episode sources
+        sources_url = f"{os.getenv('HIANIME_ENDPOINT')}/api/v2/hianime/episode/sources?animeEpisodeId={id}?ep={ep}&server={server}&category={category}"
+            
+            # Make the request to get sources
+        sources_response = requests.get(sources_url)
+        sources_response.raise_for_status()  # Raises an error for bad status codes
+
+        sources_data = sources_response.json()
+        data = sources_data.get("data")
+        if not data:
+                abort(404, description="Data not found in the response")
+
+        video_url = data["sources"][0]["url"]
+        subtitles = data["tracks"]
+        print(subtitles)
+
+        return render_template('hi.html', video_url=video_url, subtitles=subtitles)
+
+    else:
+        abort(400, description="Unsupported type")
+
+@app.route('/proxy/subtitle/<path:url>')
+def proxy_subtitle(url):
+    response = requests.get(url)
+    return Response(response.content, content_type=response.headers['content-type'])        
 
 @app.route('/realtimet')
 def realtimet():

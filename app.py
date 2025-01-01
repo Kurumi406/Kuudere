@@ -1236,16 +1236,6 @@ def watch_page(anime_id, ep_number):
             ]
     )
     
-    epiList = databases.list_documents(
-        database_id=os.getenv('DATABASE_ID'),
-        collection_id=os.getenv('Anime_Episodes'),
-        queries=[
-            Query.equal("animeId",result.get("animeId")),
-            Query.select(["titles", "number", "aired", "score", "recap", "filler","$id"]),
-            Query.limit(99999)
-        ]
-    )
-
     likes = databases.list_documents(
                 database_id=os.getenv('DATABASE_ID'),
                 collection_id=os.getenv('ANIME_LIKES'),
@@ -1292,21 +1282,6 @@ def watch_page(anime_id, ep_number):
                 elif IsUserunLiked['total'] > 0:
                     isUnliked = True
 
-    # Extract episode data
-    episodes = epiList.get("documents", [])
-    episode_details = []
-    ep_links = []
-
-    for episode in episodes:
-        episode_info = {
-            "id": episode.get("$id"),
-            "titles": episode.get("titles", []),
-            "filler": episode.get("filler"),
-            "number": episode.get("number"),
-            "recap": episode.get("recap")
-        }
-        episode_details.append(episode_info)
-
     bitch = databases.list_documents(
         database_id=os.getenv('DATABASE_ID'),
         collection_id=os.getenv('Anime_Episodes_Links'),
@@ -1321,18 +1296,6 @@ def watch_page(anime_id, ep_number):
     likass = bitch.get("documents", [])
     print("Documents retrieved:", likass)
 
-    for links in likass:
-        link_info = {
-            "$id": links.get("$id"),
-            "serverId": links.get("serverId"),
-            "serverName": links.get("serverName"),
-            "episodeNumber": links.get("episodeNumber"),
-            "dataType": links.get("dataType"),
-            "dataLink": links.get("dataLink")
-        }
-        ep_links.append(link_info)
-
-    ep_links.sort(key=lambda x: x['serverId'])
 
     filtered_document = {
                 "id":result.get('mainId'),
@@ -1365,8 +1328,6 @@ def watch_page(anime_id, ep_number):
             }
             
     response = {
-        "all_episodes": episode_details,
-        "episode_links": ep_links,
         "anime_info": filtered_document,
         "userInfo":userInfo,
         "success": True
@@ -1377,7 +1338,7 @@ def watch_page(anime_id, ep_number):
 
     if isKey:
         return response
-    return render_template('watch.html', anime_id=anime_id, ep_number=ep_number,animeInfo = filtered_document,userInfo=userInfo)
+    return render_template('test.html', anime_id=anime_id, ep_number=ep_number,animeInfo = filtered_document,userInfo=userInfo)
 
 @app.route("/api/anime/respond/<id>", methods=['POST'])
 def like_anime(id):
@@ -1925,70 +1886,13 @@ def fetch_episode_info(anime_id,ep_number):
             "replies": replys,
         }
         coms.append(detail_info)
-    
-
-    comments = [
-        {
-            "id": 1,
-            "author": "AnimeGuy123",
-            "time": "2 hours ago",
-            "content": "This episode was mind-blowing! Can't wait to see what happens next.",
-            "showReplyForm": False,
-            "showReplies": False,
-            "replyContent": "",
-            "replies": [
-                {
-                    "id": 1,
-                    "author": "OtakuFan",
-                    "time": "1 hour ago",
-                    "content": "I know right? The plot twist at the end was unexpected!"
-                },
-                {
-                    "id": 2,
-                    "author": "MangaLover",
-                    "time": "30 minutes ago",
-                    "content": "I'm curious to see how they'll develop this in the next episode."
-                }
-            ]
-        },
-        {
-            "id": 2,
-            "author": "TitanFan",
-            "time": "1 day ago",
-            "content": "The animation in this series is top-notch. Loving every minute of it!",
-            "showReplyForm": False,
-            "showReplies": False,
-            "replyContent": "",
-            "replies": []
-        },
-        {
-            "id": 3,
-            "author": "OtakuMaster",
-            "time": "2 days ago",
-            "content": "The character development in this show is incredible. Each episode reveals more depth.",
-            "showReplyForm": False,
-            "showReplies": False,
-            "replyContent": "",
-            "replies": []
-        },
-        {
-            "id": 4,
-            "author": "SciFiLover",
-            "time": "3 days ago",
-            "content": "The world-building in this anime is phenomenal. It feels so immersive!",
-            "showReplyForm": False,
-            "showReplies": False,
-            "replyContent": "",
-            "replies": []
-        }
-    ]
-
 
             
     response = {
         "all_episodes": episode_details,
         "episode_links": ep_links,
         "episode_comments":coms,
+        "total_comments":comm['total'],
         "success": True
     }
 
@@ -3058,7 +2962,7 @@ def comment():
        return jsonify({'success': False, 'message':"Unauthorized"}), 401
     
     try:
-        client = get_client(key,None)
+        client = get_client(None,secret)
         databases = Databases(client)
         print(data.get('anime'))
         anii = data.get('anime')
@@ -3071,6 +2975,8 @@ def comment():
                 Query.select(["animeId","english","romaji"])
             ]
         )
+        if not anime['documents']:
+            return jsonify({'success': False, 'message': "Anime not found"}), 404
 
         epxx = databases.list_documents(
             database_id=os.getenv('DATABASE_ID'),
@@ -3772,13 +3678,12 @@ def countdowns():
 
 
     topUpcoming = databases.list_documents(
-            database_id = os.getenv('TEST_DB'),
+            database_id = os.getenv('DATABASE_ID'),
             collection_id = os.getenv('Anime'),
             queries = [
                 Query.equal("public",True),
                 Query.is_not_null('airingAt'),
                 Query.select(["mainId", "english","romaji","airingAt","nextAiringEpisode"]),
-                Query.equal("status","NOT_YET_RELEASED"),
                 Query.order_asc("airingAt"),
             ] # optional
         )
@@ -3789,7 +3694,7 @@ def countdowns():
     for anii in count:
 
         img = databases.get_document(
-                database_id = os.getenv('TEST_DB'),
+                database_id = os.getenv('DATABASE_ID'),
                 collection_id = os.getenv('ANIME_IMGS'),
                 document_id=anii.get('mainId'),
                 queries=[
@@ -3813,13 +3718,13 @@ def get_schedule():
     date = request.args.get('date')
     
     # Initialize Appwrite client and databases service
-    client = get_client()
+    client = get_client(None,os.getenv('SECRET'))
     databases = Databases(client)
 
     # Query data from Appwrite database
     try:
         response = databases.list_documents(
-            database_id=os.getenv('TEST_DB'),
+            database_id=os.getenv('DATABASE_ID'),
             collection_id=os.getenv('Anime'),
             queries=[
                 Query.equal("public", True),
@@ -3982,7 +3887,16 @@ def player(type, id):
             
             # Make the request to get sources
         sources_response = requests.get(sources_url)
-        sources_response.raise_for_status()  # Raises an error for bad status codes
+        if sources_response.status_code == 500:
+            category = "raw"
+        
+        sources_url = f"{os.getenv('HIANIME_ENDPOINT')}/api/v2/hianime/episode/sources?animeEpisodeId={id}?ep={ep}&server={server}&category={category}"
+            
+            # Make the request to get sources
+        sources_response = requests.get(sources_url)
+
+        if sources_response.status_code == 500:
+            return jsonify({'success': True, 'message': 'Resources Not Found'}), 404
 
         sources_data = sources_response.json()
         data = sources_data.get("data")
@@ -4034,4 +3948,4 @@ def internal_error(error):
     
 if __name__ == '__main__':
     threading.Thread(target=lambda: asyncio.run(websocket_listener()), daemon=True).start()
-    socketio.run(app, debug=True)
+    socketio.run(app, debug=True,host='0.0.0.0')

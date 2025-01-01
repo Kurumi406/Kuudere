@@ -39,6 +39,38 @@
     .dislike-button.animate {
         animation: dislikeAnimation 0.3s ease-in-out;
     }
+    [x-cloak] { display: none !important; }
+        
+        .share-scroll::-webkit-scrollbar {
+            display: none;
+        }
+        
+        .share-scroll {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        
+        .share-button {
+            transition: transform 0.2s ease;
+        }
+        
+        .share-button:hover {
+            transform: scale(1.1);
+        }
+
+        .nav-arrow {
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .share-container:hover .nav-arrow {
+            opacity: 1;
+        }
+
+        .glass-input {
+            background-color: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(5px);
+        }
 </style>
     <div x-data="animePlayer()" x-init="fetchInitialData()" class="h-full">
         <!-- Loading Overlay -->
@@ -66,7 +98,6 @@
                     <div class="flex items-center gap-4">
                         <div x-data="counter()" x-init="initializeSocket()" @join-room.window="joinRoom()"
                             class="flex items-center gap-2">
-                            <!-- Display the current room's listener count -->
                             <span x-text="formatCount(count)" class="number-animation inline-block"
                                 :class="{'number-up': increasing, 'number-down': decreasing}">
                             </span>
@@ -96,7 +127,7 @@
                             <span x-text="dislikes" class="dislikes text-sm font-medium text-gray-500"></span>
                         </div>
                     </div>
-                    <button class="hover:bg-gray-800 p-2 rounded-full">
+                    <button @click="isShareOpen = true" class="hover:bg-gray-800 p-2 rounded-full">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                             <path
                                 d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" />
@@ -193,12 +224,18 @@
                     </div>
                 </div>
                 <div class="mt-8 bg-[#1a1a1a] rounded-lg p-6" x-data="comments()">
-                    <h2 class="text-2xl font-semibold mb-4 text-white">Comments</h2>
-                    <form class="mb-6" @submit.prevent="postComment">
+                    <h2 class="text-2xl font-semibold mb-4 text-white" x-text="'Comments: ' + total_comments"></h2>
+                    <div class="mb-6">
+                        <div class="flex items-center gap-2 mb-2">
+                            <div class="w-8 h-8 rounded-full bg-[#2a2a2a] flex items-center justify-center">
+                                <img src="/placeholder.svg" alt="User" class="w-6 h-6 rounded-full" />
+                            </div>
+                            <span class="text-sm text-white">Comment as {{ userInfo.username }}</span>
+                        </div>
                         <div class="relative">
                             <textarea x-model="newComment"
-                                class="w-full bg-[#2a2a2a] text-white rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-[#FF0000]"
-                                rows="4" placeholder="Add a comment..."></textarea>
+                                class="w-full bg-[#2a2a2a] text-white rounded-lg p-3 focus:outline-none focus:ring-1 focus:ring-[#3a3a3a]"
+                                rows="3" placeholder="Leave a comment"></textarea>
                             <div class="absolute right-2 bottom-2">
                                 <button @click="toggleEmojiPicker" type="button"
                                     class="text-[#808080] hover:text-white transition-colors duration-200">
@@ -220,120 +257,139 @@
                                 </div>
                             </div>
                         </div>
-                        <div
-                            class="w-full flex justify-between items-center p-3 text-center bg-[#2a2a2a] mt-2 rounded-lg">
-                            <div>
-                                <input class="form-check-input" type="checkbox" x-model="isSpoiler" id="spoilerCheck" />
-                                <label class="form-check-label text-[#808080]" for="spoilerCheck"> Spoiler?</label>
+                        <div class="flex items-center justify-between mt-2 px-2">
+                            <label class="flex items-center gap-2">
+                                <input type="checkbox" x-model="isSpoiler" class="rounded bg-[#2a2a2a] border-none text-[#FF0000] focus:ring-0"/>
+                                <span class="text-xs text-[#808080]">Spoil?</span>
+                            </label>
+                            <div class="flex items-center gap-2">
+                                <button @click="closeComment" type="button"
+                                    class="px-3 py-1.5 text-xs text-[#808080] hover:text-white transition-colors">
+                                    Close
+                                </button>
+                                <button @click="postComment" type="button"
+                                    class="px-4 py-1.5 bg-[#FF0000] hover:bg-opacity-90 text-white rounded text-xs font-medium transition-colors">
+                                    Comment
+                                </button>
                             </div>
-                            <button type="submit"
-                                class="bg-[#FF0000] text-white py-2 px-6 rounded hover:bg-opacity-80 transition-colors duration-200">
-                                Post Comment
-                            </button>
                         </div>
-                    </form>
-                    <div
-                        class="max-h-[400px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-[#FF0000] scrollbar-track-[#2a2a2a]">
+                    </div>
+                    <div class="max-h-[400px] overflow-y-auto pr-2 space-y-4">
                         <template x-for="(comment, index) in comments" :key="comment.id">
-                            <div class="py-4 border-b border-[#2a2a2a] last:border-b-0"
-                                x-intersect="$el._x_intersected = true" x-effect="if ($el._x_intersected) anime({
-                                    targets: $el,
-                                    translateY: [20, 0],
-                                    opacity: [0, 1],
-                                    duration: 600,
-                                    easing: 'easeOutExpo'
-                                })">
-                                <div class="flex items-start">
-                                    <div class="w-10 h-10 bg-[#FF0000] rounded-full flex items-center justify-center font-bold mr-3 text-white flex-shrink-0"
-                                        x-text="comment.author.charAt(0)">
+                            <div class="py-4 border-b border-[#2a2a2a] last:border-b-0">
+                                <div class="flex items-start gap-4">
+                                    <!-- Vote buttons column -->
+                                    <div class="flex flex-col items-center gap-1">
+                                        <button @click="upvoteComment(comment.id)" 
+                                            class="p-1 rounded hover:bg-[#2a2a2a] transition-colors"
+                                            :class="comment.voted === 'up' ? 'text-[#FF0000]' : 'text-[#808080]'">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
+                                                viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
+                                            </svg>
+                                        </button>
+                                        <span class="text-sm font-medium" 
+                                            :class="comment.voted ? 'text-[#FF0000]' : 'text-[#808080]'"
+                                            x-text="comment.votes"></span>
+                                        <button @click="downvoteComment(comment.id)"
+                                            class="p-1 rounded hover:bg-[#2a2a2a] transition-colors"
+                                            :class="comment.voted === 'down' ? 'text-[#FF0000]' : 'text-[#808080]'">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
+                                                viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018a2 2 0 01.485.06l3.76.94m-7 10v5a2 2 0 002 2h.096c.5 0 .905-.405.905-.904 0-.715.211-1.413.608-2.008L17 13V4m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5" />
+                                            </svg>
+                                        </button>
                                     </div>
-                                    <div class="flex-grow">
-                                        <div class="flex items-center justify-between mb-1">
-                                            <p class="font-semibold text-white" x-text="comment.author"></p>
-                                            <p class="text-xs text-[#808080]" x-text="comment.time"></p>
+                
+                                    <!-- Comment content -->
+                                    <div class="flex-1">
+                                        <div class="flex items-center gap-2 mb-1">
+                                            <span class="text-sm font-medium text-white" x-text="comment.author"></span>
+                                            <span class="text-xs text-[#808080]" x-text="comment.time"></span>
                                         </div>
-                                        <p class="text-[#808080] mb-2" x-text="comment.content"></p>
-                                        <div class="flex items-center space-x-4">
+                                        <p class="text-sm text-[#808080] mb-2" x-text="comment.content"></p>
+                                        
+                                        <!-- Action buttons -->
+                                        <div class="flex items-center gap-4">
                                             <button @click="toggleReply(comment.id)"
-                                                class="text-[#FF0000] text-sm hover:underline">Reply</button>
-                                            <button x-show="comment.replies.length > 0"
-                                                @click="toggleReplies(comment.id)"
-                                                class="text-[#FF0000] text-sm hover:underline flex items-center">
-                                                <span x-text="comment.showReplies ? 'Hide' : 'Show'"></span>
-                                                <span class="ml-1"
-                                                    x-text="comment.replies.length + (comment.replies.length === 1 ? ' reply' : ' replies')"></span>
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-1"
-                                                    :class="{'rotate-180': comment.showReplies}" fill="none"
-                                                    viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                                        stroke-width="2" d="M19 9l-7 7-7-7" />
-                                                </svg>
+                                                class="text-xs text-[#FF0000] hover:text-white transition-colors">
+                                                Reply
                                             </button>
-                                        </div>
-
-                                        <!-- Reply Form -->
-                                        <div x-show="comment.showReplyForm" class="mt-2">
-                                            <form @submit.prevent="postReply(comment.id)">
-                                                <div class="relative">
-                                                    <textarea x-model="comment.replyContent"
-                                                        class="w-full bg-[#2a2a2a] text-white rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF0000]"
-                                                        rows="2" placeholder="Write a reply..."></textarea>
-                                                    <div class="absolute right-2 bottom-2">
-                                                        <button @click="toggleReplyEmojiPicker(comment.id)"
-                                                            type="button"
-                                                            class="text-[#808080] hover:text-white transition-colors duration-200">
-                                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
-                                                                fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                <path stroke-linecap="round" stroke-linejoin="round"
-                                                                    stroke-width="2"
-                                                                    d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                            </svg>
-                                                        </button>
-                                                        <div x-show="comment.showReplyEmojiPicker"
-                                                            @click.away="comment.showReplyEmojiPicker = false"
-                                                            class="absolute bottom-full right-0 mb-2 bg-[#2a2a2a] bg-opacity-70 backdrop-filter backdrop-blur-lg rounded-lg shadow-lg p-4 z-10"
-                                                            x-transition:enter="transition ease-out duration-300"
-                                                            x-transition:enter-start="opacity-0 transform scale-95"
-                                                            x-transition:enter-end="opacity-100 transform scale-100"
-                                                            x-transition:leave="transition ease-in duration-200"
-                                                            x-transition:leave-start="opacity-100 transform scale-100"
-                                                            x-transition:leave-end="opacity-0 transform scale-95">
-                                                            <div :id="'emoji-picker-reply-' + comment.id"></div>
-                                                        </div>
-                                                    </div>
+                                            <button 
+                                                x-show="comment.replies.length > 0"
+                                                @click="toggleReplies(comment.id)"
+                                                class="text-xs text-[#FF0000] hover:text-white transition-colors flex items-center gap-1">
+                                                <span x-text="comment.showReplies ? 'Hide' : 'View'"></span>
+                                                <span x-text="comment.replies.length"></span>
+                                                <span x-text="comment.replies.length === 1 ? 'reply' : 'replies'"></span>
+                                            </button>
+                                            <div class="relative" @click.away="comment.showMoreOptions = false">
+                                                <button @click="comment.showMoreOptions = !comment.showMoreOptions"
+                                                    class="text-xs text-[#FF0000] hover:text-white transition-colors">
+                                                    More
+                                                </button>
+                                                <div x-show="comment.showMoreOptions"
+                                                    class="absolute left-0 mt-2 w-32 bg-[#2a2a2a] rounded-md shadow-lg py-1 z-10">
+                                                    <button class="w-full px-4 py-2 text-left text-xs text-[#808080] hover:bg-[#3a3a3a] hover:text-white">
+                                                        Edit
+                                                    </button>
+                                                    <button class="w-full px-4 py-2 text-left text-xs text-[#808080] hover:bg-[#3a3a3a] hover:text-white">
+                                                        Delete
+                                                    </button>
                                                 </div>
+                                            </div>
+                                        </div>
+                
+                                        <!-- Reply form -->
+                                        <div x-show="comment.showReplyForm" class="mt-4">
+                                            <form @submit.prevent="postReply(comment.id)">
+                                                <textarea x-model="comment.replyContent"
+                                                    class="w-full bg-[#2a2a2a] text-white rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF0000]"
+                                                    rows="2" placeholder="Write a reply..."></textarea>
                                                 <div class="flex justify-end mt-2">
                                                     <button type="submit"
                                                         class="bg-[#FF0000] text-white py-1 px-4 rounded text-sm hover:bg-opacity-80 transition-colors duration-200">
-                                                        Post Reply
+                                                        Reply
                                                     </button>
                                                 </div>
                                             </form>
                                         </div>
-
+                
                                         <!-- Replies -->
-                                        <div x-show="comment.showReplies"
-                                            x-transition:enter="transition ease-out duration-300"
-                                            x-transition:enter-start="opacity-0 transform -translate-y-4"
-                                            x-transition:enter-end="opacity-100 transform translate-y-0"
-                                            x-transition:leave="transition ease-in duration-300"
-                                            x-transition:leave-start="opacity-100 transform translate-y-0"
-                                            x-transition:leave-end="opacity-0 transform -translate-y-4">
+                                        <div x-show="comment.showReplies" class="mt-4 space-y-4">
                                             <template x-for="reply in comment.replies" :key="reply.id">
-                                                <div class="ml-8 mt-2 py-2 border-t border-[#2a2a2a]">
-                                                    <div class="flex items-start">
-                                                        <div class="w-8 h-8 bg-[#FF0000] rounded-full flex items-center justify-center font-bold mr-2 text-white flex-shrink-0 text-sm"
-                                                            x-text="reply.author.charAt(0)">
+                                                <div class="pl-8 border-l-2 border-[#2a2a2a]">
+                                                    <div class="flex items-start gap-4">
+                                                        <!-- Reply vote buttons -->
+                                                        <div class="flex flex-col items-center gap-1">
+                                                            <button @click="upvoteReply(comment.id, reply.id)" 
+                                                                class="p-1 rounded hover:bg-[#2a2a2a] transition-colors"
+                                                                :class="reply.voted === 'up' ? 'text-[#FF0000]' : 'text-[#808080]'">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                                                    <path fill-rule="evenodd" d="M3.293 9.707a1 1 0 010-1.414l6-6a1 1 0 011.414 0l6 6a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L4.707 9.707a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                                                                </svg>
+                                                            </button>
+                                                            <span class="text-xs font-medium" 
+                                                                :class="reply.voted ? 'text-[#FF0000]' : 'text-[#808080]'"
+                                                                x-text="reply.votes"></span>
+                                                            <button @click="downvoteReply(comment.id, reply.id)"
+                                                                class="p-1 rounded hover:bg-[#2a2a2a] transition-colors"
+                                                                :class="reply.voted === 'down' ? 'text-[#FF0000]' : 'text-[#808080]'">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                                                    <path fill-rule="evenodd" d="M16.707 10.293a1 1 0 010 1.414l-6 6a1 1 0 01-1.414 0l-6-6a1 1 0 111.414-1.414L9 14.586V3a1 1 0 012 0v11.586l4.293-4.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                                                </svg>
+                                                            </button>
                                                         </div>
-                                                        <div class="flex-grow">
-                                                            <div class="flex items-center justify-between mb-1">
-                                                                <p class="font-semibold text-white text-sm"
-                                                                    x-text="reply.author"></p>
-                                                                <p class="text-xs text-[#808080]" x-text="reply.time">
-                                                                </p>
+                
+                                                        <!-- Reply content -->
+                                                        <div class="flex-1">
+                                                            <div class="flex items-center gap-2 mb-1">
+                                                                <span class="text-sm font-medium text-white" x-text="reply.author"></span>
+                                                                <span class="text-xs text-[#808080]" x-text="reply.time"></span>
                                                             </div>
-                                                            <p class="text-[#808080] text-sm" x-text="reply.content">
-                                                            </p>
+                                                            <p class="text-sm text-[#808080]" x-text="reply.content"></p>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -427,6 +483,138 @@
                 </div>
             </aside>
         </div>
+
+        <!-- Share Dialog -->
+        <div x-cloak x-show="isShareOpen" 
+            class="fixed inset-0 bg-black/80 flex items-center justify-center z-50" 
+            @click.self="isShareOpen = false">
+            <div x-show="isShareOpen" 
+                x-transition:enter="transition ease-out duration-200"
+                x-transition:enter-start="opacity-0 transform scale-95"
+                x-transition:enter-end="opacity-100 transform scale-100"
+                x-transition:leave="transition ease-in duration-150"
+                x-transition:leave-start="opacity-100 transform scale-100"
+                x-transition:leave-end="opacity-0 transform scale-95"
+                @click.away="isShareOpen = false"
+                class="bg-[#282828]/80 backdrop-blur-md rounded-xl shadow-2xl w-[95%] max-w-[480px] border border-white/10"
+                @keydown.escape.window="isShareOpen = false">
+                
+                <!-- Header -->
+                <div class="relative px-6 py-4 border-b border-white/10">
+                    <div class="text-center">
+                        <h2 class="text-[17px] font-medium text-white">Share</h2>
+                    </div>
+                    <button @click="isShareOpen = false" 
+                            class="absolute right-4 top-4 text-[#aaa] hover:text-white transition-colors p-1">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Share Section -->
+                <div class="p-6">
+                    <div class="mb-6">
+                        <div class="relative share-container">
+                            <!-- Left Arrow -->
+                            <button @click="scrollLeft" 
+                                    class="nav-arrow absolute left-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 flex items-center justify-center bg-[#282828] rounded-full shadow-lg">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                                </svg>
+                            </button>
+                            
+                            <div class="flex space-x-4 overflow-x-auto share-scroll pb-2 px-2" x-ref="shareButtons">
+                                <button @click="share('whatsapp')" 
+                                        class="share-button flex-shrink-0 w-12 h-12 bg-[#25D366] rounded-full flex items-center justify-center">
+                                    <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+                                    </svg>
+                                </button>
+                                <button @click="share('facebook')" 
+                                        class="share-button flex-shrink-0 w-12 h-12 bg-[#1877F2] rounded-full flex items-center justify-center">
+                                    <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                                    </svg>
+                                </button>
+                                <button @click="share('twitter')" 
+                                        class="share-button flex-shrink-0 w-12 h-12 bg-black rounded-full flex items-center justify-center border border-gray-700">
+                                    <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                                    </svg>
+                                </button>
+                                <button @click="share('email')" 
+                                        class="share-button flex-shrink-0 w-12 h-12 bg-[#666] rounded-full flex items-center justify-center">
+                                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                                    </svg>
+                                </button>
+                                <button @click="share('kakaotalk')" 
+                                        class="share-button flex-shrink-0 w-12 h-12 bg-[#FAE100] rounded-full flex items-center justify-center">
+                                    <svg class="w-6 h-6 text-black" viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M12 3c-5.523 0-10 3.582-10 8 0 2.91 1.564 5.471 3.95 6.934-.184.757-.736 2.736-.85 3.163-.142.537.197.527.497.387.205-.096 3.264-2.196 4.57-3.084.576.082 1.17.125 1.777.125 5.523 0 10-3.582 10-8s-4.477-8-10-8z"/>
+                                    </svg>
+                                </button>
+                                <button @click="share('reddit')" 
+                                        class="share-button flex-shrink-0 w-12 h-12 bg-[#FF4500] rounded-full flex items-center justify-center">
+                                    <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M12 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm5.01 4.744c.688 0 1.25.561 1.25 1.249a1.25 1.25 0 0 1-2.498.056l-2.597-.547-.8 3.747c1.824.07 3.48.632 4.674 1.488.308-.309.73-.491 1.207-.491.968 0 1.754.786 1.754 1.754 0 .716-.435 1.333-1.01 1.614a3.111 3.111 0 0 1 .042.52c0 2.694-3.13 4.87-7.004 4.87-3.874 0-7.004-2.176-7.004-4.87 0-.183.015-.366.043-.534A1.748 1.748 0 0 1 4.028 12c0-.968.786-1.754 1.754-1.754.463 0 .898.196 1.207.49 1.207-.883 2.878-1.43 4.744-1.487l.885-4.182a.342.342 0 0 1 .14-.197.35.35 0 0 1 .238-.042l2.906.617a1.214 1.214 0 0 1 1.108-.701zM9.25 12C8.561 12 8 12.562 8 13.25c0 .687.561 1.248 1.25 1.248.687 0 1.248-.561 1.248-1.249 0-.688-.561-1.249-1.249-1.249zm5.5 0c-.687 0-1.248.561-1.248 1.25 0 .687.561 1.248 1.249 1.248.688 0 1.249-.561 1.249-1.249 0-.687-.562-1.249-1.25-1.249zm-5.466 3.99a.327.327 0 0 0-.231.094.33.33 0 0 0 0 .463c.842.842 2.484.913 2.961.913.477 0 2.105-.056 2.961-.913a.361.361 0 0 0 .029-.463.33.33 0 0 0-.464 0c-.547.533-1.684.73-2.512.73-.828 0-1.979-.196-2.512-.73a.326.326 0 0 0-.232-.095z"/>
+                                    </svg>
+                                </button>
+                                <button @click="share('telegram')" 
+                                        class="share-button flex-shrink-0 w-12 h-12 bg-[#0088cc] rounded-full flex items-center justify-center">
+                                    <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.14.18-.357.295-.6.295-.002 0-.003 0-.005 0l.213-3.054 5.56-5.022c.24-.213-.054-.334-.373-.121l-6.869 4.326-2.96-.924c-.64-.203-.658-.64.135-.954l11.566-4.458c.538-.196 1.006.128.832.941z"/>
+                                    </svg>
+                                </button>
+                            </div>
+
+                            <!-- Right Arrow -->
+                            <button @click="scrollRight"
+                                    class="nav-arrow absolute right-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 flex items-center justify-center bg-[#282828] rounded-full shadow-lg">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Title input field -->
+                    <div class="mb-4">
+                        <input type="text" 
+                            x-model="title" 
+                            placeholder="Enter post title"
+                            class="w-full glass-input text-white text-sm px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3ea6ff]"
+                        >
+                    </div>
+
+                     <!-- Description textarea field -->
+                    <div class="mb-4">
+                        <textarea 
+                            x-model="description" 
+                            placeholder="Enter post description"
+                            class="w-full glass-input text-white text-sm px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3ea6ff] resize-none"
+                            rows="3"
+                        ></textarea>
+                    </div>
+
+                    <!-- URL Copy field -->
+                    <div class="relative">
+                        <div class="flex items-center glass-input rounded-lg overflow-hidden">
+                            <input type="text" 
+                                x-model="url" 
+                                class="flex-1 bg-transparent text-sm px-4 py-3 focus:outline-none text-[#aaa]"
+                                readonly>
+                            <button @click="copyToClipboard"
+                                    class="px-6 py-3 bg-[#3ea6ff] text-[#0f0f0f] text-sm font-medium hover:bg-opacity-90 transition-colors"
+                                    :class="{ 'bg-green-500': copySuccess }">
+                                <span x-text="copySuccess ? 'Copied!' : 'Copy'"></span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
     <script src="{{ url_for('static', filename='js/emoji.js') }}"></script>
     <script>
@@ -434,172 +622,126 @@
             return {
                 animeId: '{{ anime_id }}',
                 currentEpisode: {{ ep_number }},
-        animeInfo: { },
-        allEpisodes: [],
-            episodeLinks: [],
+                animeInfo: { },
+                allEpisodes: [],
+                episodeLinks: [],
                 comments: [],
-                    currentServer: null,
-                        currentVideoLink: '',
-                            isLoading: false,
-                                isVideoLoading: false,
-                                    searchInput: '',
-                                        newComment: '',
-                                            isSpoiler: false,
-                                                showEmojiPicker: false,
+                currentServer: null,
+                currentVideoLink: '',
+                isLoading: false,
+                isVideoLoading: false,
+                searchInput: '',
+                newComment: '',
+                isSpoiler: false,
+                showEmojiPicker: false,
+                total_comments: 0,
+                isShareOpen: false,
+                url: window.location.href+'?ref={{ userInfo.userId | safe }}',
+                title: '{{ animeInfo.english | safe }}',
+                description: 'Dude Check It Out They Added Episode {{ animeInfo.ep | safe }}',
+                copySuccess: false,
+                
 
-                                                    init() {
-            this.initEmojiPicker();
-        },
+                init() {
+                    this.initEmojiPicker();
+                },
 
-        initEmojiPicker() {
-            const picker = new EmojiMart.Picker({
-                onEmojiSelect: (emoji) => {
-                    this.newComment += emoji.native;
-                    this.showEmojiPicker = false;
-                }
-            });
-            document.getElementById('emoji-picker').appendChild(picker);
-        },
-
-        toggleEmojiPicker() {
-            this.showEmojiPicker = !this.showEmojiPicker;
-        },
-
-        toggleReplyEmojiPicker(commentId) {
-            const comment = this.comments.find(c => c.id === commentId);
-            if (comment) {
-                comment.showReplyEmojiPicker = !comment.showReplyEmojiPicker;
-                if (comment.showReplyEmojiPicker) {
-                    this.$nextTick(() => {
-                        const replyPicker = new EmojiMart.Picker({
-                            onEmojiSelect: (emoji) => {
-                                comment.replyContent += emoji.native;
-                                comment.showReplyEmojiPicker = false;
-                            }
-                        });
-                        document.getElementById(`emoji-picker-reply-${commentId}`).appendChild(replyPicker);
-                    });
-                }
-            }
-        },
-        
-                async fetchInitialData() {
-            try {
-                await this.fetchEpisodeData(this.currentEpisode);
-            } catch (error) {
-                console.error('Initial data fetch failed:', error);
-            }
-        },
-        
-                async fetchEpisodeData(episodeNumber) {
-            this.isLoading = true;
-
-            try {
-                history.pushState(null, '', `/watch/${this.animeId}/${episodeNumber}`);
-
-                const response = await fetch(`/watch-api/${this.animeId}/${episodeNumber}`);
-                const data = await response.json();
-
-                this.animeInfo = data.anime_info || {};
-                this.allEpisodes = (data.all_episodes || []).sort((a, b) => a.number - b.number);
-                this.episodeLinks = data.episode_links || [];
-                this.comments = data.episode_comments || [];
-                this.currentEpisode = episodeNumber;
-                document.getElementById('epn').innerText = episodeNumber
-
-                if (this.episodeLinks.length) {
-                    this.selectServer(this.episodeLinks[0]);
-                } else {
-                    this.currentVideoLink = '';
-                }
-            } catch (error) {
-                console.error('Error fetching episode data:', error);
-                this.animeInfo = {};
-                this.allEpisodes = [];
-                this.episodeLinks = [];
-                this.currentVideoLink = '';
-            } finally {
-                this.isLoading = false;
-            }
-        },
-
-        selectServer(server) {
-            this.isVideoLoading = true;
-            this.currentServer = server;
-            this.currentVideoLink = server.dataLink;
-
-            const iframe = this.$refs.videoPlayer;
-            if (iframe) {
-                iframe.onload = () => {
-                    this.isVideoLoading = false;
-                };
-
-                setTimeout(() => {
-                    this.isVideoLoading = false;
-                }, 5000);
-            }
-        },
-        
-                async selectEpisode(episodeNumber) {
-            if (this.currentEpisode !== episodeNumber) {
-                await this.fetchEpisodeData(episodeNumber);
-            }
-        },
-
-        playEpisode() {
-            // Scroll to video player if it exists
-            const videoPlayer = this.$refs.videoPlayer;
-            if (videoPlayer) {
-                videoPlayer.scrollIntoView({ behavior: 'smooth' });
-            }
-        },
-
-        searchEpisodes() {
-            const searchTerm = this.searchInput.toLowerCase();
-            return this.allEpisodes.filter(episode =>
-                episode.number.toString().includes(searchTerm) ||
-                (episode.title && episode.title.toLowerCase().includes(searchTerm))
-            );
-        },
-        
-                get filteredEpisodes() {
-            if (!this.searchInput) return this.allEpisodes;
-            return this.searchEpisodes();
-        },
-        postComment() {
-            if (this.newComment.trim() !== '') {
-                const newComment = {
-                    id: this.comments.length + 1,
-                    author: 'User' + Math.floor(Math.random() * 1000),
-                    time: 'Just now',
-                    content: this.newComment,
-                    ep: this.currentEpisode,
-                    anime: this.animeId,
-                    showReplyForm: false,
-                    showReplies: false,
-                    replyContent: '',
-                    replies: []
-                };
-
-                // Send the new comment as JSON to the server
-                fetch('/anime/comment/', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(newComment)
-                })
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error(`HTTP error! status: ${response.status}`);
+                initEmojiPicker() {
+                    const picker = new EmojiMart.Picker({
+                        onEmojiSelect: (emoji) => {
+                            this.newComment += emoji.native;
+                            this.showEmojiPicker = false;
                         }
-                        return response.json();
-                    })
-                    .then(data => {
-                        console.log('Server response:', data.data.comment);
-                        const newCommentl = {
-                            id: data.data.commentId,
-                            author: data.data.username,
+                    });
+                    document.getElementById('emoji-picker').appendChild(picker);
+                },
+
+                toggleEmojiPicker() {
+                    this.showEmojiPicker = !this.showEmojiPicker;
+                },
+
+                async fetchInitialData() {
+                    try {
+                        await this.fetchEpisodeData(this.currentEpisode);
+                    } catch (error) {
+                        console.error('Initial data fetch failed:', error);
+                    }
+                },
+                
+                async fetchEpisodeData(episodeNumber) {
+                    this.isLoading = true;
+
+                    try {
+                        history.pushState(null, '', `/watch/${this.animeId}/${episodeNumber}`);
+
+                        const response = await fetch(`/watch-api/${this.animeId}/${episodeNumber}`);
+                        const data = await response.json();
+
+                        this.animeInfo = data.anime_info || {};
+                        this.allEpisodes = (data.all_episodes || []).sort((a, b) => a.number - b.number);
+                        this.episodeLinks = data.episode_links || [];
+                        this.comments = data.episode_comments || [];
+                        this.currentEpisode = episodeNumber;
+                        this.total_comments = data.total_comments;
+                        document.getElementById('epn').innerText = episodeNumber;
+
+                        if (this.episodeLinks.length) {
+                            this.selectServer(this.episodeLinks[0]);
+                        } else {
+                            this.currentVideoLink = '';
+                        }
+                    } catch (error) {
+                        console.error('Error fetching episode data:', error);
+                        this.animeInfo = {};
+                        this.allEpisodes = [];
+                        this.episodeLinks = [];
+                        this.currentVideoLink = '';
+                    } finally {
+                        this.isLoading = false;
+                    }
+                },
+
+                selectServer(server) {
+                    this.isVideoLoading = true;
+                    this.currentServer = server;
+                    this.currentVideoLink = server.dataLink;
+
+                    const iframe = this.$refs.videoPlayer;
+                    if (iframe) {
+                        iframe.onload = () => {
+                            this.isVideoLoading = false;
+                        };
+
+                        setTimeout(() => {
+                            this.isVideoLoading = false;
+                        }, 5000);
+                    }
+                },
+                
+                async selectEpisode(episodeNumber) {
+                    if (this.currentEpisode !== episodeNumber) {
+                        await this.fetchEpisodeData(episodeNumber);
+                    }
+                },
+
+                searchEpisodes() {
+                    const searchTerm = this.searchInput.toLowerCase();
+                    return this.allEpisodes.filter(episode =>
+                        episode.number.toString().includes(searchTerm) ||
+                        (episode.title && episode.title.toLowerCase().includes(searchTerm))
+                    );
+                },
+                
+                get filteredEpisodes() {
+                    if (!this.searchInput) return this.allEpisodes;
+                    return this.searchEpisodes();
+                },
+
+                postComment() {
+                    if (this.newComment.trim() !== '') {
+                        const newComment = {
+                            id: this.comments.length + 1,
+                            author: 'User' + Math.floor(Math.random() * 1000),
                             time: 'Just now',
                             content: this.newComment,
                             ep: this.currentEpisode,
@@ -609,91 +751,164 @@
                             replyContent: '',
                             replies: []
                         };
-                        // Add the comment to the UI only after successful server response
-                        this.comments.unshift(newCommentl);
-                        this.newComment = '';
-                        this.isSpoiler = false;
 
-                        // Animate new comment
-                        anime({
-                            targets: this.$el.querySelector('.max-h-[400px] > div:first-child'),
-                            translateY: [20, 0],
-                            opacity: [0, 1],
-                            duration: 600,
-                            easing: 'easeOutExpo'
-                        });
-                    })
-                    .catch(error => {
-                        console.error('Error posting comment:', error);
-                    });
-            }
-        },
-
-        toggleReply(commentId) {
-            const comment = this.comments.find(c => c.id === commentId);
-            if (comment) {
-                comment.showReplyForm = !comment.showReplyForm;
-            }
-        },
-        toggleReplies(commentId) {
-            const comment = this.comments.find(c => c.id === commentId);
-            if (comment) {
-                comment.showReplies = !comment.showReplies;
-            }
-        },
-                async postReply(commentId) {
-            const comment = this.comments.find(c => c.id === commentId);
-            if (comment && comment.replyContent.trim() !== '') {
-                try {
-                    // Send the reply data to the server
-                    const response = await fetch('/anime/comments/reply', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            commentId: commentId,
-                            content: comment.replyContent
+                        fetch('/anime/comment/', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(newComment)
                         })
-                    });
+                            .then(response => {
+                                if (!response.ok) {
+                                    throw new Error(`HTTP error! status: ${response.status}`);
+                                }
+                                return response.json();
+                            })
+                            .then(data => {
+                                console.log('Server response:', data.data.comment);
+                                const newCommentl = {
+                                    id: data.data.commentId,
+                                    author: data.data.username,
+                                    time: 'Just now',
+                                    content: this.newComment,
+                                    ep: this.currentEpisode,
+                                    anime: this.animeId,
+                                    showReplyForm: false,
+                                    showReplies: false,
+                                    replyContent: '',
+                                    replies: []
+                                };
+                                this.comments.unshift(newCommentl);
+                                this.newComment = '';
+                                this.isSpoiler = false;
+                                this.total_comments++;
 
-                    if (!response.ok) {
-                        throw new Error('Failed to send the reply.');
+                                anime({
+                                    targets: this.$el.querySelector('.max-h-[400px] > div:first-child'),
+                                    translateY: [20, 0],
+                                    opacity: [0, 1],
+                                    duration: 600,
+                                    easing: 'easeOutExpo'
+                                });
+                            })
+                            .catch(error => {
+                                console.error('Error posting comment:', error);
+                            });
                     }
+                },
 
-                    const reply = await response.json(); // Assuming the server returns the new reply data
+                toggleReply(commentId) {
+                    const comment = this.comments.find(c => c.id === commentId);
+                    if (comment) {
+                        comment.showReplyForm = !comment.showReplyForm;
+                    }
+                },
 
-                    // Add the reply to the comment's replies
-                    comment.replies.push({
-                        id: reply.id || comment.replies.length + 1,
-                        author: reply.author || 'User' + Math.floor(Math.random() * 1000),
-                        time: reply.time || 'Just now',
-                        content: reply.content || comment.replyContent
+                toggleReplies(commentId) {
+                    const comment = this.comments.find(c => c.id === commentId);
+                    if (comment) {
+                        comment.showReplies = !comment.showReplies;
+                    }
+                },
+
+                async postReply(commentId) {
+                    const comment = this.comments.find(c => c.id === commentId);
+                    if (comment && comment.replyContent.trim() !== '') {
+                        try {
+                            const response = await fetch('/anime/comments/reply', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    commentId: commentId,
+                                    content: comment.replyContent
+                                })
+                            });
+
+                            if (!response.ok) {
+                                throw new Error('Failed to send the reply.');
+                            }
+
+                            const reply = await response.json();
+
+                            comment.replies.push({
+                                id: reply.id || comment.replies.length + 1,
+                                author: reply.author || 'User' + Math.floor(Math.random() * 1000),
+                                time: reply.time || 'Just now',
+                                content: reply.content || comment.replyContent
+                            });
+
+                            comment.replyContent = '';
+                            comment.showReplyForm = false;
+                            comment.showReplies = true;
+
+                            this.$nextTick(() => {
+                                anime({
+                                    targets: comment.$el.querySelector('.ml-8:last-child'),
+                                    translateY: [20, 0],
+                                    opacity: [0, 1],
+                                    duration: 600,
+                                    easing: 'easeOutExpo'
+                                });
+                            });
+                        } catch (error) {
+                            console.error('Error posting reply:', error);
+                            alert('Failed to post reply. Please try again later.');
+                        }
+                    }
+                },
+
+                share(platform) {
+                    const encodedUrl = encodeURIComponent(this.url);
+                    const encodedTitle = encodeURIComponent(this.title);
+                    const encodedDescription = encodeURIComponent(this.description);
+                    
+                    const shareUrls = {
+                        facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}&quote=${encodedTitle}`,
+                        twitter: `https://twitter.com/intent/tweet?url=${encodedUrl}&text=${encodedTitle}`,
+                        whatsapp: `https://wa.me/?text=${encodedTitle}%0A${encodedDescription}%0A${encodedUrl}`,
+                        email: `mailto:?subject=${encodedTitle}&body=${encodedDescription}%0A%0A${encodedUrl}`,
+                        kakaotalk: `https://story.kakao.com/share?url=${encodedUrl}&title=${encodedTitle}`,
+                        reddit: `https://reddit.com/submit?url=${encodedUrl}&title=${encodedTitle}&text=${encodedDescription}`,
+                        telegram: `https://t.me/share/url?url=${encodedUrl}&text=${encodedTitle}%0A${encodedDescription}`
+                    };
+
+                    if (shareUrls[platform]) {
+                        window.open(shareUrls[platform], '_blank', 'width=600,height=600');
+                    }
+                },
+
+                copyToClipboard() {
+                    const textToCopy = `${this.title}\n${this.description}\n${this.url}`;
+                    navigator.clipboard.writeText(textToCopy).then(() => {
+                        this.copySuccess = true;
+                        setTimeout(() => {
+                            this.copySuccess = false;
+                        }, 2000);
+                    }).catch(err => {
+                        console.error('Failed to copy: ', err);
                     });
+                },
 
-                    // Clear reply input and adjust UI state
-                    comment.replyContent = '';
-                    comment.showReplyForm = false;
-                    comment.showReplies = true;
-
-                    // Animate the new reply
-                    this.$nextTick(() => {
-                        anime({
-                            targets: comment.$el.querySelector('.ml-8:last-child'),
-                            translateY: [20, 0],
-                            opacity: [0, 1],
-                            duration: 600,
-                            easing: 'easeOutExpo'
-                        });
+                scrollLeft() {
+                    this.$refs.shareButtons.scrollBy({
+                        left: -100,
+                        behavior: 'smooth'
                     });
-                } catch (error) {
-                    console.error('Error posting reply:', error);
-                    alert('Failed to post reply. Please try again later.');
+                },
+
+                scrollRight() {
+                    this.$refs.shareButtons.scrollBy({
+                        left: 100,
+                        behavior: 'smooth'
+                    });
                 }
-            }
+            };
         }
-            }
-        }
+
+
         function counter() {
             return {
                 count: 0,

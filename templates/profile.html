@@ -155,24 +155,53 @@
                     </div>
                     <div x-show="!loadingContinueWatching && continueWatching.data" class="space-y-8">
                         <h2 class="text-3xl font-bold mb-8 text-[#DC143C]">Continue Watching</h2>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                             <template x-for="item in continueWatching.data">
-                                <div
-                                    class="bg-white bg-opacity-10 rounded-lg p-3 transition-all duration-300 hover:bg-opacity-20">
-                                    <div class="aspect-video bg-gray-900 rounded-lg mb-3 overflow-hidden">
-                                        <div
-                                            class="w-full h-full bg-gradient-to-br from-[#DC143C] to-pink-500 opacity-30">
+                                <a x-bind:href="item.link" class="swiper-slide">
+                                    <div class="relative group cursor-pointer" @mouseenter="item.hover = true"
+                                        @mouseleave="item.hover = false">
+                                        <div class="relative overflow-hidden rounded-md">
+                                            <img :src="item.thumbnail"
+                                                class="w-full aspect-video object-cover rounded-md transform transition-transform duration-300 group-hover:scale-105"
+                                                :alt="item.title">
+    
+                                            <!-- Play Button -->
+                                            <div
+                                                class="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                                                <button class="bg-white p-2 rounded-full shadow-md hover:bg-gray-100">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-800"
+                                                        fill="currentColor" viewBox="0 0 24 24">
+                                                        <path d="M8 5v14l11-7z" />
+                                                    </svg>
+                                                </button>
+                                            </div>
+    
+                                            <!-- Delete Icon -->
+                                            <button
+                                                class="absolute top-2 right-2 bg-black/70 hover:text-white p-2 rounded-md opacity-0 transition-opacity duration-300 group-hover:opacity-100 hover:bg-black">
+                                                <svg xmlns="http://www.w3.org/2000/svg"
+                                                    class="h-4 w-4 text-black hover:text-white" fill="none"
+                                                    viewBox="0 0 24 24" stroke="white" stroke-width="2">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        d="M6 18L18 6M6 6l12 12" />
+                                                </svg>
+                                            </button>
+    
+                                            <div class="absolute top-2 left-2 bg-black/70 px-2 py-1 rounded text-sm">
+                                                EP <span x-text="anime.episode"></span>
+                                            </div>
+                                            <div class="absolute bottom-0 left-0 right-0 h-1 bg-gray-600">
+                                                <div class="h-full bg-red-600"
+                                                    :style="`width: ${(parseInt(item.progress) / parseInt(item.duration)) * 100}%`">
+                                                </div>
+                                            </div>
+                                            <div class="absolute bottom-2 right-2 bg-black/70 px-2 py-1 rounded text-sm">
+                                                <span x-text="item.progress"></span>/<span x-text="item.duration"></span>
+                                            </div>
                                         </div>
+                                        <h3 class="mt-2 text-sm font-medium truncate" x-text="item.title"></h3>
                                     </div>
-                                    <h3 x-text="item.title" class="font-bold text-base truncate"></h3>
-                                    <p class="text-xs text-gray-400">
-                                        Episode <span x-text="item.current"></span>/<span x-text="item.total"></span>
-                                    </p>
-                                    <button
-                                        class="mt-2 bg-[#DC143C] bg-opacity-20 hover:bg-opacity-30 text-[#DC143C] hover:text-white px-3 py-1.5 rounded-full transition-all duration-300 text-sm">
-                                        Continue
-                                    </button>
-                                </div>
+                                </a>
                             </template>
                         </div>
                         <div class="flex justify-center mt-8">

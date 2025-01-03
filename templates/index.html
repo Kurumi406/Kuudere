@@ -2,109 +2,243 @@
 {% block content %}
 <style>
     .swiper-pagination {
-  position: absolute;
-  bottom: 10px;
-  text-align: center;
-}
+        position: absolute;
+        bottom: 10px;
+        text-align: center;
+    }
 
-.swiper-pagination-bullet {
-  background-color: #ffffffea;
-  width: 6px;
-  height: 6px;
-  border-radius: 100%;
-}
+    .swiper-pagination-bullet {
+        background-color: #ffffffea;
+        width: 6px;
+        height: 6px;
+        border-radius: 100%;
+    }
 
-.swiper-pagination-bullet-active {
-  background-color: #ecf2f7;
-}
+    .swiper-pagination-bullet-active {
+        background-color: #ecf2f7;
+    }
 
+    .swiper-button-next-notification, .swiper-button-prev-notification {
+                width: 40px;
+                height: 40px;
+                background-color: rgba(43, 29, 29, 0.781);
+                border-radius: 50%;
+                color: #a5a2a2;
+                transition: all 0.3s ease;
+            }
+    
+            .swiper-button-next-notification:hover, .swiper-button-prev-notification:hover {
+                background-color: rgba(0, 0, 0, 0.8);
+                color: #FFFFFF;
+                box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+            }
+    
+            .swiper-button-next-notification:after, .swiper-button-prev-notification:after {
+                font-size: 1.2rem;
+                font-weight: bold;
+            }
+
+    @keyframes dots {
+
+        0%,
+        20% {
+            content: '.';
+        }
+
+        40% {
+            content: '..';
+        }
+
+        60%,
+        100% {
+            content: '...';
+        }
+    }
+
+    .loading-dots::after {
+        content: '';
+        animation: dots 1.5s steps(5, end) infinite;
+    }
 </style>
 <div class="relative w-full overflow-hidden bg-black">
     <div class="swiper-container">
-      <div class="swiper-wrapper">
-        {% for top in topAiring %}
-        <div class="swiper-slide">
-          <div class="relative w-full h-[400px] md:h-[450px] lg:h-[500px] group">
-            <!-- Image -->
-            <img src="{{ top.banner }}" alt="{{ top.english }}"
-              class="absolute inset-0 w-full h-full object-cover object-center">
-            
-            <!-- Gradient Overlay -->
-            <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
-            
-            <!-- Content -->
-            <div class="absolute inset-0 flex flex-col justify-end p-6 lg:p-8">
-              <!-- Metadata Badges -->
-              <div class="flex items-center gap-4 mb-2">
-                <span class="px-2 py-0.5 bg-white/20 rounded text-white text-sm">TV</span>
-                <div class="flex items-center gap-4 text-white/80 text-sm">
-                  <span class="flex items-center gap-1">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4v16M17 4v16M3 8h18M3 16h18"></path>
-                    </svg>
-                    {{ top.episodes }}
-                  </span>
-                  <span class="flex items-center gap-1">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path>
-                    </svg>
-                    {{ top.malScore }}
-                  </span>
-                  <span class="flex items-center gap-1">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                    {{ top.duration }} mins
-                  </span>
+        <div class="swiper-wrapper">
+            {% for top in topAiring %}
+            <div class="swiper-slide">
+                <div class="relative w-full h-[400px] md:h-[450px] lg:h-[500px] group">
+                    <!-- Image -->
+                    <img src="{{ top.banner }}" alt="{{ top.english }}"
+                        class="absolute inset-0 w-full h-full object-cover object-center">
+
+                    <!-- Gradient Overlay -->
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
+
+                    <!-- Content -->
+                    <div class="absolute inset-0 flex flex-col justify-end p-6 lg:p-8">
+                        <!-- Metadata Badges -->
+                        <div class="flex items-center gap-4 mb-2">
+                            <span class="px-2 py-0.5 bg-white/20 rounded text-white text-sm">TV</span>
+                            <div class="flex items-center gap-4 text-white/80 text-sm">
+                                <span class="flex items-center gap-1">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M7 4v16M17 4v16M3 8h18M3 16h18"></path>
+                                    </svg>
+                                    {{ top.episodes }}
+                                </span>
+                                <span class="flex items-center gap-1">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z">
+                                        </path>
+                                    </svg>
+                                    {{ top.malScore }}
+                                </span>
+                                <span class="flex items-center gap-1">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    {{ top.duration }} mins
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Title and Description -->
+                        <h2 class="text-3xl lg:text-4xl font-bold text-white mb-2 line-clamp-2">{{ top.english }}</h2>
+                        <p class="text-gray-400 text-base max-w-2xl mb-4 line-clamp-3">{{ top.description | safe }}</p>
+
+                        <!-- Buttons -->
+                        <div class="flex items-center gap-4">
+                            <a href="/anime/{{ top.id }}"
+                                class="px-5 py-1.5 bg-white/20 hover:bg-white/30 rounded-full text-white font-medium transition-colors flex items-center gap-2">
+                                <i data-lucide="info" class="w-5 h-5"></i>
+                                DETAILS
+                            </a>
+                            <a href="/watch/{{ top.id }}/1"
+                                class="px-5 py-1.5 bg-primary-red hover:bg-primary-red/90 rounded-full text-white font-medium transition-colors flex items-center gap-2">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z">
+                                    </path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                WATCH NOW
+                            </a>
+                        </div>
+                    </div>
                 </div>
-              </div>
-  
-              <!-- Title and Description -->
-              <h2 class="text-3xl lg:text-4xl font-bold text-white mb-2">{{ top.english }}</h2>
-              <p class="text-gray-400 text-base max-w-2xl mb-4 line-clamp-3">{{ top.description }}</p>
-  
-              <!-- Buttons -->
-              <div class="flex items-center gap-4">
-                <a href="/anime/{{ top.id }}" class="px-5 py-1.5 bg-white/20 hover:bg-white/30 rounded-full text-white font-medium transition-colors flex items-center gap-2">
-                    <i data-lucide="info" class="w-5 h-5"></i>
-                  DETAILS
-                </a>
-                <a href="/watch/{{ top.id }}/1"  class="px-5 py-1.5 bg-primary-red hover:bg-primary-red/90 rounded-full text-white font-medium transition-colors flex items-center gap-2">
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                  </svg>
-                  WATCH NOW
-                </a>
-              </div>
             </div>
-          </div>
+            {% endfor %}
         </div>
-        {% endfor %}
-      </div>
     </div>
-  
+
     <div class="absolute top-4 right-4 flex gap-2 z-10">
         <button class="p-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded text-white transition-colors prev">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-          </svg>
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+            </svg>
         </button>
         <button class="p-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded text-white transition-colors next">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-          </svg>
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+            </svg>
         </button>
-      </div>
-  
+    </div>
+
     <!-- Pagination Dots -->
     <div class="swiper-pagination hidden md:inline-block"></div>
-  </div>
+</div>
 
 <main class="px-4 sm:px-6 py-8 flex-col-2 ">
     <div class="grid grid-cols-10 space-y-8 xl:flex-row xl:space-x-8 xl:space-y-0">
         <div class="flex-grow col-span-10 xl:col-span-8">
-            <section class="mt-12">
+            {% if userInfo and ctotal %}
+            <section class="mt-5 mb-16" x-data="{ 
+                    animes: [],
+                    loading: true,
+                    async fetchAnimes() {
+                        this.loading = true;
+                        try {
+                            const response = await fetch('/api/continue-watching-home');
+                            if (!response.ok) {
+                                throw new Error('Network response was not ok');
+                            }
+                            this.animes = await response.json();
+                        } catch (error) {
+                            console.error('Error fetching animes:', error);
+                            this.animes = [];
+                        } finally {
+                            this.loading = false;
+                        }
+                    }
+                }" x-init="fetchAnimes">
+                <div class="mb-6 flex items-center justify-between">
+                    <h2 class="text-xl sm:text-2xl font-semibold">Continue Watching</h2>
+                    <a href="/user/continue-watching" class="text-sm text-gray-400 hover:text-white">View more →</a>
+                </div>
+
+                <div x-show="loading" class="flex justify-center items-center h-64">
+                    <div class="text-2xl font-bold loading-dots" role="status">
+                        Loading<span class="sr-only">Loading...</span>
+                    </div>
+                </div>
+
+                <div x-show="!loading" class="swiper anime_watchlist_swiper_7391">
+                    <div class="swiper-wrapper">
+                        <template x-for="anime in animes" :key="anime.title">
+                            <a x-bind:href="anime.link" class="swiper-slide">
+                                <div class="relative group cursor-pointer" @mouseenter="anime.hover = true"
+                                    @mouseleave="anime.hover = false">
+                                    <div class="relative overflow-hidden rounded-md">
+                                        <img :src="anime.thumbnail"
+                                            class="w-full aspect-video object-cover rounded-md transform transition-transform duration-300 group-hover:scale-105"
+                                            :alt="anime.title">
+
+                                        <!-- Play Button -->
+                                        <div
+                                            class="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                                            <button class="bg-white p-2 rounded-full shadow-md hover:bg-gray-100">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-800"
+                                                    fill="currentColor" viewBox="0 0 24 24">
+                                                    <path d="M8 5v14l11-7z" />
+                                                </svg>
+                                            </button>
+                                        </div>
+
+                                        <!-- Delete Icon -->
+                                        <button
+                                            class="absolute top-2 right-2 bg-black/70 hover:text-white p-2 rounded-md opacity-0 transition-opacity duration-300 group-hover:opacity-100 hover:bg-black">
+                                            <svg xmlns="http://www.w3.org/2000/svg"
+                                                class="h-4 w-4 text-black hover:text-white" fill="none"
+                                                viewBox="0 0 24 24" stroke="white" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round"
+                                                    d="M6 18L18 6M6 6l12 12" />
+                                            </svg>
+                                        </button>
+
+                                        <div class="absolute top-2 left-2 bg-black/70 px-2 py-1 rounded text-sm">
+                                            EP <span x-text="anime.episode"></span>
+                                        </div>
+                                        <div class="absolute bottom-0 left-0 right-0 h-1 bg-gray-600">
+                                            <div class="h-full bg-red-600"
+                                                :style="`width: ${(parseInt(anime.progress) / parseInt(anime.duration)) * 100}%`">
+                                            </div>
+                                        </div>
+                                        <div class="absolute bottom-2 right-2 bg-black/70 px-2 py-1 rounded text-sm">
+                                            <span x-text="anime.progress"></span>/<span x-text="anime.duration"></span>
+                                        </div>
+                                    </div>
+                                    <h3 class="mt-2 text-sm font-medium truncate" x-text="anime.title"></h3>
+                                </div>
+                            </a>
+                        </template>
+                    </div>
+                </div>
+            </section>
+            {% endif %}
+            <section class="mt-5">
                 <div class="mb-6 flex items-center justify-between">
                     <h2 class="text-xl sm:text-2xl font-semibold">Latest Episodes</h2>
                     <a href="#" class="text-sm text-gray-400 hover:text-white">View more →</a>
@@ -115,12 +249,17 @@
                         @mouseenter="$store.animeData.hoveredCard = {{ loop.index0 }}"
                         @mouseleave="$store.animeData.hoveredCard = null"
                         @click="window.location.href='/anime/{{ anime.id }}'">
-                        <div class="relative h-full w-full overflow-hidden rounded-md transition-transform duration-300 ease-in-out hover:scale-105">
+                        <div
+                            class="relative h-full w-full overflow-hidden rounded-md transition-transform duration-300 ease-in-out hover:scale-105">
                             <img src="{{ anime.cover }}" alt="{{ anime.english }}" class="w-full h-full object-cover">
-                            <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent"></div>
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent">
+                            </div>
                             <div class="absolute left-2 top-2 flex flex-wrap gap-1">
-                                <span class="bg-black/50 backdrop-blur-sm text-white text-[10px] uppercase px-2 py-1 rounded-full">{{ anime.type }}</span>
-                                <span class="bg-black/50 backdrop-blur-sm text-white text-[10px] uppercase px-2 py-1 rounded-full flex items-center">
+                                <span
+                                    class="bg-black/50 backdrop-blur-sm text-white text-[10px] uppercase px-2 py-1 rounded-full">{{
+                                    anime.type }}</span>
+                                <span
+                                    class="bg-black/50 backdrop-blur-sm text-white text-[10px] uppercase px-2 py-1 rounded-full flex items-center">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1 text-yellow-400"
                                         viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                                         stroke-linecap="round" stroke-linejoin="round">
@@ -135,7 +274,8 @@
                                     </svg>
                                     {{ anime.epCount }}
                                 </span>
-                                <span class="bg-black/50 backdrop-blur-sm text-white text-[10px] uppercase px-2 py-1 rounded-full flex items-center">
+                                <span
+                                    class="bg-black/50 backdrop-blur-sm text-white text-[10px] uppercase px-2 py-1 rounded-full flex items-center">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1 text-blue-400"
                                         viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                                         stroke-linecap="round" stroke-linejoin="round">
@@ -218,12 +358,17 @@
                         @mouseenter="$store.animeData.hoveredCard = {{ loop.index0 }}"
                         @mouseleave="$store.animeData.hoveredCard = null"
                         @click="window.location.href='/anime/{{ anime.id }}'">
-                        <div class="relative h-full w-full overflow-hidden rounded-md transition-transform duration-300 ease-in-out hover:scale-105">
+                        <div
+                            class="relative h-full w-full overflow-hidden rounded-md transition-transform duration-300 ease-in-out hover:scale-105">
                             <img src="{{ anime.cover }}" alt="{{ anime.english }}" class="w-full h-full object-cover">
-                            <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent"></div>
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent">
+                            </div>
                             <div class="absolute left-2 top-2 flex flex-wrap gap-1">
-                                <span class="bg-black/50 backdrop-blur-sm text-white text-[10px] uppercase px-2 py-1 rounded-full">{{ anime.type }}</span>
-                                <span class="bg-black/50 backdrop-blur-sm text-white text-[10px] uppercase px-2 py-1 rounded-full flex items-center">
+                                <span
+                                    class="bg-black/50 backdrop-blur-sm text-white text-[10px] uppercase px-2 py-1 rounded-full">{{
+                                    anime.type }}</span>
+                                <span
+                                    class="bg-black/50 backdrop-blur-sm text-white text-[10px] uppercase px-2 py-1 rounded-full flex items-center">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1 text-yellow-400"
                                         viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                                         stroke-linecap="round" stroke-linejoin="round">
@@ -238,7 +383,8 @@
                                     </svg>
                                     {{ anime.epCount }}
                                 </span>
-                                <span class="bg-black/50 backdrop-blur-sm text-white text-[10px] uppercase px-2 py-1 rounded-full flex items-center">
+                                <span
+                                    class="bg-black/50 backdrop-blur-sm text-white text-[10px] uppercase px-2 py-1 rounded-full flex items-center">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1 text-blue-400"
                                         viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                                         stroke-linecap="round" stroke-linejoin="round">
@@ -318,7 +464,7 @@
                         <div class="loading-dot w-3 h-3 bg-theme-red rounded-full"></div>
                     </div>
                 </div>
-            
+
                 <!-- Schedule Content -->
                 <div x-show="!isLoading">
                     <div class="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between">
@@ -335,7 +481,8 @@
                                 class="p-2 rounded-full bg-gray-800 hover:bg-gray-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
                                     stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M15 19l-7-7 7-7" />
                                 </svg>
                             </button>
                         </div>
@@ -349,7 +496,8 @@
                                         class="flex-shrink-0 text-center py-2 px-4 rounded-lg text-sm font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 flex flex-col items-center justify-center w-16">
                                         <span x-text="new Date(date).toLocaleDateString('en-US', { weekday: 'short' })"
                                             class="block text-xs"></span>
-                                        <span x-text="new Date(date).getDate()" class="block text-lg font-bold mt-1"></span>
+                                        <span x-text="new Date(date).getDate()"
+                                            class="block text-lg font-bold mt-1"></span>
                                     </button>
                                 </template>
                             </div>
@@ -359,7 +507,8 @@
                                 class="p-2 rounded-full bg-gray-800 hover:bg-gray-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
                                     stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9 5l7 7-7 7" />
                                 </svg>
                             </button>
                         </div>
@@ -591,7 +740,7 @@
                     }
                 }" class="container mx-auto">
                     <h2 class="text-2xl font-bold text-white mb-6">Genres</h2>
-            
+
                     <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3" x-init="anime({
                             targets: '.genre-item',
                             scale: [0.5, 1],
@@ -600,17 +749,14 @@
                             easing: 'easeOutElastic(1, .8)'
                          })">
                         <template x-for="(genre, index) in showAll ? genres : genres.slice(0, 12)" :key="index">
-                            <button
-                                @click="navigateToGenre(genre.name)"
+                            <button @click="navigateToGenre(genre.name)"
                                 class="genre-item glass rounded-lg p-3 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-purple-500/20"
-                                :class="genre.color" 
-                                @mouseenter="anime({
+                                :class="genre.color" @mouseenter="anime({
                                     targets: $el,
                                     scale: 1.05,
                                     duration: 300,
                                     easing: 'easeOutElastic(1, .8)'
-                                })" 
-                                @mouseleave="anime({
+                                })" @mouseleave="anime({
                                     targets: $el,
                                     scale: 1,
                                     duration: 300,
@@ -620,18 +766,15 @@
                             </button>
                         </template>
                     </div>
-            
-                    <button x-show="genres.length > 12" 
-                        @click="showAll = !showAll"
+
+                    <button x-show="genres.length > 12" @click="showAll = !showAll"
                         class="mt-6 mx-auto block glass px-6 py-2 rounded-lg text-white text-sm transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/20"
-                        x-text="showAll ? 'Show Less' : 'Show More'" 
-                        @mouseenter="anime({
+                        x-text="showAll ? 'Show Less' : 'Show More'" @mouseenter="anime({
                             targets: $el,
                             scale: 1.05,
                             duration: 300,
                             easing: 'easeOutElastic(1, .8)'
-                        })" 
-                        @mouseleave="anime({
+                        })" @mouseleave="anime({
                             targets: $el,
                             scale: 1,
                             duration: 300,
@@ -639,7 +782,7 @@
                         })">
                     </button>
                 </div>
-            
+
                 <script>
                     document.addEventListener('DOMContentLoaded', () => {
                         anime({
@@ -775,7 +918,7 @@
         </div>
     </div>
 </main>
-
+{% include "Changelog.html" %}
 <div x-data="counter()" x-init="initializeSocket()" @join-room.window="joinRoom()"
     class="float-counter fixed bottom-8 right-8 rounded-full p-4 text-white flex items-center gap-2 z-50 cursor-pointer hover:scale-105 transition-transform duration-300"
     @mouseover="pulse()">
@@ -880,39 +1023,39 @@
         });
 
         Alpine.data('schedule', () => ({
-        selectedDate: '',
-        dates: [],
-        scheduleData: {},
-        isLoading: true,
-        async fetchData() {
-            try {
-                const response = await fetch('/api/schedule'); // Replace with your API URL
-                const data = await response.json();
-                this.dates = Object.keys(data);
-                this.scheduleData = data;
-                this.selectedDate = this.dates[0]; // Set the first date as selected by default
-            } catch (error) {
-                console.error('Error fetching schedule:', error);
-            } finally {
-                this.isLoading = false; // Hide the loader once data is fetched
+            selectedDate: '',
+            dates: [],
+            scheduleData: {},
+            isLoading: true,
+            async fetchData() {
+                try {
+                    const response = await fetch('/api/schedule'); // Replace with your API URL
+                    const data = await response.json();
+                    this.dates = Object.keys(data);
+                    this.scheduleData = data;
+                    this.selectedDate = this.dates[0]; // Set the first date as selected by default
+                } catch (error) {
+                    console.error('Error fetching schedule:', error);
+                } finally {
+                    this.isLoading = false; // Hide the loader once data is fetched
+                }
+            },
+            setSelectedDate(date) {
+                this.selectedDate = date;
+            },
+            scrollDates(direction) {
+                const scroller = this.$refs.dateScroller;
+                const scrollAmount = scroller.offsetWidth * 0.8;
+                if (direction === 'left') {
+                    scroller.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+                } else {
+                    scroller.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+                }
+            },
+            init() {
+                this.fetchData();
             }
-        },
-        setSelectedDate(date) {
-            this.selectedDate = date;
-        },
-        scrollDates(direction) {
-            const scroller = this.$refs.dateScroller;
-            const scrollAmount = scroller.offsetWidth * 0.8;
-            if (direction === 'left') {
-                scroller.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
-            } else {
-                scroller.scrollBy({ left: scrollAmount, behavior: 'smooth' });
-            }
-        },
-        init() {
-            this.fetchData();
-        }
-    }));
+        }));
     });
 
     // Swiper initialization
@@ -930,6 +1073,28 @@
                 el: ".swiper-pagination",
                 dynamicBullets: true,
             },
+        });
+        const swiper = new Swiper('.anime_watchlist_swiper_7391', {
+            slidesPerView: 2,
+            spaceBetween: 16,
+            navigation: {
+                nextEl: '.swiper-button-next',
+                prevEl: '.swiper-button-prev',
+            },
+            breakpoints: {
+                640: {
+                    slidesPerView: 2,
+                },
+                768: {
+                    slidesPerView: 3,
+                },
+                1024: {
+                    slidesPerView: 4,
+                },
+                1280: {
+                    slidesPerView: 4,
+                }
+            }
         });
     });
 

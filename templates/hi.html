@@ -361,6 +361,9 @@
 
     <script src="https://cdn.jsdelivr.net/npm/flowbite@2.5.1/dist/flowbite.min.js"></script>
     <script>
+        const currentsv = '{{ current }}';
+        const durationsv = '{{ duration }}';
+        const userInfo = '{{ userInfo | tojson | safe}}';
         const video = document.getElementById("video");
         const statusForNerds = document.getElementById("status-for-nerds");
         const videoInfo = document.getElementById("video-info");
@@ -385,6 +388,16 @@
         const audioTab = document.getElementById("audio-tab");
         const muteBtn = document.getElementById("mute");
         const volumeSlider = document.getElementById("volume");
+
+        if (currentsv != null && durationsv != null){
+            // Create an object for progress data
+            const progress = {
+                currentTime: currentsv,
+                duration: durationsv
+            };
+
+            sessionStorage.setItem(window.location.href, JSON.stringify(progress));
+        }
 
         let controlsTimeout;
         let mouseTimer;
@@ -873,13 +886,40 @@
 
 
         // Function to save progress
-        function saveProgress() {
+        async function saveProgress() {
             const currentTime = video.currentTime;
             const duration = video.duration;
+
+            // Create an object for progress data
             const progress = {
                 currentTime: currentTime,
                 duration: duration
             };
+
+            // Extract current page URL parameters
+            const urlParams = new URLSearchParams(window.location.search);
+            
+            // Add each parameter to the progress object
+            urlParams.forEach((value, key) => {
+                progress[key] = value;
+            });
+
+            // Now construct the request URL and send the progress data
+            if (userInfo != 'null') {
+                if (!video.paused) {
+                    const url = '/save/progress';
+
+                    const response = await fetch(url, {
+                        method: 'POST', // Changed to POST as you are sending data in the body
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(progress)
+                    });
+                }    
+            }
+
+            // Save progress to sessionStorage
             sessionStorage.setItem(window.location.href, JSON.stringify(progress));
         }
 

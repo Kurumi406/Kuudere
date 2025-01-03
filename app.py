@@ -12,6 +12,7 @@ from appwrite.services.users import Users
 from appwrite.services.teams import Teams
 from dateutil.relativedelta import relativedelta
 from appwrite.exception import AppwriteException
+from werkzeug.exceptions import HTTPException
 from nacl.public import PrivateKey, Box
 from flask_compress import Compress
 from flask_sitemap import Sitemap
@@ -90,7 +91,7 @@ def get_user_info(key=None,secret=None):
 
     if 'session_secret' in session:
         try:
-            print("Session after setting:", session)
+            
 
             client = get_client(session["session_secret"],None)
             account = Account(client)
@@ -453,7 +454,7 @@ def logout():
             'message': 'Logged Out successfully',
         })
     except Exception as e:
-        return jsonify({'success': False, 'message': e}),500    
+        return jsonify({'success': False, 'message': e}),500 
     
 @app.route('/user', methods=['POST'])
 def get_user():
@@ -487,6 +488,7 @@ def load_home():
     secret = request.args.get('secret')
     key = request.args.get('key')
     isKey = bool(secret)
+    ctotal = None
     if secret:
         isKey = True
         print("Key exists: ", secret)
@@ -497,7 +499,7 @@ def load_home():
 
     if 'session_secret' in session:
         try:
-            print("Session after setting:", session)
+            
 
             client = get_client(session["session_secret"],None)
             account = Account(client)
@@ -532,6 +534,21 @@ def load_home():
     try:
         client = get_client(None,secret)
         databases = Databases(client)
+
+        if userInfo:
+
+            search = databases.list_documents(
+                    database_id=os.getenv('DATABASE_ID'),
+                    collection_id=os.getenv('CONTINUE_WATCHING'),
+                    queries=[
+                        Query.equal("userId",acc.get("$id")),
+                        Query.order_desc('$updatedAt'),
+                        Query.select(['continueId']),
+                        Query.limit(1),
+                    ]
+                )
+            
+            ctotal = search['total']
         
         result = databases.list_documents(
             database_id = os.getenv('DATABASE_ID'),
@@ -549,16 +566,17 @@ def load_home():
             collection_id = os.getenv('Anime'),
             queries = [
                 Query.equal("public",True),
+                Query.equal("year",2025),
                 Query.select(["mainId", "english", "romaji", "native", "ageRating", "malScore", "averageScore", "duration", "genres", "season", "startDate", "status", "synonyms", "type", "year", "description","subbed","dubbed"]),
-                Query.equal("status","FINISHED"),
-                Query.order_desc("malScore"),
+                Query.equal("status","RELEASING"),
+                Query.order_desc("lastUpdated"),
                 Query.limit(12)
             ] # optional
         )
 
 
         topUpcoming = databases.list_documents(
-            database_id = os.getenv('TEST_DB'),
+            database_id = os.getenv('DATABASE_ID'),
             collection_id = os.getenv('Anime'),
             queries = [
                 Query.equal("public",True),
@@ -575,7 +593,8 @@ def load_home():
             queries = [
                 Query.select("animeId"),
                 Query.order_desc("aired"),
-                Query.limit(30)
+                Query.order_desc("$updatedAt"),
+                Query.limit(20)
             ] # optional
         )
 
@@ -699,7 +718,7 @@ def load_home():
             )
 
             if not img.get("banner"):
-                continue
+                new_url = img.get('cover').replace("medium", "large")
 
             filtered_documents_top.append({
                 "id": air.get("mainId"),
@@ -712,7 +731,7 @@ def load_home():
                 "duration": air.get("duration"),
                 "genres": air.get("genres"),
                 "cover":img.get("cover"),
-                "banner": img.get("banner"),
+                "banner": img.get("banner") or new_url,
                 "season": air.get("season"),
                 "startDate": air.get("startDate"),
                 "status": air.get("status"),
@@ -729,7 +748,7 @@ def load_home():
         for upcoming in documents_top_upcoming:
 
             img = databases.get_document(
-                database_id = os.getenv('TEST_DB'),
+                database_id = os.getenv('DATABASE_ID'),
                 collection_id = os.getenv('ANIME_IMGS'),
                 document_id=upcoming.get("mainId"),
                 queries=[
@@ -775,7 +794,7 @@ def load_home():
         if isKey:
             return response
         else:
-            return render_template('index.html', last_updated=filtered_documents,latest_eps = filtered_documents_eps, topAiring = filtered_documents_top,topUpcoming=filtered_documents_top_upcoming,userInfo=userInfo)
+            return render_template('index.html', last_updated=filtered_documents,latest_eps = filtered_documents_eps, topAiring = filtered_documents_top,topUpcoming=filtered_documents_top_upcoming,userInfo=userInfo,ctotal=ctotal)
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
     
@@ -809,7 +828,7 @@ def filter_results():
 
     if 'session_secret' in session:
         try:
-            print("Session after setting:", session)
+            
 
             client = get_client(session["session_secret"],None)
             account = Account(client)
@@ -887,7 +906,10 @@ def filter_results():
             offset = (page - 1) * results_per_page
             base_query_list.append(Query.offset(offset))
         else:
-            base_query_list.append(Query.offset(0))      
+            base_query_list.append(Query.offset(0))
+
+        if True:
+            base_query_list.append(Query.not_equal("status","NOT_YET_RELEASED"))      
 
         if True:
             base_query_list.append(Query.limit(18))
@@ -1021,7 +1043,7 @@ def anime_info(id):
         secret = os.getenv('SECRET')
     try:
         if 'session_secret' in session:
-            print("Session after setting:", session)
+            
 
             client = get_client(session["session_secret"],None)
             account = Account(client)
@@ -1182,7 +1204,7 @@ def watch_page(anime_id, ep_number):
 
         try:
             if 'session_secret' in session:
-                print("Session after setting:", session)
+                
 
                 client = get_client(session["session_secret"],None)
                 account = Account(client)
@@ -1358,7 +1380,7 @@ def like_anime(id):
         print("Key is missing or empty, setting default secret.")
 
     if 'session_secret' in session:
-        print("Session after setting:", session)
+        
         key = session["session_secret"]
 
         client = get_client(session["session_secret"], None)
@@ -1371,7 +1393,7 @@ def like_anime(id):
             "username": acc.get("name"),
             "email": acc.get("email")
         }
-        print(acc)
+        
     elif bool(key):
         client = get_client(key, None)
         account = Account(client)
@@ -1775,6 +1797,16 @@ def fetch_episode_info(anime_id,ep_number):
         ]
     )
 
+    epinfo = databases.list_documents(
+        database_id=os.getenv('DATABASE_ID'),
+        collection_id=os.getenv('Anime_Episodes'),
+        queries=[
+            Query.equal("animeId",result.get("animeId")),
+            Query.equal("number",ep_number),
+            Query.select(["$id"])
+        ]
+    )
+
     # Extract episode data
     episodes = epiList.get("documents", [])
     episode_details = []
@@ -1811,7 +1843,7 @@ def fetch_episode_info(anime_id,ep_number):
                 "serverName": links.get("serverName"),
                 "episodeNumber": links.get("episodeNumber"),
                 "dataType": links.get("dataType"),
-                "dataLink":  links.get("dataLink").replace("https://hianime.to/watch/", "/player/Hianime/")
+                "dataLink": links.get("dataLink").replace("https://hianime.to/watch/", "/player/Hianime/") + f"&episode={epinfo['documents'][0]['$id']}&anime={anime_id}&vide=Hianime"
             }
         else:    
             link_info = {
@@ -1959,7 +1991,7 @@ def community():
 
         if 'session_secret' in session:
             try:
-                print("Session after setting:", session)
+                
 
                 client = get_client(session["session_secret"],None)
                 account = Account(client)
@@ -2388,7 +2420,7 @@ def create_post():
 
     try:
         if 'session_secret' in session:
-            print("Session after setting:", session)
+            
 
             client = get_client(session["session_secret"],None)
             account = Account(client)
@@ -2508,7 +2540,7 @@ def like_post(id):
         print("Key is missing or empty, setting default secret.")
 
     if 'session_secret' in session:
-        print("Session after setting:", session)
+        
         key = session["session_secret"]
 
         client = get_client(session["session_secret"], None)
@@ -2521,7 +2553,7 @@ def like_post(id):
             "username": acc.get("name"),
             "email": acc.get("email")
         }
-        print(acc)
+        
     elif bool(key):
         client = get_client(key, None)
         account = Account(client)
@@ -2669,7 +2701,7 @@ def view_post(post_id):
         print("Key is missing or empty, setting default secret.")
 
     if 'session_secret' in session:
-         print("Session after setting:", session)
+         
          key = session["session_secret"]
 
          client = get_client(session["session_secret"],None)
@@ -2852,7 +2884,7 @@ def add_comment(post_id):
         print("Key is missing or empty, setting default secret.")
 
     if 'session_secret' in session:
-         print("Session after setting:", session)
+         
          key = session["session_secret"]
 
          client = get_client(session["session_secret"],None)
@@ -2865,7 +2897,7 @@ def add_comment(post_id):
              "username" : acc.get("name"),
              "email" : acc.get("email")
          }
-         print(acc)
+         
     elif bool(key):
          client = get_client(key,None)
          account = Account(client)
@@ -2934,7 +2966,7 @@ def comment():
         print("Key is missing or empty, setting default secret.")
 
     if 'session_secret' in session:
-         print("Session after setting:", session)
+         
 
          client = get_client(session["session_secret"],None)
          account = Account(client)
@@ -2946,7 +2978,7 @@ def comment():
              "username" : acc.get("name"),
              "email" : acc.get("email")
          }
-         print(acc)
+         
     elif bool(key):
          client = get_client(key,None)
          account = Account(client)
@@ -3088,7 +3120,7 @@ def post_reply():
         print("Key is missing or empty, setting default secret.")
 
     if 'session_secret' in session:
-         print("Session after setting:", session)
+         
 
          client = get_client(session["session_secret"],None)
          account = Account(client)
@@ -3100,7 +3132,7 @@ def post_reply():
              "username" : acc.get("name"),
              "email" : acc.get("email")
          }
-         print(acc)
+         
     elif bool(key):
          client = get_client(key,None)
          account = Account(client)
@@ -3372,14 +3404,6 @@ def watchlist():
 
     documents = watchlist.get('documents', [])
 
-    watchlist_data = [
-    {"title": "Don't Toy with Me, Miss Nagatoro", "type": "TV", "duration": "24m", "current": 12, "total": 12, "image": "/static/placeholder.svg", "status": "watching"},
-    {"title": "Isekai Cheat Magician", "type": "TV", "duration": "23m", "current": 12, "total": 12, "image": "/static/placeholder.svg", "status": "completed"},
-    {"title": "Date A Bullet: Nightmare or Queen", "type": "Movie", "duration": "29m", "current": 1, "total": 1, "image": "/static/placeholder.svg", "rating": "18+", "status": "plan-to-watch"},
-    {"title": "Anime Title 4", "type": "TV", "duration": "24m", "current": 6, "total": 12, "image": "/static/placeholder.svg", "status": "on-hold"},
-    {"title": "Anime Title 5", "type": "OVA", "duration": "45m", "current": 0, "total": 3, "image": "/static/placeholder.svg", "status": "dropped"},
-]
-
     watchlist_dataz = []
     
     for data in documents:
@@ -3441,18 +3465,295 @@ def notifications():
         "total_pages": total_pages,
         "current_page": page
     })
+@app.route('/save/progress',methods=['POST'])
+@limiter.limit("15 per minute")
+def save_continue_watching():
+    data = request.json
 
+    try:
+        if 'session_secret' in session:
+            
+            key = session["session_secret"]
+
+            client = get_client(session["session_secret"], None)
+            account = Account(client)
+
+            acc = account.get()
+
+            userInfo = {
+                "userId": acc.get("$id"),
+                "username": acc.get("name"),
+                "email": acc.get("email")
+            }
+            
+        elif bool(key):
+            client = get_client(key, None)
+            account = Account(client)
+
+            acc = account.get()
+
+            userInfo = {
+                "userId": acc.get("$id"),
+                "username": acc.get("name"),
+                "email": acc.get("email")
+            }
+    except Exception:
+        userInfo = None
+
+
+    client = get_client(None,os.getenv('SECRET'))
+    databases = Databases(client)
+    cid = ID.unique()
+
+    server = data.get('category')
+
+    if data.get('category') == 'raw':
+        server = 'sub'
+
+    search = databases.list_documents(
+                database_id=os.getenv('DATABASE_ID'),
+                collection_id=os.getenv('CONTINUE_WATCHING'),
+                queries=[
+                    Query.equal("userId",acc.get("$id")),
+                    Query.equal("animeId",data.get('anime')),
+                    Query.equal("episodeId",data.get('episode')),
+                    Query.select(['continueId']),
+                ]
+            )
+    
+    if search['total'] > 0:
+
+    
+        cid=search['documents'][0]['continueId']
+
+        databases.update_document(
+            database_id=os.getenv('DATABASE_ID'),
+            collection_id=os.getenv('CONTINUE_WATCHING'),
+            document_id=cid,
+            data={
+                "continueId":cid,
+                "userId":acc.get("$id"),
+                "animeId":data.get('anime'),
+                "episodeId":data.get('episode'),
+                "removed":False,
+                "server":data.get('vide'),
+                "language":server,
+                "user":acc.get("$id"),
+                "related_anime": data.get('anime'),
+                "episode":data.get('episode'),
+                "currentTime":data.get('currentTime'),
+                "duration":data.get('duration'),
+            }
+        )
+
+    else:
+
+        databases.create_document(
+            database_id=os.getenv('DATABASE_ID'),
+            collection_id=os.getenv('CONTINUE_WATCHING'),
+            document_id=cid,
+            data={
+                "continueId":cid,
+                "userId":acc.get("$id"),
+                "animeId":data.get('anime'),
+                "episodeId":data.get('episode'),
+                "removed":False,
+                "server":data.get('vide'),
+                "language":server,
+                "user":acc.get("$id"),
+                "related_anime": data.get('anime'),
+                "episode":data.get('episode'),
+                "currentTime":data.get('currentTime'),
+                "duration":data.get('duration'),
+            }
+        )
+
+    return request.json
+
+@app.route('/api/continue-watching-home')
+def continue_watching_home():
+
+    try:
+        if 'session_secret' in session:
+            
+            key = session["session_secret"]
+
+            client = get_client(session["session_secret"], None)
+            account = Account(client)
+
+            acc = account.get()
+
+            userInfo = {
+                "userId": acc.get("$id"),
+                "username": acc.get("name"),
+                "email": acc.get("email")
+            }
+            
+        elif bool(key):
+            client = get_client(key, None)
+            account = Account(client)
+
+            acc = account.get()
+
+            userInfo = {
+                "userId": acc.get("$id"),
+                "username": acc.get("name"),
+                "email": acc.get("email")
+            }
+    except Exception:
+        userInfo = None
+
+    client = get_client(None,os.getenv('SECRET'))
+    databases = Databases(client)
+
+    search = databases.list_documents(
+                database_id=os.getenv('DATABASE_ID'),
+                collection_id=os.getenv('CONTINUE_WATCHING'),
+                queries=[
+                    Query.equal("userId",acc.get("$id")),
+                    Query.order_desc('$updatedAt'),
+                    Query.select(['continueId','animeId','episodeId','currentTime','duration','server','language']),
+                ]
+            )
+    animes = []
+    for data in search['documents']:
+        
+        anime = data['animeId']
+
+        aniimeData = databases.get_document(
+            database_id = os.getenv('DATABASE_ID'),
+            collection_id = os.getenv('Anime'),
+            document_id=anime,
+            queries = [
+                Query.select(["mainId","animeId","english","romaji","lastUpdated","type","subbed","dubbed"]),
+            ] # optional
+        )
+
+        img = databases.get_document(
+            database_id = os.getenv('DATABASE_ID'),
+            collection_id = os.getenv('ANIME_IMGS'),
+            document_id=aniimeData.get('mainId'),
+            queries=[
+                Query.select(['cover','banner'])
+            ]
+        )
+
+        ep = databases.get_document(
+            database_id = os.getenv('DATABASE_ID'),
+            collection_id = os.getenv('Anime_Episodes'),
+            document_id=data['episodeId'],
+            queries = [
+                Query.select("number"),
+            ] # optional
+        )
+
+        
+        ff=  {
+                "title": aniimeData["english"] if aniimeData['english'] is not None else aniimeData["romaji"],
+                "link":f'/watch/{aniimeData["mainId"]}/{ep.get('number')}?server={data['server']}&lang={data['language']}',                
+                "episode": ep.get('number'),
+                "progress": f"{int(data['currentTime'] // 60)}:{int(data['currentTime'] % 60):02}",
+                "duration": f"{int(data['duration'] // 60)}:{int(data['duration'] % 60):02}",
+                "thumbnail": img.get('cover')
+            }
+        animes.append(ff)
+    return jsonify(animes)
 
 @app.route('/api/continue-watching')
 def continue_watching():
     time.sleep(1)  # Simulate delay
+    
     page = int(request.args.get('page', 1))
     per_page = 8
     start = (page - 1) * per_page
     end = start + per_page
-    continue_watching_data = [item for item in watchlist_data if item['status'] == 'watching']
+    
+    userInfo = None
+    try:
+        if 'session_secret' in session:
+            key = session["session_secret"]
+            client = get_client(session["session_secret"], None)
+            account = Account(client)
+            acc = account.get()
+            userInfo = {
+                "userId": acc.get("$id"),
+                "username": acc.get("name"),
+                "email": acc.get("email")
+            }
+        elif bool(key):
+            client = get_client(key, None)
+            account = Account(client)
+            acc = account.get()
+            userInfo = {
+                "userId": acc.get("$id"),
+                "username": acc.get("name"),
+                "email": acc.get("email")
+            }
+    except Exception:
+        userInfo = None
+    
+    if userInfo is None:
+        return jsonify({"error": "User not authenticated"}), 401
+
+    client = get_client(None, os.getenv('SECRET'))
+    databases = Databases(client)
+
+    search = databases.list_documents(
+        database_id=os.getenv('DATABASE_ID'),
+        collection_id=os.getenv('CONTINUE_WATCHING'),
+        queries=[
+            Query.equal("userId", acc.get("$id")),
+            Query.order_desc('$updatedAt'),
+            Query.select(['continueId','animeId','episodeId','currentTime','duration','server','language']),
+        ]
+    )
+    
+    animes = []
+    for data in search['documents']:
+        anime = data['animeId']
+
+        aniimeData = databases.get_document(
+            database_id=os.getenv('DATABASE_ID'),
+            collection_id=os.getenv('Anime'),
+            document_id=anime,
+            queries=[
+                Query.select(["mainId", "animeId", "english", "romaji", "lastUpdated", "type", "subbed", "dubbed"]),
+            ]
+        )
+
+        img = databases.get_document(
+            database_id=os.getenv('DATABASE_ID'),
+            collection_id=os.getenv('ANIME_IMGS'),
+            document_id=aniimeData.get('mainId'),
+            queries=[
+                Query.select(['cover', 'banner'])
+            ]
+        )
+
+        ep = databases.get_document(
+            database_id=os.getenv('DATABASE_ID'),
+            collection_id=os.getenv('Anime_Episodes'),
+            document_id=data['episodeId'],
+            queries=[
+                Query.select("number"),
+            ]
+        )
+
+        ff = {
+            "title": aniimeData["english"] if aniimeData['english'] is not None else aniimeData["romaji"],
+            "link": f'/watch/{aniimeData["mainId"]}/{ep.get("number")}?server={data["server"]}&lang={data["language"]}',
+            "episode": ep.get('number'),
+            "progress": f"{int(data['currentTime'] // 60)}:{int(data['currentTime'] % 60):02}",
+            "duration": f"{int(data['duration'] // 60)}:{int(data['duration'] % 60):02}",
+            "thumbnail": img.get('cover')
+        }
+        animes.append(ff)
+
+    # Paginate the results
+    continue_watching_data = animes
     paginated_data = continue_watching_data[start:end]
     total_pages = math.ceil(len(continue_watching_data) / per_page)
+    
     return jsonify({
         "data": paginated_data,
         "total_pages": total_pages,
@@ -3561,7 +3862,7 @@ def get_notifications(notification_type):
                 "id":noa.get('notificationId'),
                 "message":noa.get('message'),
                 "time":format_relative_time(noa.get('time')),
-                "image":"https://g-t9mgc8zy9ce.vusercontent.net/placeholder.svg?height=40&width=40",
+                "image":"https://g-t9mgc8zy9ce.vusercontent.net/placeholder.svg?height=200&width=100",
                 "isRead":noa.get('isRead'),
             })
         
@@ -3641,7 +3942,7 @@ def countdowns():
 
     if 'session_secret' in session:
         try:
-            print("Session after setting:", session)
+            
 
             client = get_client(session["session_secret"],None)
             account = Account(client)
@@ -3878,10 +4179,48 @@ def realtime():
 
 @app.route('/player/<type>/<id>')
 def player(type, id):
+    try:
+        if 'session_secret' in session:
+            
+            key = session["session_secret"]
+
+            client = get_client(session["session_secret"], None)
+            account = Account(client)
+
+            acc = account.get()
+
+            userInfo = {
+                "userId": acc.get("$id"),
+                "username": acc.get("name"),
+                "email": acc.get("email")
+            }
+            
+        elif bool(key):
+            client = get_client(key, None)
+            account = Account(client)
+
+            acc = account.get()
+
+            userInfo = {
+                "userId": acc.get("$id"),
+                "username": acc.get("name"),
+                "email": acc.get("email")
+            }
+        else:
+            userInfo = None
+    except Exception:
+        userInfo = None
+
     if type == "Hianime":
         ep = request.args.get('ep')
         server = request.args.get('server')
         category =request.args.get('category')
+        vide = request.args.get('vide')
+        anime = request.args.get('anime')
+        episode = request.args.get('episode')
+        current = None
+        duration = None
+        
             # Con\struct the URL to get episode sources
         sources_url = f"{os.getenv('HIANIME_ENDPOINT')}/api/v2/hianime/episode/sources?animeEpisodeId={id}?ep={ep}&server={server}&category={category}"
             
@@ -3907,7 +4246,29 @@ def player(type, id):
         subtitles = data["tracks"]
         print(subtitles)
 
-        return render_template('hi.html', video_url=video_url, subtitles=subtitles)
+        client = get_client(None,os.getenv('SECRET'))
+        databases = Databases(client)
+
+        if userInfo:
+
+            search = databases.list_documents(
+                    database_id=os.getenv('DATABASE_ID'),
+                    collection_id=os.getenv('CONTINUE_WATCHING'),
+                    queries=[
+                        Query.equal("userId",acc.get("$id")),
+                        Query.equal("animeId",anime),
+                        Query.equal("episodeId",episode),
+                        Query.select(['continueId','currentTime','duration']),
+                    ]
+                )
+            
+            if search['total'] > 0:
+                data = search['documents'][0]
+                current = data.get('currentTime')
+                duration = data.get('duration')
+
+
+        return render_template('hi.html', video_url=video_url, subtitles=subtitles,userInfo=userInfo,current=current, duration=duration)
 
     else:
         abort(400, description="Unsupported type")
@@ -3944,7 +4305,16 @@ def not_found_error(error):
 # Custom error handler for 500 errors
 @app.errorhandler(500)
 def internal_error(error):
-    return jsonify({"error": "An unexpected error occurred. Please try again later."}), 500          
+    return jsonify({"error": "An unexpected error occurred. Please try again later."}), 500      
+
+@app.errorhandler(HTTPException)
+def handle_http_exception(e):
+    # Handle HTTP exceptions, including rate limit exceeded
+    if e.code == 429:  # 429 Too Many Requests
+        return jsonify({'success': False, "message": "Too many requests. Please try again later."}), 429
+    if e.code == 500:  # 429 Too Many Requests
+        return jsonify({'success': False, "message": "Internal Server Error"}), 500
+    return jsonify({'success': False,"message": str(e)}), e.code
     
 if __name__ == '__main__':
     threading.Thread(target=lambda: asyncio.run(websocket_listener()), daemon=True).start()

@@ -441,6 +441,7 @@
                 </a>
                 {% endfor %}
             </div>
+            {% if total %}
             <div class="mt-8 flex justify-center gap-2" 
                 x-data="{ 
                     currentPage: {{ page }}, 
@@ -515,6 +516,7 @@
                     </button>
                 </nav>
             </div>
+            {% endif %}
         </section>
     </div>
 

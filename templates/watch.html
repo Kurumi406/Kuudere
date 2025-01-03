@@ -105,20 +105,65 @@
                             watching
                         </div>
                         <div x-data="likeSystem()" class="flex items-center gap-2">
-                            <button @click="like()" :class="{'text-red-500': liked, 'text-gray-500': !liked}"
-                                class="like-button hover:text-gray-300 transition-colors p-1"
+                            <button 
+                                @click="like()" 
+                                :disabled="isLoading"
+                                :class="{
+                                    'text-red-500': liked,
+                                    'text-gray-500': !liked,
+                                    'opacity-50 cursor-not-allowed': isLoading
+                                }"
+                                class="like-button hover:text-gray-300 transition-colors p-1 relative"
                                 x-bind:style="liked ? 'color: rgb(239, 68, 68);' : ''">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                                <!-- Loading spinner -->
+                                <div 
+                                    x-show="isLoading" 
+                                    class="absolute inset-0 flex items-center justify-center">
+                                    <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                </div>
+                                <!-- Like icon -->
+                                <svg 
+                                    :class="{ 'opacity-0': isLoading }"
+                                    xmlns="http://www.w3.org/2000/svg" 
+                                    class="h-5 w-5" 
+                                    fill="none" 
+                                    viewBox="0 0 24 24"
                                     stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
                                 </svg>
                             </button>
                             <span x-text="likes" class="likes text-sm font-medium text-gray-500"></span>
-                            <button @click="dislike()" :class="{'text-blue-500': disliked, 'text-gray-500': !disliked}"
-                                class="dislike-button hover:text-gray-300 transition-colors p-1"
+                            
+                            <button 
+                                @click="dislike()" 
+                                :disabled="isLoading"
+                                :class="{
+                                    'text-blue-500': disliked,
+                                    'text-gray-500': !disliked,
+                                    'opacity-50 cursor-not-allowed': isLoading
+                                }"
+                                class="dislike-button hover:text-gray-300 transition-colors p-1 relative"
                                 x-bind:style="disliked ? 'color: rgb(59, 130, 246);' : ''">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                                <!-- Loading spinner -->
+                                <div 
+                                    x-show="isLoading" 
+                                    class="absolute inset-0 flex items-center justify-center">
+                                    <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                </div>
+                                <!-- Dislike icon -->
+                                <svg 
+                                    :class="{ 'opacity-0': isLoading }"
+                                    xmlns="http://www.w3.org/2000/svg" 
+                                    class="h-5 w-5" 
+                                    fill="none" 
+                                    viewBox="0 0 24 24"
                                     stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018a2 2 0 01.485.06l3.76.94m-7 10v5a2 2 0 002 2h.096c.5 0 .905-.405.905-.904 0-.715.211-1.413.608-2.008L17 13V4m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5" />
@@ -1001,87 +1046,102 @@
             };
         }
         function likeSystem() {
-            const userInfo = {{ userInfo | tojson | safe }};
-            console.log(this.userInfo);
-            return {
-                likes: {{ animeInfo.likes }},
-                dislikes: {{ animeInfo.dislikes }},
-                liked: {{ animeInfo.userLiked | tojson }},
-                disliked: {{ animeInfo.userUnliked | tojson }},
-                anime: {{ animeInfo.id | tojson }},
-                
-                async like() {
-                    if (typeof userInfo === "undefined" || userInfo === null) {
-                        window.dispatchEvent(new CustomEvent('trigger-auth-modal'));
-                    } else {
-                        // If the user hasn't liked before, like the anime
-                        if (!this.liked) {
-                            const response = await fetch(`/api/anime/respond/${this.anime}`, {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                },
-                                body: JSON.stringify({
-                                    type: 'like', // Action type is 'like'
-                                }),
-                            });
-                            if (response.ok) {
-                                this.likes++;
-                                this.liked = true;
-
-                                // If the user previously disliked, cancel that action
-                                if (this.disliked) {
-                                    this.dislikes--;
-                                    this.disliked = false;
-                                }
-
-                                this.animateButton('like-button');
-                            }
-                        }
-                    }
-                },
-
-                async dislike() {
-                    if (typeof userInfo === "undefined" || userInfo === null) {
-                        window.dispatchEvent(new CustomEvent('trigger-auth-modal'));
-                    } else {
-                        // If the user hasn't disliked before, dislike the anime
-                        if (!this.disliked) {
-                            const response = await fetch(`/api/anime/respond/${this.anime}`, {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                },
-                                body: JSON.stringify({
-                                    type: 'dislike', // Action type is 'dislike'
-                                }),
-                            });
-                            if (response.ok) {
-                                this.dislikes++;
-                                this.disliked = true;
-
-                                // If the user previously liked, cancel that action
-                                if (this.liked) {
-                                    this.likes--;
-                                    this.liked = false;
-                                }
-
-                                this.animateButton('dislike-button');
-                            }
-                        }
-                    }
-                },
-
-                animateButton(buttonClass) {
-                    const button = document.querySelector(`.${buttonClass}`);
-                    button.classList.add('animate');
-                    setTimeout(() => {
-                        button.classList.remove('animate');
-                    }, 300);
+        const userInfo = {{ userInfo | tojson | safe }};
+        return {
+            likes: {{ animeInfo.likes }},
+            dislikes: {{ animeInfo.dislikes }},
+            liked: {{ animeInfo.userLiked | tojson }},
+            disliked: {{ animeInfo.userUnliked | tojson }},
+            anime: {{ animeInfo.id | tojson }},
+            isLoading: false,
+            
+            async like() {
+                if (typeof userInfo === "undefined" || userInfo === null) {
+                    window.dispatchEvent(new CustomEvent('trigger-auth-modal'));
+                    return;
                 }
-            };
-        }
 
+                if (!this.liked && !this.isLoading) {
+                    this.isLoading = true;
+                    try {
+                        const response = await fetch(`/api/anime/respond/${this.anime}`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                type: 'like',
+                            }),
+                        });
+
+                        if (response.ok) {
+                            this.likes++;
+                            this.liked = true;
+
+                            if (this.disliked) {
+                                this.dislikes--;
+                                this.disliked = false;
+                            }
+
+                            this.animateButton('like-button');
+                        }
+                    } catch (error) {
+                        console.error('Error during like operation:', error);
+                    } finally {
+                        this.isLoading = false;
+                    }
+                }
+            },
+
+            async dislike() {
+                if (typeof userInfo === "undefined" || userInfo === null) {
+                    window.dispatchEvent(new CustomEvent('trigger-auth-modal'));
+                    return;
+                }
+
+                if (!this.disliked && !this.isLoading) {
+                    this.isLoading = true;
+                    try {
+                        const response = await fetch(`/api/anime/respond/${this.anime}`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                type: 'dislike',
+                            }),
+                        });
+
+                        if (response.ok) {
+                            this.dislikes++;
+                            this.disliked = true;
+
+                            if (this.liked) {
+                                this.likes--;
+                                this.liked = false;
+                            }
+
+                            this.animateButton('dislike-button');
+                        }
+                    } catch (error) {
+                        console.error('Error during dislike operation:', error);
+                    } finally {
+                        this.isLoading = false;
+                    }
+                }
+            },
+
+            animateButton(buttonClass) {
+                const button = document.querySelector(`.${buttonClass}`);
+                anime({
+                    targets: button,
+                    scale: [1, 1.2, 1],
+                    duration: 300,
+                    easing: 'easeInOutQuad'
+                });
+            }
+        };
+    }
 
     </script>
     <script>

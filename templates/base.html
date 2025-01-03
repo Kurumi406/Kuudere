@@ -673,7 +673,7 @@
         </header>
 
 
-        <div x-cloak x-show="isAuthOpen" x-transition.opacity
+        <div x-cloak x-show="isAuthOpen" x-transition.opacity x-effect="isAuthOpen ? document.body.style.overflow = 'hidden' : document.body.style.overflow = '';"
             class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
             @click.self="isAuthOpen = false"
             @trigger-auth-modal.window="isAuthOpen = true">

@@ -319,7 +319,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="max-h-[400px] overflow-y-auto pr-2 space-y-4">
+                    <div class="max-h-[400px] overflow-y-auto pr-2 space-y-4 scrollbar-thin">
                         <template x-for="(comment, index) in comments" :key="comment.id">
                             <div class="py-4 border-b border-[#2a2a2a] last:border-b-0">
                                 <div class="flex items-start gap-4">
@@ -625,7 +625,7 @@
                     </div>
 
                     <!-- Title input field -->
-                    <div class="mb-4">
+                    <div class="mb-4" x-data="{ title: '{{ animeInfo.english }}' }" >
                         <input type="text" 
                             x-model="title" 
                             placeholder="Enter post title"
@@ -682,7 +682,7 @@
                 total_comments: 0,
                 isShareOpen: false,
                 url: window.location.href+'?ref={{ userInfo.userId | safe }}',
-                title: '{{ animeInfo.english | safe }}',
+                title: '',
                 description: 'Dude Check It Out They Added Episode {{ animeInfo.ep | safe }}',
                 copySuccess: false,
                 
@@ -717,8 +717,13 @@
                     this.isLoading = true;
 
                     try {
-                        history.pushState(null, '', `/watch/${this.animeId}/${episodeNumber}`);
+                        // URL parameter logic
+                        const urlParams = new URLSearchParams(window.location.search);
+                        const serverName = urlParams.get('server');
+                        const lang = urlParams.get('lang');  // Get the `lang` parameter from the URL
+                        history.pushState(null, '', `/watch/${this.animeId}/${episodeNumber}?server=${serverName}&lang=${lang}`);
 
+                        // Fetch data for the episode
                         const response = await fetch(`/watch-api/${this.animeId}/${episodeNumber}`);
                         const data = await response.json();
 
@@ -730,8 +735,31 @@
                         this.total_comments = data.total_comments;
                         document.getElementById('epn').innerText = episodeNumber;
 
-                        if (this.episodeLinks.length) {
-                            this.selectServer(this.episodeLinks[0]);
+                        // Try to find a server based on `serverName` from the URL
+                        let selectedServer = null;
+
+                        // If a server is specified, look for it
+                        if (serverName) {
+                            selectedServer = this.episodeLinks.find(link => link.serverName === serverName && (!lang || link.dataType === lang));  // Filter by `lang` if provided
+                        }
+
+                        // If no matching server is found, fallback to default logic
+                        if (!selectedServer) {
+                            // Try to find a server that matches the `lang` parameter, otherwise fallback to any server
+                            if (lang) {
+                                selectedServer = this.episodeLinks.find(link => link.dataType === lang);
+                            }
+
+                            if (!selectedServer) {
+                                // Fallback to a server that supports 'dub' or the first available server
+                                const dubServer = this.episodeLinks.find(link => link.dataType === 'dub');
+                                selectedServer = dubServer || this.episodeLinks[0];
+                            }
+                        }
+
+                        // Select the determined server
+                        if (selectedServer) {
+                            this.selectServer(selectedServer);
                         } else {
                             this.currentVideoLink = '';
                         }
@@ -746,22 +774,48 @@
                     }
                 },
 
-                selectServer(server) {
-                    this.isVideoLoading = true;
-                    this.currentServer = server;
-                    this.currentVideoLink = server.dataLink;
+                    selectServer(server) {
+                        this.isVideoLoading = true;
+                        this.currentServer = server;
+                        this.currentVideoLink = server.dataLink;
 
-                    const iframe = this.$refs.videoPlayer;
-                    if (iframe) {
-                        iframe.onload = () => {
-                            this.isVideoLoading = false;
-                        };
+                        const iframe = this.$refs.videoPlayer;
+                        if (iframe) {
+                            iframe.onload = () => {
+                                this.isVideoLoading = false;
+                            };
 
-                        setTimeout(() => {
-                            this.isVideoLoading = false;
-                        }, 5000);
-                    }
-                },
+                            setTimeout(() => {
+                                this.isVideoLoading = false;
+                            }, 5000);
+                        }
+
+                        // Determine the lang based on the server's dataType
+                        let lang = '';
+                        if (server.dataType === 'sub') {
+                            lang = 'sub';  // For subtitles, you could use 'sub' or any other value
+                        } else if (server.dataType === 'dub') {
+                            lang = 'dub';  // For dubbed episodes, set lang to 'dub'
+                        } else {
+                            lang = '';  // Default if no specific dataType is found
+                        }
+
+                        // Update the URL with the selected server and lang
+                        const urlParams = new URLSearchParams(window.location.search);
+                        urlParams.set('server', server.serverName);  // Update the server parameter
+                        if (lang) {
+                            urlParams.set('lang', lang);  // Update the lang parameter based on dataType
+                        } else {
+                            urlParams.delete('lang');  // Remove lang if no specific type
+                        }
+
+                        // Update the browser URL without reloading the page
+                        history.pushState(null, '', `${window.location.pathname}?${urlParams.toString()}`);
+
+                        // Optionally, you can also trigger any necessary logic based on the updated URL, e.g., saving state or analytics tracking.
+                    },
+
+
                 
                 async selectEpisode(episodeNumber) {
                     if (this.currentEpisode !== episodeNumber) {

@@ -196,6 +196,60 @@
         #volume {
             @apply w-16 sm:w-20;
         }
+        @media (max-width: 640px) and (orientation: landscape) {
+            #video-container.fullscreen {
+                width: 100vw;
+                height: 100vh;
+            }
+
+            ::cue {
+                font-size: 14px;
+                text-shadow: 
+                    -1px -1px 0 #000,
+                    1px -1px 0 #000,
+                    -1px 1px 0 #000,
+                    1px 1px 0 #000,
+                    0px 0px 6px rgba(0, 0, 0, 1);
+            }
+
+            #video-container.fullscreen ::cue {
+                font-size: 18px;
+                text-shadow: 
+                    -2px -2px 0 #000,
+                    2px -2px 0 #000,
+                    -2px 2px 0 #000,
+                    2px 2px 0 #000,
+                    0px 0px 8px rgba(0, 0, 0, 1);
+            }
+
+            #video-container.fullscreen video {
+                width: 100%;
+                height: 100%;
+                object-fit: contain;
+            }
+
+            #controls {
+                padding: 0.5rem;
+            }
+
+            #progress {
+                height: 0.5rem;
+            }
+
+            .control-button {
+                padding: 0.25rem;
+            }
+
+            #time {
+                font-size: 0.75rem;
+            }
+
+            #status-for-nerds {
+                font-size: 0.625rem;
+                padding: 0.5rem;
+            }
+            
+        }
     </style>
 </head>
 
@@ -858,25 +912,68 @@
             if (!document.fullscreenElement) {
                 if (videoContainer.requestFullscreen) {
                     videoContainer.requestFullscreen();
-                } else if (videoContainer.mozRequestFullScreen) { // Firefox
+                } else if (videoContainer.mozRequestFullScreen) {
                     videoContainer.mozRequestFullScreen();
-                } else if (videoContainer.webkitRequestFullscreen) { // Chrome, Safari and Opera
+                } else if (videoContainer.webkitRequestFullscreen) {
                     videoContainer.webkitRequestFullscreen();
-                } else if (videoContainer.msRequestFullscreen) { // IE/Edge
+                } else if (videoContainer.msRequestFullscreen) {
                     videoContainer.msRequestFullscreen();
                 }
+                videoContainer.classList.add('fullscreen');
+                
+                // Try to switch to landscape orientation
+                if (screen.orientation && screen.orientation.lock) {
+                    screen.orientation.lock('landscape').catch((error) => {
+                        console.log('Unable to lock screen orientation:', error);
+                    });
+                } else if (screen.lockOrientation) {
+                    screen.lockOrientation('landscape');
+                } else if (screen.mozLockOrientation) {
+                    screen.mozLockOrientation('landscape');
+                } else if (screen.msLockOrientation) {
+                    screen.msLockOrientation('landscape');
+                }
+                
+                // Fallback for devices that don't support orientation locking
+                setTimeout(() => {
+                    if (window.innerHeight > window.innerWidth) {
+                        alert("For the best experience, please rotate your device to landscape mode.");
+                    }
+                }, 500);
             } else {
                 if (document.exitFullscreen) {
                     document.exitFullscreen();
-                } else if (document.mozCancelFullScreen) { // Firefox
+                } else if (document.mozCancelFullScreen) {
                     document.mozCancelFullScreen();
-                } else if (document.webkitExitFullscreen) { // Chrome, Safari and Opera
+                } else if (document.webkitExitFullscreen) {
                     document.webkitExitFullscreen();
-                } else if (document.msExitFullscreen) { // IE/Edge
+                } else if (document.msExitFullscreen) {
                     document.msExitFullscreen();
+                }
+                videoContainer.classList.remove('fullscreen');
+                
+                // Unlock the screen orientation
+                if (screen.orientation && screen.orientation.unlock) {
+                    screen.orientation.unlock();
+                } else if (screen.unlockOrientation) {
+                    screen.unlockOrientation();
+                } else if (screen.mozUnlockOrientation) {
+                    screen.mozUnlockOrientation();
+                } else if (screen.msUnlockOrientation) {
+                    screen.msUnlockOrientation();
                 }
             }
         }
+
+        // Update the orientation change event listener
+        window.addEventListener('orientationchange', function() {
+            if (document.fullscreenElement) {
+                setTimeout(function() {
+                    video.style.width = window.innerWidth + 'px';
+                    video.style.height = window.innerHeight + 'px';
+                }, 200);
+            }
+        });
 
         // Call toggleSubtitles initially to set the default state
         window.addEventListener('load', toggleSubtitles);

@@ -843,7 +843,7 @@
                                      duration: 800
                                  })
                              ">
-                                <div class="flex justify-between items-start mb-2">
+                                <a x-bind:href="post.link" class="flex justify-between items-start mb-2">
                                     <div class="flex items-center gap-2">
                                         <span class="text-blue-400 text-sm" x-text="'#' + post.tag"></span>
                                         <span class="text-gray-500">•</span>
@@ -858,7 +858,7 @@
                                         </svg>
                                         <span class="text-sm" x-text="post.comments"></span>
                                     </div>
-                                </div>
+                                </a>
                                 <h2 class="text-white font-semibold mb-2" x-text="post.title"></h2>
                                 <p class="text-gray-400 text-sm mb-4 line-clamp-2" x-text="post.content"></p>
                                 <div class="flex items-center gap-2">

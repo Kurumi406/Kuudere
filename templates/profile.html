@@ -155,7 +155,7 @@
                     </div>
                     <div x-show="!loadingContinueWatching && continueWatching.data" class="space-y-8">
                         <h2 class="text-3xl font-bold mb-8 text-[#DC143C]">Continue Watching</h2>
-                        <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                             <template x-for="item in continueWatching.data">
                                 <a x-bind:href="item.link" class="swiper-slide">
                                     <div class="relative group cursor-pointer" @mouseenter="item.hover = true"

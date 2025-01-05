@@ -488,21 +488,24 @@
                                 </div>
                                 <!-- Notifications -->
                                 <template x-for="notification in notifications[activeTab]" :key="notification.id">
-                                    <div class="notification-item border-b border-white/10">
+                                    <a x-bind:href="notification.link" class="notification-item border-b border-white/10">
                                         <div class="p-3">
                                             <div class="flex gap-2">
-                                                <img :src="notification.image" class="w-8 h-8 rounded object-cover"
-                                                    alt="">
+                                                <img :src="notification.image" 
+                                                     :class="{
+                                                         'w-8 h-8': notification.isCommunity,
+                                                         'w-10 h-16': !notification.isCommunity
+                                                     }"
+                                                     class="rounded object-cover"
+                                                     alt="">
                                                 <div>
-                                                    <p class="theme-home-gray  text-xs" x-text="notification.message">
-                                                    </p>
-                                                    <p class="theme-home-gray /60 text-xs mt-0.5"
-                                                        x-text="notification.time"></p>
+                                                    <p class="theme-home-gray font-semibold text-xs" x-text="notification.message"></p>
+                                                    <p class="theme-home-gray /60 text-xs mt-0.5" x-text="notification.time"></p>
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
-                                </template>
+                                    </a>
+                                </template>                                
                                 <!-- Load More -->
                                 <div x-show="hasMore[activeTab] && !isLoading" class="p-2 text-center">
                                     <button @click="fetchNotifications(activeTab, true)"

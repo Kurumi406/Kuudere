@@ -13,6 +13,7 @@ from appwrite.services.teams import Teams
 from dateutil.relativedelta import relativedelta
 from appwrite.exception import AppwriteException
 from werkzeug.exceptions import HTTPException
+from logging.handlers import RotatingFileHandler
 from nacl.public import PrivateKey, Box
 from flask_compress import Compress
 from flask_sitemap import Sitemap
@@ -28,6 +29,7 @@ from appwrite.id import ID
 import websockets
 import threading
 import requests
+import logging
 import asyncio
 import dotenv
 import json
@@ -79,6 +81,23 @@ def get_client(session_id=None, secret=None):
         client.set_key(secret)
     
     return client
+
+# Custom log format similar to your example
+log_format = '%(remote_addr)s - - [%(asctime)s] "%(request_line)s" %(status_code)s -'
+
+# Set up the logger
+def setup_logging():
+    # Create a rotating file handler to manage log file size
+    handler = RotatingFileHandler('appAccess.log', maxBytes=10000, backupCount=3)
+    handler.setLevel(logging.INFO)
+    
+    # Create a custom formatter with the log format
+    formatter = logging.Formatter(log_format, datefmt='%d/%b/%Y %H:%M:%S')
+    handler.setFormatter(formatter)
+    
+    # Add the handler to the Flask app's logger
+    app.logger.addHandler(handler)
+
 def get_user_info(key=None,secret=None):
     isKey = bool(secret)
     if secret:
@@ -189,6 +208,44 @@ def versioned_url_for(endpoint, **values):
 
 @app.after_request
 def add_cache_control_headers(response):
+        # Log the request details: IP, request method, URL, status code
+    client_ip = request.headers.get('X-Forwarded-For', request.remote_addr).split(',')[0]
+
+    scheme = request.headers.get('X-Forwarded-Proto', request.scheme)
+    
+    # Use request.host to get the original host
+    host = request.headers.get('X-Forwarded-Host', request.host)
+    
+    # Reconstruct the original URL
+    original_url = f"{scheme}://{host}{request.path}"
+    secret = os.getenv('SECRET')  # Default value
+    print("Key is missing or empty, setting default secret.")
+
+        # Initialize client and database
+    client = get_client(None, secret)
+    databases = Databases(client)
+    
+    vid = ID.unique()
+    
+    view = databases.create_document(
+        database_id=os.getenv('DATABASE_ID'),
+        collection_id=os.getenv('LOG'),
+        document_id=vid,
+        data={
+            "logId": vid,
+            "requestIp":client_ip,
+            "path":request.path, 
+            "type":request.method,
+            "code": response.status_code,
+        }
+    )
+    app.logger.info(
+        'Request: %s %s %s', 
+        request.method, 
+        request.full_path, 
+        response.status_code
+    )
+    print (request.headers.get('X-Forwarded-For', request.remote_addr).split(',')[0])
     """Add Cache-Control headers for static files."""
     if request.path.startswith('/static/'):
         # Fix: Check for CSS, JS, PNG, or JPG files correctly
@@ -1360,7 +1417,7 @@ def watch_page(anime_id, ep_number):
 
     if isKey:
         return response
-    return render_template('test.html', anime_id=anime_id, ep_number=ep_number,animeInfo = filtered_document,userInfo=userInfo)
+    return render_template('watch.html', anime_id=anime_id, ep_number=ep_number,animeInfo = filtered_document,userInfo=userInfo)
 
 @app.route("/api/anime/respond/<id>", methods=['POST'])
 def like_anime(id):
@@ -1641,24 +1698,6 @@ def generate_unique_id(string1, string2):
     combined = string1 + string2
     # Use SHA-256 and truncate to 32 characters
     return hashlib.sha256(combined.encode()).hexdigest()[:32]    
-
-@app.route('/raw')
-def raw():
-    secret = os.getenv('SECRET')
-
-    client = get_client(None, secret)
-    databases = Databases(client)
-
-    result = databases.list_documents(
-            database_id=os.getenv('DATABASE_ID'),
-            collection_id=os.getenv('Anime'),
-            queries=[
-                Query.offset(1506),
-                Query.limit(390),
-            ]
-        )
-
-    return result
 
 @app.route('/search-api')
 def search_api():
@@ -3795,6 +3834,7 @@ def realtime_anime_info(id):
     return animeDetails
 
 @app.route('/api/notifications/<notification_type>', methods=['GET'])
+@limiter.limit("30 per minute")
 def get_notifications(notification_type):
     secret = request.args.get('secret')
     key = request.args.get('key')
@@ -3858,11 +3898,74 @@ def get_notifications(notification_type):
 
         noti = []
         for noa in notifications['documents']:
+            imgurl = "https://g-t9mgc8zy9ce.vusercontent.net/placeholder.svg?height=200&width=100"
+            url = '#'
+            if noa.get('relatedEpId') and notification_type == 'anime':
+                ep = databases.get_document(
+                    database_id=os.getenv('DATABASE_ID'),
+                    collection_id=os.getenv('Anime_Episodes'),
+                    document_id=noa.get('relatedEpId'),
+                    queries=[
+                        Query.select(['number','animeId'])
+                    ]
+                )
+                img = databases.list_documents(
+                    database_id = os.getenv('DATABASE_ID'),
+                    collection_id = os.getenv('ANIME_IMGS'),
+                    queries=[
+                        Query.equal('animeId',ep.get('animeId')),
+                        Query.select(['cover'])
+                    ]
+                )
+
+                anime = databases.list_documents(
+                    database_id=os.getenv('DATABASE_ID'),
+                    collection_id=os.getenv('Anime'),
+                    queries=[
+                        Query.equal("animeId", ep.get('animeId')),  # Ensure `anii` is properly defined
+                        Query.select(["mainId"])
+                    ]
+                )
+
+                url = f'/watch/{anime['documents'][0]['mainId']}/{ep.get('number')}?lang={re.search(r'\[(.*?)\]', noa.get('message')).group(1).lower() if re.search(r'\[(.*?)\]', noa.get('message')) else None}'
+                
+                imgurl = img['documents'][0]['cover']
+            elif noa.get('relatedEpId') and notification_type == 'community':
+                ep = databases.get_document(
+                    database_id=os.getenv('DATABASE_ID'),
+                    collection_id=os.getenv('Anime_Episodes'),
+                    document_id=noa.get('relatedEpId'),
+                    queries=[
+                        Query.select(['number','animeId'])
+                    ]
+                )
+                img = databases.list_documents(
+                    database_id = os.getenv('DATABASE_ID'),
+                    collection_id = os.getenv('ANIME_IMGS'),
+                    queries=[
+                        Query.equal('animeId',ep.get('animeId')),
+                        Query.select(['cover'])
+                    ]
+                )
+
+                anime = databases.list_documents(
+                    database_id=os.getenv('DATABASE_ID'),
+                    collection_id=os.getenv('Anime'),
+                    queries=[
+                        Query.equal("animeId", ep.get('animeId')),  # Ensure `anii` is properly defined
+                        Query.select(["mainId"])
+                    ]
+                )
+
+                url = f'/watch/{anime['documents'][0]['mainId']}/{ep.get('number')}'
+                
             noti.append({
                 "id":noa.get('notificationId'),
                 "message":noa.get('message'),
                 "time":format_relative_time(noa.get('time')),
-                "image":"https://g-t9mgc8zy9ce.vusercontent.net/placeholder.svg?height=200&width=100",
+                "link":url,
+                "image":imgurl,
+                "isCommunity":noa.get('isCommunity'),
                 "isRead":noa.get('isRead'),
             })
         
@@ -3913,10 +4016,12 @@ def get_top_posts():
                 document_id=post.get('userId'),
                 queries=[Query.select(['username', 'userId'])]
             )
+        url = f'/post/{post.get("postId")}'
         postz.append({
                     "id": post.get("postId"),
                     "title": post.get("title"),
                     "content": post.get("content"),
+                    "link":url,
                     "tag": post.get("category"),
                     "time": format_relative_time(post.get("added")),
                     'authorAvatar': '/placeholder.svg?height=32&width=32',
@@ -3986,13 +4091,16 @@ def countdowns():
                 Query.is_not_null('airingAt'),
                 Query.select(["mainId", "english","romaji","airingAt","nextAiringEpisode"]),
                 Query.order_asc("airingAt"),
+                Query.limit(100)
             ] # optional
         )
 
     count = topUpcoming.get('documents', [])
     animes = []
+    
 
     for anii in count:
+        print(anii.get('mainId'), anii.get('english'))
 
         img = databases.get_document(
                 database_id = os.getenv('DATABASE_ID'),

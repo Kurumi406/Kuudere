@@ -463,13 +463,13 @@
 
                     <!-- Episodes List -->
                     <div
-                        class="space-y-4 max-h-[calc(100vh-200px)] lg:max-h-[600px] overflow-y-auto pr-4 scrollbar-thin scrollbar-thumb-[#FF0000] scrollbar-track-[#1a1a1a]">
+                        class="space-y-4 max-h-[calc(100vh-200px)] lg:min-h-[600px] lg:max-h-[600px] overflow-y-auto pl-4 pr-4 pb-4 scrollbar-thin scrollbar-thumb-[#FF0000] scrollbar-track-[#1a1a1a] bg-black rounded-md border border-[#808080]">
                         <template x-for="episode in filteredEpisodes" :key="episode.id">
                             <button @click="selectEpisode(episode.number)" class="w-full text-left group">
                                 <div class="episode bg-black p-4 rounded-lg cursor-pointer hover:bg-[#412c2c] transition-colors duration-200"
                                     :class="{
                                         'border-2 border-red-600': currentEpisode === episode.number,
-                                        'border-2 border-transparent hover:border-gray-700': currentEpisode !== episode.number
+                                        'border-2 border-gray-600 hover:border-gray-700': currentEpisode !== episode.number
                                     }">
                                     <div class="flex items-center">
                                         <div

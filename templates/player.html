@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Play Anime</title>
+    <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: black;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .plyr__video-embed {
+            aspect-ratio: 16 / 9;
+            max-width: 100%;
+            position: relative;
+        }
+
+        #loading-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 999;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .plyr__caption {
+            background: transparent;
+            color: white;
+            text-shadow:
+                0px 0px 4px rgba(0, 0, 0, 0.7),
+                0px 2px 2px rgba(0, 0, 0, 0.5);
+            font-weight: 600;
+            padding: 0;
+            font-size: 4.5vw;
+        }
+
+        @media screen and (min-width: 768px) {
+            .plyr__caption {
+                font-size: 3.5vw;
+            }
+        }
+
+        @media screen and (min-width: 1024px) {
+            .plyr__caption {
+                font-size: 2.5vw;
+            }
+        }
+
+        @media screen and (min-width: 1440px) {
+            .plyr__caption {
+                font-size: 36px;
+            }
+        }
+
+        .plyr--fullscreen-active .plyr__caption {
+            font-size: 4vw;
+        }
+
+        .plyr--captions-active .plyr__captions {
+            background: transparent;
+        }
+
+        .plyr__caption:hover {
+            background: transparent;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-900 text-white h-screen flex items-center justify-center">
+    <!-- Video Player -->
+    <div class="w-full h-full">
+        <video id="video-player" class="plyr w-full h-full" controls crossorigin="anonymous">
+
+            <!-- Fallback -->
+            Your browser does not support HTML5 video. Upgrade your browser to view this content.
+        </video>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const video = document.getElementById('video-player');
+            const loadingScreen = document.getElementById('loading-screen');
+            const source = "{{ video_url }}";
+            const subtitles = {{ subtitles| tojson | safe}};
+
+        // Add custom styles for subtitles
+        const subtitleStyles = `
+        .plyr__captions {
+            background: transparent;
+            padding: 0;
+        }
+
+        .plyr__caption {
+            background-color: transparent;
+            color: white;
+            text-shadow:
+                -2px -2px 0 #000,
+                2px -2px 0 #000,
+                -2px 2px 0 #000,
+                2px 2px 0 #000;
+            font-weight: 600;
+        }
+
+        @media screen and (min-width: 768px) {
+            .plyr__caption {
+                font-size: 14px;
+                text-shadow: 
+                    -1px -1px 0 #000,
+                    1px -1px 0 #000,
+                    -1px 1px 0 #000,
+                    1px 1px 0 #000,
+                    0px 0px 6px rgba(0, 0, 0, 1);
+            }
+        }
+
+        @media screen and (min-width: 1024px) {
+            .plyr__caption {
+                 font-size: 20px;
+                text-shadow: 
+                    -1px -1px 0 #000,
+                    1px -1px 0 #000,
+                    -1px 1px 0 #000,
+                    1px 1px 0 #000,
+                    0px 0px 6px rgba(0, 0, 0, 1);
+            }
+        }
+
+        @media screen and (min-width: 1440px) {
+            .plyr__caption {
+                 font-size: 36px;
+                text-shadow: 
+                    -1px -1px 0 #000,
+                    1px -1px 0 #000,
+                    -1px 1px 0 #000,
+                    1px 1px 0 #000,
+                    0px 0px 6px rgba(0, 0, 0, 1);
+            }
+        }
+
+        .plyr--fullscreen-active .plyr__caption {
+            font-size: 4vw;
+        }
+
+        .plyr--captions-active .plyr__captions {
+            background: transparent;
+        }
+
+        .plyr__caption:hover {
+            background: transparent;
+        }
+    `;
+
+        const styleSheet = document.createElement("style");
+        styleSheet.textContent = subtitleStyles;
+        document.head.appendChild(styleSheet);
+
+        function showLoading() {
+            loadingScreen.style.display = 'flex';
+        }
+
+        function hideLoading() {
+            loadingScreen.style.display = 'none';
+        }
+
+        if (Hls.isSupported()) {
+            hls = new Hls({
+                capLevelToPlayerSize: true,
+                autoStartLoad: true
+            });
+
+            // Load source into hls
+            hls.loadSource(source);
+            hls.on(Hls.Events.MANIFEST_PARSED, function (event, data) {
+                const availableQualities = hls.levels.map((l) => l.height);
+
+                // Initialize Plyr
+                const player = new Plyr(video, {
+                    captions: { active: true, update: true, language: 'en' },
+                    quality: {
+                        default: availableQualities[0],
+                        options: availableQualities,
+                        forced: true,
+                        onChange: (e) => updateQuality(e)
+                    },
+                    controls: [
+                        'play-large',
+                        'play',
+                        'progress',
+                        'current-time',
+                        'mute',
+                        'volume',
+                        'settings',
+                        'fullscreen'
+                    ]
+                });
+
+                // Attach media to video element
+                hls.attachMedia(video);
+                hideLoading();
+
+                // Handle quality changes
+                function updateQuality(newQuality) {
+                    if (newQuality === 0) {
+                        hls.currentLevel = -1; //Enable AUTO quality if option "Default" is chosen
+                    } else {
+                        hls.levels.forEach((level, levelIndex) => {
+                            if (level.height === newQuality) {
+                                hls.currentLevel = levelIndex;
+                            }
+                        });
+                    }
+                }
+            });
+
+            // Optional: Handle HLS errors
+            hls.on(Hls.Events.ERROR, function (event, data) {
+                if (data.fatal) {
+                    switch (data.type) {
+                        case Hls.ErrorTypes.NETWORK_ERROR:
+                            hls.startLoad();
+                            break;
+                        case Hls.ErrorTypes.MEDIA_ERROR:
+                            hls.recoverMediaError();
+                            break;
+                        default:
+                            initPlayer();
+                            break;
+                    }
+                }
+            });
+        }
+
+        subtitles.forEach(subtitle => {
+            if (subtitle.kind === 'captions') {
+                const track = document.createElement('track');
+                track.kind = subtitle.kind;
+                track.label = subtitle.label;
+                track.srclang = subtitle.label.split(' ')[0].toLowerCase();
+                track.src = subtitle.file;
+                if (subtitle.default) {
+                    track.default = true;
+                }
+                video.appendChild(track);
+            }
+        });
+
+        showLoading();
+        video.addEventListener('canplay', hideLoading);
+});
+    </script>
+</body>
+
+</html>

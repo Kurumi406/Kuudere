@@ -363,16 +363,26 @@
                                 this.page[type] = 1;
                                 this.hasMore[type] = true;
                             }
+                            if (!this.hasMore[type]) {
+                                this.isLoading = false;
+                                return;
+                            }
                             try {
                                 const response = await fetch(`/api/notifications/${type}?page=${this.page[type]}`);
                                 const data = await response.json();
+                                
+                                // Filter out duplicates
+                                const newNotifications = data.notifications.filter(newNotif => 
+                                    !this.notifications[type].some(existingNotif => existingNotif.id === newNotif.id)
+                                );
+                                
                                 if (loadMore) {
-                                    this.notifications[type] = [...this.notifications[type], ...data.notifications];
+                                    this.notifications[type] = [...this.notifications[type], ...newNotifications];
                                 } else {
-                                    this.notifications[type] = data.notifications;
+                                    this.notifications[type] = newNotifications;
                                 }
                                 this.hasMore[type] = data.has_more;
-                                this.page[type]++;
+                                this.page[type] = data.page + 1;
                             } catch (error) {
                                 console.error('Error fetching notifications:', error);
                             }
@@ -412,13 +422,13 @@
                         <!-- Notification Icon -->
                         <button
                             @click="isOpen = !isOpen; if(isOpen) { activeTab = 'anime'; fetchNotifications('anime') }"
-                            class="theme-home-gray  hover:text-theme-red transition-colors focus:outline-none relative"
+                            class="theme-home-gray hover:text-theme-red transition-colors focus:outline-none relative"
                             aria-label="Open notifications">
                             <i data-lucide="bell" class="w-6 h-6"></i>
                             <span
                                 class="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-theme-red rounded-full">3</span>
                         </button>
-
+                    
                         <!-- Notification Popup -->
                         <div x-cloak x-show="isOpen" x-transition:enter="transition ease-out duration-200"
                             x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
@@ -426,7 +436,7 @@
                             <!-- Tabs -->
                             <div class="flex relative border-b border-white/10">
                                 <button @click="activeTab = 'community'; fetchNotifications('community')"
-                                    :class="{'text-theme-red': activeTab === 'community', 'theme-home-gray ': activeTab !== 'community'}"
+                                    :class="{'text-theme-red': activeTab === 'community', 'theme-home-gray': activeTab !== 'community'}"
                                     class="flex-1 py-3 text-sm font-medium transition-colors relative z-10 overflow-hidden">
                                     <span class="relative z-10">Community</span>
                                     <span x-show="activeTab === 'community'"
@@ -436,7 +446,7 @@
                                         class="absolute inset-0 bg-white/10 rounded-t-lg tab-slide-enter"></span>
                                 </button>
                                 <button @click="activeTab = 'anime'; fetchNotifications('anime')"
-                                    :class="{'text-theme-red': activeTab === 'anime', 'theme-home-gray ': activeTab !== 'anime'}"
+                                    :class="{'text-theme-red': activeTab === 'anime', 'theme-home-gray': activeTab !== 'anime'}"
                                     class="flex-1 py-3 text-sm font-medium transition-colors relative z-10 overflow-hidden">
                                     <span class="relative z-10">Anime</span>
                                     <span x-show="activeTab === 'anime'"
@@ -446,7 +456,7 @@
                                         class="absolute inset-0 bg-white/10 rounded-t-lg tab-slide-enter"></span>
                                 </button>
                                 <button @click="activeTab = 'system'; fetchNotifications('system')"
-                                    :class="{'text-theme-red': activeTab === 'system', 'theme-home-gray ': activeTab !== 'system'}"
+                                    :class="{'text-theme-red': activeTab === 'system', 'theme-home-gray': activeTab !== 'system'}"
                                     class="flex-1 py-3 text-sm font-medium transition-colors relative z-10 overflow-hidden">
                                     <span class="relative z-10">System</span>
                                     <span x-show="activeTab === 'system'"
@@ -459,16 +469,16 @@
                                     class="absolute bottom-0 left-0 h-0.5 bg-theme-red transition-all duration-300 ease-out"
                                     :style="{ width: '33.333%', transform: `translateX(${activeTab === 'community' ? '0' : activeTab === 'anime' ? '100%' : '200%'})` }"></span>
                             </div>
-
+                    
                             <!-- Mark all as read button -->
                             <div class="p-2 border-b border-white/10">
                                 <button @click="// Add mark all as read functionality here"
-                                    class="w-full py-1 px-3 text-xs font-medium theme-home-gray  hover:text-theme-red transition-colors focus:outline-none flex items-center justify-center">
+                                    class="w-full py-1 px-3 text-xs font-medium theme-home-gray hover:text-theme-red transition-colors focus:outline-none flex items-center justify-center">
                                     <i data-lucide="check" class="w-4 h-4 mr-1"></i>
                                     Mark all as read
                                 </button>
                             </div>
-
+                    
                             <!-- Notification Content -->
                             <div class="max-h-[400px] min-h-[200px] overflow-y-auto scrollbar-thin border-t border-white/10"
                                 @scroll="handleScroll">
@@ -484,10 +494,10 @@
                                 <div x-show="!isLoading && notifications[activeTab].length === 0"
                                     class="flex flex-col items-center justify-center py-12 px-4">
                                     <i data-lucide="package-open" class="w-12 h-12 theme-home-gray mb-3"></i>
-                                    <p class="theme-home-gray  text-sm">No Notifications</p>
+                                    <p class="theme-home-gray text-sm">No Notifications</p>
                                 </div>
                                 <!-- Notifications -->
-                                <template x-for="notification in notifications[activeTab]" :key="notification.id">
+                                <template x-for="(notification, index) in notifications[activeTab]" :key="`${activeTab}-${notification.id}`">
                                     <a x-bind:href="notification.link" class="notification-item border-b border-white/10">
                                         <div class="p-3">
                                             <div class="flex gap-2">
@@ -505,11 +515,11 @@
                                             </div>
                                         </div>
                                     </a>
-                                </template>                                
+                                </template>
                                 <!-- Load More -->
                                 <div x-show="hasMore[activeTab] && !isLoading" class="p-2 text-center">
                                     <button @click="fetchNotifications(activeTab, true)"
-                                        class="text-xs theme-home-gray  hover:text-theme-red transition-colors focus:outline-none">
+                                        class="text-xs theme-home-gray hover:text-theme-red transition-colors focus:outline-none">
                                         Load More
                                     </button>
                                 </div>

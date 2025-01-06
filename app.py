@@ -3839,7 +3839,6 @@ def get_notifications(notification_type):
     secret = request.args.get('secret')
     key = request.args.get('key')
     
-    isKey = bool(secret)
     if secret:
         isKey = True
         print("Key exists: ", secret)
@@ -3849,12 +3848,15 @@ def get_notifications(notification_type):
         print("Key is missing or empty, setting default secret.")
     
     try:
-        offset = int(request.args.get('offset', 0))
+        page = int(request.args.get('page', 1))
+        per_page = 6  # Number of notifications per page
+        offset = (page - 1) * per_page
+
         if 'session_secret' in session:
             client = get_client(session["session_secret"], None)
             account = Account(client)
             acc = account.get()
-        elif bool(key):
+        elif key:
             client = get_client(key, secret)
             account = Account(client)
             acc = account.get()
@@ -3884,7 +3886,7 @@ def get_notifications(notification_type):
             database_id=os.getenv('DATABASE_ID'),
             collection_id=os.getenv('Notifications'),
             queries=[
-                Query.limit(6),
+                Query.limit(per_page + 1),  # Fetch one extra to check if there are more
                 Query.offset(offset),
                 Query.equal('userId', acc.get("$id")),
                 Query.order_desc("time"),
@@ -3897,7 +3899,7 @@ def get_notifications(notification_type):
         )
 
         noti = []
-        for noa in notifications['documents']:
+        for noa in notifications['documents'][:per_page]:  # Process only up to per_page items
             imgurl = "https://g-t9mgc8zy9ce.vusercontent.net/placeholder.svg?height=200&width=100"
             url = '#'
             if noa.get('relatedEpId') and notification_type == 'anime':
@@ -3931,33 +3933,38 @@ def get_notifications(notification_type):
                 
                 imgurl = img['documents'][0]['cover']
             elif noa.get('relatedEpId') and notification_type == 'community':
-                ep = databases.get_document(
-                    database_id=os.getenv('DATABASE_ID'),
-                    collection_id=os.getenv('Anime_Episodes'),
-                    document_id=noa.get('relatedEpId'),
-                    queries=[
-                        Query.select(['number','animeId'])
-                    ]
-                )
-                img = databases.list_documents(
-                    database_id = os.getenv('DATABASE_ID'),
-                    collection_id = os.getenv('ANIME_IMGS'),
-                    queries=[
-                        Query.equal('animeId',ep.get('animeId')),
-                        Query.select(['cover'])
-                    ]
-                )
+                try:
+                    ep = databases.get_document(
+                        database_id=os.getenv('DATABASE_ID'),
+                        collection_id=os.getenv('Anime_Episodes'),
+                        document_id=noa.get('relatedEpId'),
+                        queries=[
+                            Query.select(['number','animeId'])
+                        ]
+                    )
+                    img = databases.list_documents(
+                        database_id = os.getenv('DATABASE_ID'),
+                        collection_id = os.getenv('ANIME_IMGS'),
+                        queries=[
+                            Query.equal('animeId',ep.get('animeId')),
+                            Query.select(['cover'])
+                        ]
+                    )
 
-                anime = databases.list_documents(
-                    database_id=os.getenv('DATABASE_ID'),
-                    collection_id=os.getenv('Anime'),
-                    queries=[
-                        Query.equal("animeId", ep.get('animeId')),  # Ensure `anii` is properly defined
-                        Query.select(["mainId"])
-                    ]
-                )
+                    anime = databases.list_documents(
+                        database_id=os.getenv('DATABASE_ID'),
+                        collection_id=os.getenv('Anime'),
+                        queries=[
+                            Query.equal("animeId", ep.get('animeId')),  # Ensure `anii` is properly defined
+                            Query.select(["mainId"])
+                        ]
+                    )
 
-                url = f'/watch/{anime['documents'][0]['mainId']}/{ep.get('number')}'
+                    url = f'/watch/{anime['documents'][0]['mainId']}/{ep.get('number')}'
+                except Exception as e:
+                    if str(e) == "Document with the requested ID could not be found.":
+                        url = "/#"
+
                 
             noti.append({
                 "id":noa.get('notificationId'),
@@ -3970,17 +3977,17 @@ def get_notifications(notification_type):
             })
         
         # Check if there are more notifications
-        total_notifications = notifications['total']
-        has_more = offset + 6 < total_notifications
+        has_more = len(notifications['documents']) > per_page
         
         return jsonify({
             'notifications': noti,
             'has_more': has_more,
+            'page': page,
         })
     
     except Exception as e:
         print(f"Error: {e}")
-        return jsonify({'success': False, 'message': e}), 401
+        return jsonify({'success': False, 'message': str(e)}), 404
 
 @app.route('/api/top/posts', methods=['GET'])
 def get_top_posts():

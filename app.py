@@ -170,23 +170,19 @@ def login_required(f):
 @lru_cache(maxsize=1000)
 def get_file_hash(filepath):
     """
-    Calculate MD5 hash of file for versioning.
-    Takes into account both content and modification time for CSS files.
+    Calculate MD5 hash of a file for versioning.
+    Includes both file content and modification time.
     """
     if not os.path.exists(filepath):
         return None
-        
-    # Check if the file is a CSS, JS, PNG, or JPG file (fix the condition here)
-    is_static_file = filepath.endswith(('.css', '.js', '.png', '.jpg'))
-    
+
     with open(filepath, 'rb') as f:
         content = f.read()
-        
-    if is_static_file:
-        # Include modification time for these files to force cache invalidation
-        mtime = str(os.path.getmtime(filepath))
-        content = content + mtime.encode()
-        
+
+    # Append modification time to ensure unique hash on file updates
+    mtime = str(os.path.getmtime(filepath))
+    content += mtime.encode()
+
     return hashlib.md5(content).hexdigest()[:8]
 
 def clear_file_hash_cache():
@@ -195,7 +191,7 @@ def clear_file_hash_cache():
 
 def versioned_url_for(endpoint, **values):
     """
-    Override url_for to add version hash for static files.
+    Add a version hash to static file URLs for cache busting.
     """
     if endpoint == 'static':
         filename = values.get('filename', None)
@@ -226,6 +222,33 @@ def add_cache_control_headers(response):
     databases = Databases(client)
     
     vid = ID.unique()
+
+    """
+    Add Cache-Control and ETag headers for static files.
+    """
+    if request.path.startswith('/static/'):
+        # Check if the request is for a static file
+        is_static_file = request.path.endswith(('.css', '.js', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico'))
+        
+        if is_static_file:
+            # Set cache duration based on file type
+            max_age = int(timedelta(days=365).total_seconds())
+            response.headers['Cache-Control'] = f'public, max-age={max_age}'
+
+            # Generate and set ETag
+            try:
+                filepath = os.path.join(app.static_folder, request.path.replace('/static/', '', 1))
+                file_hash = get_file_hash(filepath)
+                if file_hash:
+                    response.set_etag(file_hash)
+            except (OSError, IOError):
+                pass
+    
+    
+    excluded_routes = ['/api/', '/save/progress/','/static/']
+    if any(request.path.startswith(route) for route in excluded_routes):
+        # Skip logging for excluded routes
+        return response
     
     view = databases.create_document(
         database_id=os.getenv('DATABASE_ID'),
@@ -245,40 +268,18 @@ def add_cache_control_headers(response):
         request.full_path, 
         response.status_code
     )
-    print (request.headers.get('X-Forwarded-For', request.remote_addr).split(',')[0])
-    """Add Cache-Control headers for static files."""
-    if request.path.startswith('/static/'):
-        # Fix: Check for CSS, JS, PNG, or JPG files correctly
-        is_static_file = request.path.endswith(('.css', '.js', '.png', '.jpg'))
-        
-        # Set different cache durations based on file type
-        if is_static_file:
-            # Shorter cache duration for CSS/JS files
-            max_age = int(timedelta(hours=1).total_seconds())
-        else:
-            # Longer cache duration for other static files
-            max_age = int(timedelta(days=365).total_seconds())
-            
-        response.headers['Cache-Control'] = f'public, max-age={max_age}'
-        
-        try:
-            # Attempt to set ETag for static files
-            filepath = os.path.join(app.static_folder, request.path.replace('/static/', '', 1))
-            file_hash = get_file_hash(filepath)
-            if file_hash:
-                response.set_etag(file_hash)
-        except (OSError, IOError):
-            pass
-            
+
     return response
 
 # Clear cache periodically (optional)
 @app.before_request
 def clear_expired_cache():
-    """Clear the file hash cache periodically"""
-    # Clear cache every hour
-    clear_file_hash_cache()
-
+    """
+    Clear the file hash cache periodically or under specific conditions.
+    """
+    # Example: Clear cache every 1 hour
+    if datetime.now().minute == 0:
+        get_file_hash.cache_clear()
 # Override Flask's url_for with our versioned version
 app.jinja_env.globals['url_for'] = versioned_url_for
 

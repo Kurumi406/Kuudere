@@ -10,6 +10,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
     <script src="https://unpkg.com/swiper/swiper-bundle.min.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/swiper/swiper-bundle.min.css" />
+    <script src="{{ url_for('static', filename='js/socket.io.min.js') }}"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -56,7 +57,7 @@
     class="bg-theme-black text-white min-h-screen relative overflow-x-hidden scrollbar-thin scrollbar-thumb-[#FF0000] scrollbar-track-[#2a2a2a]"
     x-data="faqPage">
     <!-- Moving Balls Container -->
-    <div id="moving-elements" class="fixed inset-0 overflow-hidden pointer-events-none"></div>
+    <div id="moving-elements" class="fixed inset-0 overflow-hidden pointer-events-none" x-data="joinRealtime()" x-init="initializeSocket()"></div>
 
     <div class="container mx-auto px-4 py-12 relative z-10">
         <h1 class="text-4xl font-bold mb-8 text-center">Frequently Asked Questions</h1>
@@ -127,6 +128,10 @@
                 Alpine.data('faqPage', () => ({
                     faqs: [
                         {
+                            question: "Why Site Name is Kuudere But There Is Kurumi's Image she isn't Kuudere type?",
+                            answer: "Bcz I freaking Love Her, Got a Problem With that!? Good Then Continue :)",
+                        },
+                        {
                             question: "What is Kuudere?",
                             answer: "Kuudere is an anime streaming platform that offers a wide variety of anime series and movies.",
                         },
@@ -189,7 +194,7 @@
                             question: "How can I request an anime to be added to Kuudere?",
                             answer: "You can submit anime requests through our community page",
                             references: [
-                                { title: "Kuudere Anime Request", url: "https://kuudere.com/request" }
+                                { title: "Kuudere Anime Request", url: "/request" }
                             ]
                         },
                         {
@@ -300,6 +305,31 @@
                     animateElement(element);
                 }
             });
+            function joinRealtime(){
+            console.log("lol")
+            return{
+            socket: null,
+            currentRoom: null,
+            initializeSocket() {
+                        this.socket = io({ transports: ['websocket'] });
+
+                        this.socket.on('connect', () => {
+                            console.log('Connected to server');
+                            this.joinRoom();
+                        });
+                    },
+                    joinRoom() {
+                    const part = 'faq'
+                    console.log(part);
+                    if (this.currentRoom) {
+                        this.socket.emit('leave', { room: this.currentRoom });
+                    }
+                    this.currentRoom = part;
+                    this.socket.emit('join', { other_id: this.currentRoom });
+                    this.socket.emit('get_current_room_count', { room: this.currentRoom }); // Request count for the current room
+                }
+                }
+            }
         </script>
 </body>
 

@@ -21,7 +21,7 @@
         }
     </style>
 </head>
-<div class="bg-black min-h-screen p-4 md:p-8">
+<div class="bg-black min-h-screen p-4 md:p-8" x-data="joinRealtime()" x-init="initializeSocket()">
     <div class="max-w-7xl mx-auto">
         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
             {% for anime in animes %}
@@ -120,5 +120,30 @@
                 easing: 'spring(1, 80, 10, 0)'
             });
         });
+        function joinRealtime(){
+            console.log("lol")
+            return{
+            socket: null,
+            currentRoom: null,
+            initializeSocket() {
+                        this.socket = io({ transports: ['websocket'] });
+
+                        this.socket.on('connect', () => {
+                            console.log('Connected to server');
+                            this.joinRoom();
+                        });
+                    },
+                    joinRoom() {
+                    const part = 'countdowns'
+                    console.log(part);
+                    if (this.currentRoom) {
+                        this.socket.emit('leave', { room: this.currentRoom });
+                    }
+                    this.currentRoom = part;
+                    this.socket.emit('join', { other_id: this.currentRoom });
+                    this.socket.emit('get_current_room_count', { room: this.currentRoom }); // Request count for the current room
+                }
+                }
+            }
     </script>
 {% endblock %}

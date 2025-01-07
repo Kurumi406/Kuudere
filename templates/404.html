@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 - Page Not Found | Kuudere</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            background-color: #000;
+            color: #fff;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .error-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .error-image {
+            width: 200px;
+            height: auto;
+            margin-bottom: 1rem;
+        }
+
+        .error-code {
+            font-size: 2.5rem;
+            font-weight: 500;
+            margin: 0;
+            color: #fff;
+        }
+
+        .error-message {
+            font-size: 1rem;
+            color: #888;
+            margin: 0;
+        }
+
+        .back-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background: #ff0000;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 50px;
+            font-size: 0.875rem;
+            transition: all 0.2s ease;
+        }
+
+        .back-button:hover {
+            background: #cc0000;
+            transform: translateY(-1px);
+        }
+    </style>
+</head>
+<body>
+    <div class="error-container">
+        <img src="{{ url_for('static', filename='404.png') }}" alt="Error Illustration" class="error-image">
+        <h1 class="error-code">404 Error</h1>
+        <p class="error-message">Oops! We can't find this page.</p>
+        <a href="/home" class="back-button">Back to homepage</a>
+    </div>
+</body>
+</html>

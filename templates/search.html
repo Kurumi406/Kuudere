@@ -22,7 +22,7 @@
         transform: translateY(0);
     }
 </style>
-<div class="bg-black min-h-screen p-8">
+<div class="bg-black min-h-screen p-8" x-data="joinRealtime()" x-init="initializeSocket()">
     <div class="max-w-7xl mx-auto" x-data="{
         searchQuery: '',
         selectedGenres: [],
@@ -193,7 +193,7 @@
                     <div id="year-dropdown" x-show="dropdownStates.year" x-cloak @click.away="closeDropdown('year')"
                         class="dropdown-content scrollbar-thin absolute z-40 mt-1 w-full max-h-60 overflow-y-auto glass rounded-lg">
                         <div class="p-2">
-                            <template x-for="year in Array.from({length: 50}, (_, i) => 2024 - i)">
+                            <template x-for="year in Array.from({length: 50}, (_, i) => 2025 - i)">
                                 <div class="flex items-center space-x-2 mb-2">
                                     <input type="checkbox" :id="'year_' + year" :value="year" x-model="selectedYears"
                                         class="w-4 h-4 rounded border-slate-600 text-blue-500 focus:ring-blue-500 focus:ring-offset-slate-800 bg-slate-700">
@@ -542,6 +542,32 @@
                 return url + separator + param + "=" + value;
             }
         }
+        function joinRealtime(){
+            console.log("lol")
+            return{
+            socket: null,
+            currentRoom: null,
+            initializeSocket() {
+                        this.socket = io({ transports: ['websocket'] });
+
+                        this.socket.on('connect', () => {
+                            console.log('Connected to server');
+                            this.joinRoom();
+                        });
+                    },
+                    joinRoom() {
+                    const part = 'search'
+                    console.log(part);
+                    if (this.currentRoom) {
+                        this.socket.emit('leave', { room: this.currentRoom });
+                    }
+                    this.currentRoom = part;
+                    this.socket.emit('join', { other_id: this.currentRoom });
+                    this.socket.emit('get_current_room_count', { room: this.currentRoom }); // Request count for the current room
+                }
+                }
+            }
+            window.dispatchEvent(new Event('join-room'));
     </script>
 </div>
 {% endblock %}

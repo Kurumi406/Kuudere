@@ -7,18 +7,20 @@
     <title>Kuuere - Free Anime Streaming Platform</title>
     <link href="{{ url_for('static', filename='css/output.css') }}" rel="stylesheet">
     <link rel="icon" href="{{ url_for('static', filename='favicon.png') }}" type="image/x-icon">
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="{{ url_for('static', filename='js/socket.io.min.js') }}"></script>
 </head>
 
-<body class="bg-primary text-white" x-data="{ searchQuery: '', isMenuOpen: false }">
+<body class="bg-primary text-white" x-data="{ searchQuery: '', isMenuOpen: false, ...searchBar() }">
     <!-- Navigation -->
 
-
     <!-- Hero Section -->
-    <div class="relative min-h-screen bg-primary">
+    <div class="relative min-h-screen bg-primary" x-data="joinRealtime()" x-init="initializeSocket()">
         <!-- Background with anime characters -->
         <div class="absolute inset-0 w-full h-full">
             <div class="absolute inset-0 bg-gradient-to-b from-transparent to-primary/90 z-10"></div>
-            <img src="{{ url_for('static', filename='kurumi-bg.jpg') }}"alt="Kurumi"
+            <img src="{{ url_for('static', filename='kurumi-bg.jpg') }}" alt="Kurumi"
                 class="w-full h-full object-cover object-center">
         </div>
 
@@ -38,17 +40,63 @@
                     <div class="flex flex-col items-center justify-center">
                         <!-- Search Bar -->
                         <img src="{{ url_for('static', filename='logo.png') }}" width="200px" class="lazyload">
-                        <div class="w-full max-w-md mb-6 mt-6">
+                        <div class="w-full max-w-md mb-6 mt-6 relative">
                             <div class="relative">
                                 <input type="text" placeholder="Search anime..."
-                                    class="w-full px-5 py-4 bg-black/40 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-accent/50">
+                                    class="w-full px-5 py-4 bg-black/40 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-accent/50"
+                                    x-model="searchQuery"
+                                    @input.debounce.300ms="fetchResults"
+                                    @click.away="clearResults">
                                 <button
-                                    class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-accent">
+                                    class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-accent"
+                                    @click="fetchResults">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                             d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                                     </svg>
                                 </button>
+                            </div>
+                            <!-- Search Results Dropdown -->
+                            <div x-show="searchQuery.length > 0" x-cloak
+                                class="absolute w-full mt-2 bg-black/80 backdrop-blur-md rounded-lg shadow-lg overflow-hidden z-50">
+                                <!-- Loading indicator -->
+                                <div x-show="isLoading" class="px-4 py-2 text-center text-sm text-gray-400">
+                                    Loading...
+                                </div>
+                                <!-- Search Results -->
+                                <template x-if="!isLoading && searchResults.length > 0">
+                                    <div>
+                                        <template x-for="result in searchResults" :key="result.id">
+                                            <a :href="`/anime/${result.id}`"
+                                                class="flex items-center px-4 py-2 text-sm text-gray-200 hover:bg-red-500/20 transition dropdown-item"
+                                                @mouseover="highlightItem($event)" @mouseleave="resetHighlight($event)">
+                                                <!-- Small Cover Image -->
+                                                <img :src="result.coverImage" alt="Cover Image"
+                                                    class="w-10 h-14 mr-3 rounded-md object-cover" />
+                                                <!-- Title and Details -->
+                                                <div>
+                                                    <p class="font-bold text-white" x-text="result.title"></p>
+                                                    <p class="text-xs text-gray-400" x-text="result.details"></p>
+                                                </div>
+                                            </a>
+                                        </template>
+                                        <!-- View All Button -->
+                                        <a :href="`/search?keyword=${searchQuery}`"
+                                            class="block px-4 py-2 text-center text-sm font-bold text-red-500 bg-black/60 hover:bg-red-500/20 transition">
+                                            View All Results
+                                        </a>
+                                    </div>
+                                </template>
+                                <!-- If no results are found -->
+                                <template x-if="!isLoading && searchResults.length === 0">
+                                    <div class="px-4 py-6 text-center text-sm text-gray-400">
+                                        <p>Nothing Found</p>
+                                        <a href="/search"
+                                            class="mt-4 inline-block px-4 py-2 text-sm font-bold text-red-500 bg-black/60 rounded-md hover:bg-red-500/20 transition">
+                                            Find Out More
+                                        </a>
+                                    </div>
+                                </template>
                             </div>
                         </div>
 
@@ -104,11 +152,11 @@
                                     here.</li>
                                 <li>• Streaming experience: We have top of the line streaming servers. You can simply
                                     choose one that is fast for you.</li>
-                                <li>• We are based on <a class="hover:text-accent/80"
+                                <li class="hidden">• We are based on <a class="hover:text-accent/80"
                                         href="http://pfo5xckqttdpyfaa3udik2wg5z6uata2ax5wvniqy6s52wcfrzwvsyyd.onion">TOR</a>
                                     & <a class="hover:text-accent/80"
                                         href="http://ruif5ytuzjjtsjekdwsd7owo73hfaclzlatzy3jwylp3goyjudva.b32.i2p">I2P</a>
-                                    network so it is nearly impossible to takedown us.</li>
+                                    network.</li>
                                 <li>• Still Got Questions? <a class="hover:text-accent/80"
                                         href="/faq">Browse our F&Q</a>
                             </ul>
@@ -154,6 +202,96 @@
                 observer.observe(el);
             });
         });
+
+        // Search bar functionality
+        function searchBar() {
+            return {
+                searchQuery: '',
+                searchResults: [],
+                isLoading: false,
+
+                async fetchResults() {
+                    if (this.searchQuery.trim().length === 0) {
+                        this.searchResults = [];
+                        this.isLoading = false;
+                        return;
+                    }
+
+                    this.isLoading = true;
+
+                    try {
+                        const response = await fetch(`/search-api?q=${this.searchQuery}`);
+                        if (!response.ok) throw new Error('Network response was not ok');
+                        this.searchResults = await response.json();
+
+                        if (this.searchResults.length > 0) {
+                            anime({
+                                targets: '.dropdown-item',
+                                opacity: [0, 1],
+                                translateY: [10, 0],
+                                delay: anime.stagger(100),
+                                easing: 'easeOutExpo',
+                                duration: 500,
+                            });
+                        }
+                    } catch (error) {
+                        console.error('Error fetching search results:', error);
+                        this.searchResults = [];
+                    } finally {
+                        this.isLoading = false;
+                    }
+                },
+
+                clearResults() {
+                    this.searchResults = [];
+                    this.isLoading = false;
+                    this.searchQuery = '';
+                },
+
+                highlightItem(event) {
+                    anime({
+                        targets: event.currentTarget,
+                        scale: 1.05,
+                        duration: 300,
+                        easing: 'easeOutQuad',
+                    });
+                },
+
+                resetHighlight(event) {
+                    anime({
+                        targets: event.currentTarget,
+                        scale: 1,
+                        duration: 300,
+                        easing: 'easeOutQuad',
+                    });
+                },
+            };
+        }
+        function joinRealtime(){
+            console.log("lol")
+            return{
+            socket: null,
+            currentRoom: null,
+            initializeSocket() {
+                        this.socket = io({ transports: ['websocket'] });
+
+                        this.socket.on('connect', () => {
+                            console.log('Connected to server');
+                            this.joinRoom();
+                        });
+                    },
+                    joinRoom() {
+                    const part = '/'
+                    console.log(part);
+                    if (this.currentRoom) {
+                        this.socket.emit('leave', { room: this.currentRoom });
+                    }
+                    this.currentRoom = part;
+                    this.socket.emit('join', { other_id: this.currentRoom });
+                    this.socket.emit('get_current_room_count', { room: this.currentRoom }); // Request count for the current room
+                }
+                }
+            }
     </script>
 </body>
 

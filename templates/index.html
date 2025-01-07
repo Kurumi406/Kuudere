@@ -106,7 +106,7 @@
 
                         <!-- Title and Description -->
                         <h2 class="text-3xl lg:text-4xl font-bold text-white mb-2 line-clamp-2">{{ top.english }}</h2>
-                        <p class="text-gray-400 text-base max-w-2xl mb-4 line-clamp-3">{{ top.description | safe }}</p>
+                        <p class="text-gray-400 text-base max-w-2xl mb-4 line-clamp-3">{{ top.description }}</p>
 
                         <!-- Buttons -->
                         <div class="flex items-center gap-4">
@@ -331,13 +331,15 @@
                                         </svg>
                                         Watch now
                                     </a>
-                                    <button class="bg-gray-800 hover:bg-gray-700 p-2 rounded-md">
+                                    {% if  anime.epCount > 0 %}
+                                    <button class="bg-gray-800 hover:bg-gray-700 p-2 rounded-md hidden">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
                                             viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                 d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                                         </svg>
                                     </button>
+                                    {% endif %}
                                 </div>
                             </div>
                         </div>
@@ -428,6 +430,7 @@
                                     <p>Status: {{ anime.status }}</p>
                                     <p>Genres: {{ anime.genres | join(', ') }}</p>
                                 </div>
+                                {% if  anime.epCount > 0 %}
                                 <div class="mt-4 flex items-center gap-2">
                                     <a href="/watch/{{ anime.id }}/1"
                                         class="flex-1 bg-pink-600 hover:bg-pink-700 px-4 py-2 rounded-md text-sm font-medium flex items-center justify-center">
@@ -440,7 +443,7 @@
                                         </svg>
                                         Watch now
                                     </a>
-                                    <button class="bg-gray-800 hover:bg-gray-700 p-2 rounded-md">
+                                    <button class="bg-gray-800 hover:bg-gray-700 p-2 rounded-md hidden">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
                                             viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -448,6 +451,7 @@
                                         </svg>
                                     </button>
                                 </div>
+                                {% endif %}
                             </div>
                         </div>
                     </div>
@@ -619,6 +623,7 @@
                                     <p>Genres: {{ topUp.genres | join(', ') }}</p>
                                 </div>
                                 <div class="mt-4 flex items-center gap-2">
+                                    {% if topUp.epCount > 0 %}
                                     <button
                                         class="flex-1 bg-pink-600 hover:bg-pink-700 px-4 py-2 rounded-md text-sm font-medium flex items-center justify-center">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none"
@@ -630,7 +635,8 @@
                                         </svg>
                                         Watch now
                                     </button>
-                                    <button class="bg-gray-800 hover:bg-gray-700 p-2 rounded-md">
+                                    {% endif %}
+                                    <button class="bg-gray-800 hover:bg-gray-700 p-2 rounded-md hidden">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
                                             viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -919,16 +925,22 @@
     </div>
 </main>
 {% include "Changelog.html" %}
-<div x-data="counter()" x-init="initializeSocket()" @join-room.window="joinRoom()"
+<div x-data="counter()" x-init="setupSocket()" @join-room.window="joinRoom()"
     class="float-counter fixed bottom-8 right-8 rounded-full p-4 text-white flex items-center gap-2 z-50 cursor-pointer hover:scale-105 transition-transform duration-300"
     @mouseover="pulse()">
+    
+    <!-- Loading Animation (visible when isLoading is true) -->
+    <div x-show="isLoading" class="loading-spinner absolute inset-0 flex justify-center items-center">
+        <div class="w-8 h-8 border-4 border-t-transparent border-blue-500 border-solid rounded-full animate-spin"></div>
+    </div>
+
+    <!-- Counter Display -->
     <div class="relative overflow-hidden h-8">
         <span x-text="formatCount(totalCount)" class="number-animation inline-block text-xl font-bold"
             :class="{'number-up': increasing, 'number-down': decreasing}"></span>
     </div>
     <div class="w-2 h-2 rounded-full bg-red-500 animate-ping"></div>
 </div>
-
 
 <!-- ... (keep existing scripts) ... -->
 <script src="{{ url_for('static', filename='js/socket.io.min.js') }}"></script>
@@ -956,7 +968,7 @@
             latestEpisodes: [
                 {
                     title: "Attack on Titan Final Season",
-                    image: "https://g-t9mgc8zy9ce.vusercontent.net/placeholder.svg?height=400&width=300&text=AoT",
+                    image: "{{ url_for('static', filename='placeholder.svg') }}?height=400&width=300&text=AoT",
                     episodeNumber: 87,
                     quality: "1080p",
                     type: "TV",
@@ -972,7 +984,7 @@
                 },
                 {
                     title: "My Hero Academia Season 6",
-                    image: "https://g-t9mgc8zy9ce.vusercontent.net/placeholder.svg?height=400&width=300&text=MHA",
+                    image: "{{ url_for('static', filename='placeholder.svg') }}?height=400&width=300&text=MHA",
                     episodeNumber: 138,
                     quality: "1080p",
                     type: "TV",
@@ -989,22 +1001,22 @@
                 // ... (other anime entries)
             ],
             topAiring: [
-                { title: "Demon Slayer: Swordsmith Village Arc", image: "https://g-t9mgc8zy9ce.vusercontent.net/placeholder.svg?height=400&width=300&text=Demon+Slayer", rating: 9.2 },
-                { title: "Jujutsu Kaisen Season 2", image: "https://g-t9mgc8zy9ce.vusercontent.net/placeholder.svg?height=400&width=300&text=JJK", rating: 9.1 },
-                { title: "One Piece", image: "https://g-t9mgc8zy9ce.vusercontent.net/placeholder.svg?height=400&width=300&text=One+Piece", rating: 8.9 },
-                { title: "Spy x Family Part 2", image: "https://g-t9mgc8zy9ce.vusercontent.net/placeholder.svg?height=400&width=300&text=Spy+Family", rating: 8.8 },
+                { title: "Demon Slayer: Swordsmith Village Arc", image: "{{ url_for('static', filename='placeholder.svg') }}?height=400&width=300&text=Demon+Slayer", rating: 9.2 },
+                { title: "Jujutsu Kaisen Season 2", image: "{{ url_for('static', filename='placeholder.svg') }}?height=400&width=300&text=JJK", rating: 9.1 },
+                { title: "One Piece", image: "{{ url_for('static', filename='placeholder.svg') }}?height=400&width=300&text=One+Piece", rating: 8.9 },
+                { title: "Spy x Family Part 2", image: "{{ url_for('static', filename='placeholder.svg') }}?height=400&width=300&text=Spy+Family", rating: 8.8 },
                 // ... (other top airing anime)
             ],
             topAnime: [
-                { title: "Fullmetal Alchemist: Brotherhood", image: "https://g-t9mgc8zy9ce.vusercontent.net/placeholder.svg?height=60&width=100&text=FMAB" },
-                { title: "Death Note", image: "https://g-t9mgc8zy9ce.vusercontent.net/placeholder.svg?height=60&width=100&text=Death+Note" },
-                { title: "Steins;Gate", image: "https://g-t9mgc8zy9ce.vusercontent.net/placeholder.svg?height=60&width=100&text=Steins;Gate" },
-                { title: "Hunter x Hunter (2011)", image: "https://g-t9mgc8zy9ce.vusercontent.net/placeholder.svg?height=60&width=100&text=HxH" },
+                { title: "Fullmetal Alchemist: Brotherhood", image: "{{ url_for('static', filename='placeholder.svg') }}?height=60&width=100&text=FMAB" },
+                { title: "Death Note", image: "{{ url_for('static', filename='placeholder.svg') }}?height=60&width=100&text=Death+Note" },
+                { title: "Steins;Gate", image: "{{ url_for('static', filename='placeholder.svg') }}?height=60&width=100&text=Steins;Gate" },
+                { title: "Hunter x Hunter (2011)", image: "{{ url_for('static', filename='placeholder.svg') }}?height=60&width=100&text=HxH" },
             ],
             upcomingAnime: [
-                { title: "Chainsaw Man Part 2", image: "https://g-t9mgc8zy9ce.vusercontent.net/placeholder.svg?height=60&width=100&text=Chainsaw" },
-                { title: "The Promised Neverland Season 3", image: "https://g-t9mgc8zy9ce.vusercontent.net/placeholder.svg?height=60&width=100&text=Neverland" },
-                { title: "Dr. STONE Season 3", image: "https://g-t9mgc8zy9ce.vusercontent.net/placeholder.svg?height=60&width=100&text=Dr.STONE" },
+                { title: "Chainsaw Man Part 2", image: "{{ url_for('static', filename='placeholder.svg') }}?height=60&width=100&text=Chainsaw" },
+                { title: "The Promised Neverland Season 3", image: "{{ url_for('static', filename='placeholder.svg') }}?height=60&width=100&text=Neverland" },
+                { title: "Dr. STONE Season 3", image: "{{ url_for('static', filename='placeholder.svg') }}?height=60&width=100&text=Dr.STONE" },
             ],
             topComments: [
                 { user: "AnimeGuru", comment: "The latest episode of Attack on Titan was mind-blowing!", likes: 328 },
@@ -1028,9 +1040,16 @@
             scheduleData: {},
             isLoading: true,
             async fetchData() {
+                this.isLoading = true; // Show the loader while fetching data
                 try {
-                    const response = await fetch('/api/schedule'); // Replace with your API URL
+                    // Get the user's timezone from their browser
+                    const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+                    // Make the API request with the timezone as a query parameter
+                    const response = await fetch(`/api/schedule?timezone=${encodeURIComponent(userTimeZone)}`);
                     const data = await response.json();
+
+                    // Process the response
                     this.dates = Object.keys(data);
                     this.scheduleData = data;
                     this.selectedDate = this.dates[0]; // Set the first date as selected by default
@@ -1141,34 +1160,52 @@
 
     function counter() {
         return {
-            count: 0,
-            previousCount: 0,
-            previousTotalCount: 0,
             totalCount: 0,
             increasing: false,
             decreasing: false,
             socket: null,
             currentRoom: null,
+            isConnected: false,
+            isLoading: true,  // New property to track loading state
 
-            initializeSocket() {
+            setupSocket() {
                 this.socket = io({ transports: ['websocket'] });
 
                 this.socket.on('connect', () => {
+                    this.isConnected = true;
                     console.log('Connected to server');
-                    this.joinRoom();
+                    this.socket.emit('get_all_counts');
+                    this.joinRoom(); // Automatically join the "home" room after connecting
                 });
 
-                this.socket.on('all_room_counts', (data) => {
-                    this.previousCount = this.count;
-                    this.previousTotalCount = this.totalCount; // Track the previous total count
-                    this.totalCount = Object.values(data).reduce((sum, count) => sum + count, 0); // Sum all counts
+                this.socket.on('disconnect', () => {
+                    this.isConnected = false;
+                });
 
-                    if (this.totalCount > this.previousTotalCount) {
+                this.setupSocketListeners();
+            },
+
+            setupSocketListeners() {
+                this.socket.on('all_room_counts', (data) => {
+                    const previousTotalCount = this.totalCount;
+                    this.totalCount = Object.values(data).reduce((total, count) => total + count, 0);
+
+                    // Hide loading animation once data is synced
+                    this.isLoading = false;
+
+                    // Call animateCountChange based on whether the count increased or decreased
+                    if (this.totalCount > previousTotalCount) {
                         this.animateCountChange('up');
-                    } else if (this.totalCount < this.previousTotalCount) {
+                    } else if (this.totalCount < previousTotalCount) {
                         this.animateCountChange('down');
                     }
                 });
+
+                setInterval(() => {
+                    if (this.isConnected) {
+                        this.socket.emit('get_all_counts');
+                    }
+                }, 10000);
             },
 
             joinRoom() {
@@ -1217,7 +1254,7 @@
                 today: [
                     {
                         title: "Blue Lock Season 2",
-                        image: "https://g-t9mgc8zy9ce.vusercontent.net/placeholder.svg?height=76&width=60",
+                        image: "{{ url_for('static', filename='placeholder.svg') }}?height=76&width=60",
                         stats: [
                             { value: "12", class: "bg-green-500/20 text-green-400" },
                             { value: "10", class: "bg-blue-500/20 text-blue-400" },
@@ -1226,7 +1263,7 @@
                     },
                     {
                         title: "Bleach: Thousand-Year Blood War - The Conflict",
-                        image: "https://g-t9mgc8zy9ce.vusercontent.net/placeholder.svg?height=76&width=60",
+                        image: "{{ url_for('static', filename='placeholder.svg') }}?height=76&width=60",
                         stats: [
                             { value: "12", class: "bg-green-500/20 text-green-400" },
                             { value: "8", class: "bg-blue-500/20 text-blue-400" }
@@ -1234,7 +1271,7 @@
                     },
                     {
                         title: "One Piece",
-                        image: "https://g-t9mgc8zy9ce.vusercontent.net/placeholder.svg?height=76&width=60",
+                        image: "{{ url_for('static', filename='placeholder.svg') }}?height=76&width=60",
                         stats: [
                             { value: "1122", class: "bg-green-500/20 text-green-400" },
                             { value: "1096", class: "bg-blue-500/20 text-blue-400" }
@@ -1244,7 +1281,7 @@
                 week: [
                     {
                         title: "Dandadan",
-                        image: "https://g-t9mgc8zy9ce.vusercontent.net/placeholder.svg?height=76&width=60",
+                        image: "{{ url_for('static', filename='placeholder.svg') }}?height=76&width=60",
                         stats: [
                             { value: "12", class: "bg-green-500/20 text-green-400" },
                             { value: "12", class: "bg-blue-500/20 text-blue-400" },
@@ -1253,7 +1290,7 @@
                     },
                     {
                         title: "Shangri-La Frontier Season 2",
-                        image: "https://g-t9mgc8zy9ce.vusercontent.net/placeholder.svg?height=76&width=60",
+                        image: "{{ url_for('static', filename='placeholder.svg') }}?height=76&width=60",
                         stats: [
                             { value: "11", class: "bg-green-500/20 text-green-400" },
                             { value: "8", class: "bg-blue-500/20 text-blue-400" },
@@ -1264,7 +1301,7 @@
                 month: [
                     {
                         title: "Bleach",
-                        image: "https://g-t9mgc8zy9ce.vusercontent.net/placeholder.svg?height=76&width=60",
+                        image: "{{ url_for('static', filename='placeholder.svg') }}?height=76&width=60",
                         stats: [
                             { value: "366", class: "bg-green-500/20 text-green-400" },
                             { value: "366", class: "bg-blue-500/20 text-blue-400" },
@@ -1273,7 +1310,7 @@
                     },
                     {
                         title: "The Healer Who Was Banished From His Party",
-                        image: "https://g-t9mgc8zy9ce.vusercontent.net/placeholder.svg?height=76&width=60",
+                        image: "{{ url_for('static', filename='placeholder.svg') }}?height=76&width=60",
                         stats: [
                             { value: "12", class: "bg-green-500/20 text-green-400" },
                             { value: "12", class: "bg-blue-500/20 text-blue-400" }

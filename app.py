@@ -26,7 +26,10 @@ from dotenv import load_dotenv
 from functools import wraps,lru_cache
 from flask_cors import CORS
 from appwrite.id import ID
+from pytz import timezone as tz
+from pytz import UTC as Fuck
 import websockets
+import traceback
 import threading
 import requests
 import logging
@@ -40,6 +43,7 @@ import os
 import re
 
 os.environ['no_proxy'] = 'localhost,127.0.0.1'
+POINTS_LIKES = 25
 
 # Custom function to get the client's real IP behind a proxy
 def get_real_ip():
@@ -245,7 +249,7 @@ def add_cache_control_headers(response):
                 pass
     
     
-    excluded_routes = ['/api/', '/save/progress/','/static/']
+    excluded_routes = ['/api/', '/save/progress','/proxy/','/static/']
     if any(request.path.startswith(route) for route in excluded_routes):
         # Skip logging for excluded routes
         return response
@@ -854,8 +858,8 @@ def load_home():
         else:
             return render_template('index.html', last_updated=filtered_documents,latest_eps = filtered_documents_eps, topAiring = filtered_documents_top,topUpcoming=filtered_documents_top_upcoming,userInfo=userInfo,ctotal=ctotal)
     except Exception as e:
-        return jsonify({'success': False, 'message': str(e)})
-    
+         return jsonify({'success': False, 'message': str(e)}), 500 
+        
 @app.route('/search')
 def filter_results():
     print(request)
@@ -922,6 +926,23 @@ def filter_results():
         # Validate secret 
         client = get_client(None, secret)
         databases = Databases(client)
+
+        try: 
+            if keyword:
+                databases.create_document(
+                    database_id=os.getenv('DATABASE_ID'),
+                    collection_id=os.getenv('SEARCH_DATA'),
+                    document_id=ID.unique(),
+                    data={
+                        "sid": ID.unique(),
+                        "Keyword": keyword,
+                        "user": acc.get('id') if userInfo else None,
+                        "Genres": genres.split(',') if genres else []
+                    }
+                )
+        except Exception as e:
+            print(e)
+
 
         # Build base query list
         # Base query
@@ -1041,7 +1062,7 @@ def filter_results():
             "averageScore": doc.get("averageScore"),
             "duration": doc.get("duration"),
             "genres": doc.get("genres"),
-            "cover":img.get("cover") or "https://g-t9mgc8zy9ce.vusercontent.net/placeholder.svg",
+            "cover":img.get("cover") or "/static/placeholder.svg",
             "season": doc.get("season"),
             "startDate": doc.get("startDate"),
             "status": doc.get("status"),
@@ -1192,7 +1213,7 @@ def anime_info(id):
 
         title = doc.get('english') if doc.get('english') is not None else doc.get('romaji')
         description = doc.get("description")
-        cover = img.get("banner") or "https://g-t9mgc8zy9ce.vusercontent.net/placeholder.svg"
+        cover = img.get("banner") or "/static/placeholder.svg"
 
         # Calculate subbed and dubbed counts
         filtered_document = {
@@ -1206,7 +1227,7 @@ def anime_info(id):
                 "duration": doc.get("duration"),
                 "genres": doc.get("genres"),
                 "cover": img.get("cover"),
-                "banner":img.get("banner") or "https://g-t9mgc8zy9ce.vusercontent.net/placeholder.svg",
+                "banner":img.get("banner") or "/static/placeholder.svg",
                 "season": doc.get("season"),
                 "startDate": doc.get("startDate"),
                 "status": doc.get("status"),
@@ -1246,6 +1267,7 @@ def watch_page(anime_id, ep_number):
     ep = ep_number
     print(ep)
     secret = request.args.get('secret')
+    nid = request.args.get('nid')
     key = request.args.get('key')
     idz =anime_id
     epASs = int(ep)
@@ -1357,6 +1379,26 @@ def watch_page(anime_id, ep_number):
                     ]
                 )
 
+                if nid:
+                    ns = databases.list_documents(
+                        database_id=os.getenv('DATABASE_ID'),
+                        collection_id=os.getenv('Notifications'),
+                        queries=[
+                            Query.equal('notificationId',nid),
+                        ]
+                    )
+
+                    if ns['total'] > 0:
+                        databases.update_document(
+                            database_id=os.getenv('DATABASE_ID'),
+                            collection_id=os.getenv('Notifications'),
+                            document_id=nid,
+                            data={
+                                "isRead":True,
+                            }
+                        )
+                
+
                 if IsUserLiked['total'] > 0:
                     isLiked = True
                 elif IsUserunLiked['total'] > 0:
@@ -1388,7 +1430,7 @@ def watch_page(anime_id, ep_number):
                 "duration": result.get("duration"),
                 "genres": result.get("genres"),
                 "cover": img.get("cover"),
-                "banner":img.get("banner") or "https://g-t9mgc8zy9ce.vusercontent.net/placeholder.svg",
+                "banner":img.get("banner") or "/static/placeholder.svg",
                 "season": result.get("season"),
                 "startDate": result.get("startDate"),
                 "status": result.get("status"),
@@ -1493,7 +1535,6 @@ def like_anime(id):
                     Query.select(['likedId', 'userId']),
                 ]
             )
-            print(isliked, "1011")
         except Exception as e:
             return e    
 
@@ -1535,6 +1576,8 @@ def like_anime(id):
                             }
                         )
 
+                        rank_points(client,acc,'Like')
+
                     return jsonify({"message": "Anime liked!"}), 200
                 except AppwriteException as e:
                     return jsonify({"message": f"Something went wrong: {e}"}), 500
@@ -1572,6 +1615,8 @@ def like_anime(id):
                                 "isLiked": False,
                             }
                         )
+
+                        rank_points(client,acc,'Like')
 
                     return jsonify({"message": "Anime disliked!"}), 200
                 except AppwriteException as e:
@@ -1773,7 +1818,7 @@ def search_api():
                     "id": doc.get("mainId"),
                     "title": doc.get("english") if doc.get('english') else doc.get("romaji"),
                     "details": f"{doc.get('year')} • {doc.get('type')}",
-                    "coverImage": img.get("cover") or "https://g-t9mgc8zy9ce.vusercontent.net/placeholder.svg"
+                    "coverImage": img.get("cover") or "/static/placeholder.svg"
                 }
                 filtered_documents.append(filtered_document)
 
@@ -2530,6 +2575,7 @@ def create_post():
             print(user['documents'][0]['userId'])
 
             nid= ID.unique()
+            rank_points(client,acc,"post")
 
             make_nofification = databases.create_document(
                 database_id = os.getenv('DATABASE_ID'),
@@ -2677,6 +2723,8 @@ def like_post(id):
                             }
                         )
 
+                        rank_points(client,acc,'Like')
+
                     return jsonify({"message": "Post liked!"}), 200
                 except AppwriteException as e:
                     return jsonify({"message": f"Something went wrong: {e}"}), 500
@@ -2714,6 +2762,8 @@ def like_post(id):
                                 "isLiked": False,
                             }
                         )
+
+                        rank_points(client,acc,'Like')
 
                     return jsonify({"message": "Post disliked!"}), 200
                 except AppwriteException as e:
@@ -2979,6 +3029,7 @@ def add_comment(post_id):
             'post':post_id,
         }
     )
+    rank_points(client,acc,'comment')
     new_comment = {
         "id": cid,
         "author": acc.get("name"),  # In a real app, you'd get this from user authentication
@@ -3092,6 +3143,8 @@ def comment():
                 "episode": epxx['documents'][0]['$id'],      
             }
         )
+
+        rank_points(client,acc,'comment')
 
 
         mentions = re.findall(r'@(\w+)', data.get('content', ''))
@@ -3238,6 +3291,7 @@ def post_reply():
                 "replyed_episode_comment":comment_id,
             }
         )
+        rank_points(client,acc,'comment')
 
         nid= ID.unique()
 
@@ -3306,20 +3360,6 @@ def post_reply():
     except Exception as e:
           return jsonify({"error": f"Error:{e}"}), 500
 # Simulated data (replace with database queries in a real application)
-
-watchlist_data = [
-    {"title": "Don't Toy with Me, Miss Nagatoro", "type": "TV", "duration": "24m", "current": 12, "total": 12, "image": "/static/placeholder.svg", "status": "watching"},
-    {"title": "Isekai Cheat Magician", "type": "TV", "duration": "23m", "current": 12, "total": 12, "image": "/static/placeholder.svg", "status": "completed"},
-    {"title": "Date A Bullet: Nightmare or Queen", "type": "Movie", "duration": "29m", "current": 1, "total": 1, "image": "/static/placeholder.svg", "rating": "18+", "status": "plan-to-watch"},
-    {"title": "Anime Title 4", "type": "TV", "duration": "24m", "current": 6, "total": 12, "image": "/static/placeholder.svg", "status": "on-hold"},
-    {"title": "Anime Title 5", "type": "OVA", "duration": "45m", "current": 0, "total": 3, "image": "/static/placeholder.svg", "status": "dropped"},
-]
-
-# Add more items to the watchlist_data to demonstrate pagination
-watchlist_data.extend([
-    {"title": f"Anime Title {i}", "type": "TV", "duration": "24m", "current": i % 12 + 1, "total": 12, "image": "/static/placeholder.svg", "status": ["watching", "completed", "plan-to-watch", "on-hold", "dropped"][i % 5]}
-    for i in range(6, 51)
-])
 
 notifications_data = [
     {
@@ -3901,7 +3941,7 @@ def get_notifications(notification_type):
 
         noti = []
         for noa in notifications['documents'][:per_page]:  # Process only up to per_page items
-            imgurl = "https://g-t9mgc8zy9ce.vusercontent.net/placeholder.svg?height=200&width=100"
+            imgurl = "/static/placeholder.svg?height=200&width=100"
             url = '#'
             if noa.get('relatedEpId') and notification_type == 'anime':
                 ep = databases.get_document(
@@ -3930,7 +3970,7 @@ def get_notifications(notification_type):
                     ]
                 )
 
-                url = f'/watch/{anime['documents'][0]['mainId']}/{ep.get('number')}?lang={re.search(r'\[(.*?)\]', noa.get('message')).group(1).lower() if re.search(r'\[(.*?)\]', noa.get('message')) else None}'
+                url = f'/watch/{anime['documents'][0]['mainId']}/{ep.get('number')}?lang={re.search(r'\[(.*?)\]', noa.get('message')).group(1).lower() if re.search(r'\[(.*?)\]', noa.get('message')) else None}&nid={noa.get('notificationId')}&type=anime'
                 
                 imgurl = img['documents'][0]['cover']
             elif noa.get('relatedEpId') and notification_type == 'community':
@@ -3988,7 +4028,80 @@ def get_notifications(notification_type):
     
     except Exception as e:
         print(f"Error: {e}")
-        return jsonify({'success': False, 'message': str(e)}), 404
+        return (f"Error: {e}")
+    
+@app.route('/api/notifications/count', methods=['GET'])
+@limiter.limit("30 per minute")
+def get_notifications_count():
+    secret = request.args.get('secret')
+    key = request.args.get('key')
+    
+    if secret:
+        isKey = True
+        print("Key exists: ", secret)
+    else:
+        isKey = False
+        secret = os.getenv('SECRET')  # Default value
+        print("Key is missing or empty, setting default secret.")
+    
+    try:
+        page = int(request.args.get('page', 1))
+        per_page = 6  # Number of notifications per page
+        offset = (page - 1) * per_page
+
+        if 'session_secret' in session:
+            client = get_client(session["session_secret"], None)
+            account = Account(client)
+            acc = account.get()
+        elif key:
+            client = get_client(key, secret)
+            account = Account(client)
+            acc = account.get()
+        else:
+            return jsonify({'success': False, 'message': 'Authentication Failed'}), 401
+        
+        # Extract user info
+        user_info = {
+            "userId": acc.get("$id"),
+            "username": acc.get("name"),
+            "email": acc.get("email"),
+        }
+        
+        # Initialize Databases client
+        client = get_client(key, secret)
+        databases = Databases(client)
+        
+        # Query notifications
+        notifications = databases.list_documents(
+            database_id=os.getenv('DATABASE_ID'),
+            collection_id=os.getenv('Notifications'),
+            queries=[
+                Query.offset(offset),
+                Query.equal('userId', acc.get("$id")),
+                Query.equal('isRead', False),
+                Query.select([
+                    'notificationId'
+                ]),
+                Query.limit(10)
+            ],
+        )
+
+        if notifications['total'] > 0 :
+            if notifications['total'] > 10:
+                total = '9+'
+            else:
+                total = notifications['total']
+        else:
+            total = 0
+
+        return jsonify({
+            'total': total,
+            'success': True,
+        })
+    
+    except Exception as e:
+        print(f"Error: {e}")
+        return (f"Error: {e}")
 
 @app.route('/api/top/posts', methods=['GET'])
 def get_top_posts():
@@ -4132,10 +4245,11 @@ def countdowns():
 
 @app.route('/api/schedule', methods=['GET'])
 def get_schedule():
-    date = request.args.get('date')
-    
+    date = request.args.get('date')  # Expected format: YYYY-MM-DD
+    user_timezone = request.args.get('timezone', 'UTC')
+
     # Initialize Appwrite client and databases service
-    client = get_client(None,os.getenv('SECRET'))
+    client = get_client(None, os.getenv('SECRET'))
     databases = Databases(client)
 
     # Query data from Appwrite database
@@ -4148,12 +4262,35 @@ def get_schedule():
                 Query.is_not_null("airingAt"),
                 Query.select(["mainId", "english", "romaji", "airingAt", "nextAiringEpisode"]),
                 Query.order_asc("airingAt"),
+                Query.limit(60)
             ]
         )
         documents = response.get('documents', [])
     except Exception as e:
-        return jsonify({"error": "Failed to fetch data", "details": str(e)}), 500
+        return jsonify({"error": str(e)}), 500
 
+    # Validate and prepare timezone
+    try:
+        user_tz = tz(user_timezone)
+    except Exception as e:
+        return jsonify({"error": f"Invalid timezone: {user_timezone}"}), 400
+
+    # If date is provided, convert it to UTC timestamp range for that entire day in user's timezone
+    if date:
+        try:
+            # Parse the date string into a datetime object in user's timezone
+            local_start = datetime.strptime(date, '%Y-%m-%d').replace(
+                hour=0, minute=0, second=0, microsecond=0,
+                tzinfo=user_tz
+            )
+            local_end = local_start.replace(hour=23, minute=59, second=59)
+            
+            # Convert to UTC timestamps for filtering
+            utc_start = local_start.astimezone(Fuck).timestamp()
+            utc_end = local_end.astimezone(Fuck).timestamp()
+        except ValueError:
+            return jsonify({"error": "Invalid date format. Use YYYY-MM-DD"}), 400
+    
     # Process data
     animes_by_date = {}
     for anime in documents:
@@ -4161,26 +4298,31 @@ def get_schedule():
         if not airing_timestamp:
             continue
 
-        # Convert timestamp to date string
-        airing_date = datetime.utcfromtimestamp(airing_timestamp).strftime('%Y-%m-%d')
+        # Convert timestamp to user's timezone
+        utc_time = datetime.utcfromtimestamp(airing_timestamp).replace(tzinfo=Fuck)
+        local_time = utc_time.astimezone(user_tz)
 
-        if date and airing_date != date:
-            continue
+        # Format date and time
+        airing_date = local_time.strftime('%Y-%m-%d')
+        airing_time = local_time.strftime('%H:%M')
+
+        # Filter by date if provided
+        if date:
+            if not (utc_start <= airing_timestamp <= utc_end):
+                continue
 
         # Prepare anime details
         anime_data = {
-            "time": datetime.utcfromtimestamp(airing_timestamp).strftime('%H:%M'),
+            "time": airing_time,
             "title": anime.get("english") or anime.get("romaji"),
             "episode": anime.get("nextAiringEpisode"),
         }
 
-        # Group by date
+        # Group by adjusted date
         if airing_date not in animes_by_date:
             animes_by_date[airing_date] = []
         animes_by_date[airing_date].append(anime_data)
 
-    # Return response
-    
     return jsonify(animes_by_date)
 
 def comment_filter(comment):
@@ -4294,6 +4436,7 @@ def realtime():
     return render_template('rtest.html')
 
 @app.route('/player/<type>/<id>')
+@limiter.limit("5 per minute") 
 def player(type, id):
     try:
         if 'session_secret' in session:
@@ -4360,7 +4503,6 @@ def player(type, id):
 
         video_url = data["sources"][0]["url"]
         subtitles = data["tracks"]
-        print(subtitles)
 
         client = get_client(None,os.getenv('SECRET'))
         databases = Databases(client)
@@ -4389,6 +4531,43 @@ def player(type, id):
     else:
         abort(400, description="Unsupported type")
 
+def rank_points(client,acc,type):
+
+    databases = Databases(client)
+    rid = ID.unique()
+
+    rank = databases.list_documents(
+        database_id=os.getenv('DATABASE_ID'),
+        collection_id=os.getenv('LEADER_BOARD'),
+        queries=[
+            Query.equal('userId',acc.get('$id')),
+            Query.select(['points','$id']),
+            ]
+        )
+    if rank['total'] > 0:
+        points = rank['documents'][0]
+        lol=databases.update_document(
+        database_id=os.getenv('DATABASE_ID'),
+        collection_id=os.getenv('LEADER_BOARD'),
+        document_id=points.get('$id'),
+        data={
+            'points':points.get('points')+POINTS_LIKES,
+            'userId':acc.get('$id'),
+            'user':acc.get('$id'),
+            }
+        )
+    else:
+        lol=databases.create_document(
+        database_id=os.getenv('DATABASE_ID'),
+        collection_id=os.getenv('LEADER_BOARD'),
+        document_id=rid,
+        data={
+            'points':0+POINTS_LIKES,
+            'userId':acc.get('$id'),
+            'user':acc.get('$id'),
+        }
+    )
+
 @app.route('/proxy/subtitle/<path:url>')
 def proxy_subtitle(url):
     response = requests.get(url)
@@ -4416,12 +4595,26 @@ def home():
 # Custom error handler for 404 errors
 @app.errorhandler(404)
 def not_found_error(error):
-    return jsonify({"error": "Resource not found"}), 404
+    return render_template('404.html'), 404
+
+@app.errorhandler(Exception)
+def handle_exception(error):
+    # Get the error details
+    error_info = traceback.format_exc()
+    
+    # Log the error (you should set up proper logging)
+    print(error_info)  # Replace with proper logging
+    
+    # Return the error page
+    return render_template('500.html',
+        error_code="500",
+        error_message="Oops! Something went wrong on our servers."
+    ), 500
 
 # Custom error handler for 500 errors
 @app.errorhandler(500)
 def internal_error(error):
-    return jsonify({"error": "An unexpected error occurred. Please try again later."}), 500      
+    return render_template('index.html'), 500      
 
 @app.errorhandler(HTTPException)
 def handle_http_exception(e):

@@ -6,7 +6,7 @@
     }
 </style>
 <div class="bg-gradient-to-br from-[#000000] to-gray-900 text-gray-200 min-h-screen">
-    <div x-data="animeApp()" x-init="initializeApp()" x-cloak class="font-sans">
+    <div x-data="{ ...animeApp(), ...joinRealtime() }" x-init="{ ...initializeApp(), ...initializeSocket() }" x-cloak class="font-sans">
         <!-- Header -->
         <header
             class="sticky top-0 w-full z-40 px-4 sm:px-6 py-4 glass bg-white bg-opacity-5 backdrop-filter backdrop-blur-md">
@@ -149,75 +149,85 @@
 
                 <!-- Continue Watching Tab -->
                 <div x-show="activeTab === 'continue-watching'" class="tab-content"
-                    :class="{'active': activeTab === 'continue-watching'}">
-                    <div x-show="loadingContinueWatching" class="flex justify-center items-center h-64">
-                        <div class="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-[#DC143C]"></div>
+                :class="{'active': activeTab === 'continue-watching'}">
+                <div x-show="loadingContinueWatching" class="flex justify-center items-center h-64">
+                    <div class="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-[#DC143C]"></div>
+                </div>
+                <div x-show="!loadingContinueWatching" class="space-y-8">
+                    <h2 class="text-3xl font-bold mb-8 text-[#DC143C]">Continue Watching</h2>
+                    
+                    <!-- Empty Continue Watching Message -->
+                    <div x-show="!continueWatching.data || continueWatching.data.length === 0" class="flex flex-col items-center justify-center h-64">
+                        <svg class="w-16 h-16 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <p class="text-gray-400 text-xl font-medium">Nothing here</p>
+                        <p class="text-gray-500 mt-2">You haven't started watching any anime yet</p>
                     </div>
-                    <div x-show="!loadingContinueWatching && continueWatching.data" class="space-y-8">
-                        <h2 class="text-3xl font-bold mb-8 text-[#DC143C]">Continue Watching</h2>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                            <template x-for="item in continueWatching.data">
-                                <a x-bind:href="item.link" class="swiper-slide">
-                                    <div class="relative group cursor-pointer" @mouseenter="item.hover = true"
-                                        @mouseleave="item.hover = false">
-                                        <div class="relative overflow-hidden rounded-md">
-                                            <img :src="item.thumbnail"
-                                                class="w-full aspect-video object-cover rounded-md transform transition-transform duration-300 group-hover:scale-105"
-                                                :alt="item.title">
-    
-                                            <!-- Play Button -->
-                                            <div
-                                                class="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-                                                <button class="bg-white p-2 rounded-full shadow-md hover:bg-gray-100">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-800"
-                                                        fill="currentColor" viewBox="0 0 24 24">
-                                                        <path d="M8 5v14l11-7z" />
-                                                    </svg>
-                                                </button>
-                                            </div>
-    
-                                            <!-- Delete Icon -->
-                                            <button
-                                                class="absolute top-2 right-2 bg-black/70 hover:text-white p-2 rounded-md opacity-0 transition-opacity duration-300 group-hover:opacity-100 hover:bg-black">
-                                                <svg xmlns="http://www.w3.org/2000/svg"
-                                                    class="h-4 w-4 text-black hover:text-white" fill="none"
-                                                    viewBox="0 0 24 24" stroke="white" stroke-width="2">
-                                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                                        d="M6 18L18 6M6 6l12 12" />
+
+                    <div x-show="continueWatching.data && continueWatching.data.length > 0" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        <template x-for="item in continueWatching.data">
+                            <a x-bind:href="item.link" class="swiper-slide">
+                                <div class="relative group cursor-pointer" @mouseenter="item.hover = true"
+                                    @mouseleave="item.hover = false">
+                                    <div class="relative overflow-hidden rounded-md">
+                                        <img :src="item.thumbnail"
+                                            class="w-full aspect-video object-cover rounded-md transform transition-transform duration-300 group-hover:scale-105"
+                                            :alt="item.title">
+
+                                        <!-- Play Button -->
+                                        <div
+                                            class="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                                            <button class="bg-white p-2 rounded-full shadow-md hover:bg-gray-100">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-800"
+                                                    fill="currentColor" viewBox="0 0 24 24">
+                                                    <path d="M8 5v14l11-7z" />
                                                 </svg>
                                             </button>
-    
-                                            <div class="absolute top-2 left-2 bg-black/70 px-2 py-1 rounded text-sm">
-                                                EP <span x-text="anime.episode"></span>
-                                            </div>
-                                            <div class="absolute bottom-0 left-0 right-0 h-1 bg-gray-600">
-                                                <div class="h-full bg-red-600"
-                                                    :style="`width: ${(parseInt(item.progress) / parseInt(item.duration)) * 100}%`">
-                                                </div>
-                                            </div>
-                                            <div class="absolute bottom-2 right-2 bg-black/70 px-2 py-1 rounded text-sm">
-                                                <span x-text="item.progress"></span>/<span x-text="item.duration"></span>
+                                        </div>
+
+                                        <!-- Delete Icon -->
+                                        <button
+                                            class="absolute top-2 right-2 bg-black/70 hover:text-white p-2 rounded-md opacity-0 transition-opacity duration-300 group-hover:opacity-100 hover:bg-black">
+                                            <svg xmlns="http://www.w3.org/2000/svg"
+                                                class="h-4 w-4 text-black hover:text-white" fill="none"
+                                                viewBox="0 0 24 24" stroke="white" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round"
+                                                    d="M6 18L18 6M6 6l12 12" />
+                                            </svg>
+                                        </button>
+
+                                        <div class="absolute top-2 left-2 bg-black/70 px-2 py-1 rounded text-sm">
+                                            EP <span x-text="item.episode"></span>
+                                        </div>
+                                        <div class="absolute bottom-0 left-0 right-0 h-1 bg-gray-600">
+                                            <div class="h-full bg-red-600"
+                                                :style="`width: ${(parseInt(item.progress) / parseInt(item.duration)) * 100}%`">
                                             </div>
                                         </div>
-                                        <h3 class="mt-2 text-sm font-medium truncate" x-text="item.title"></h3>
+                                        <div class="absolute bottom-2 right-2 bg-black/70 px-2 py-1 rounded text-sm">
+                                            <span x-text="item.progress"></span>/<span x-text="item.duration"></span>
+                                        </div>
                                     </div>
-                                </a>
-                            </template>
-                        </div>
-                        <div class="flex justify-center mt-8">
-                            <template x-for="page in continueWatching.total_pages">
-                                <button @click="loadContinueWatching(page)"
-                                    :class="{'bg-[#DC143C]': continueWatching.current_page === page}"
-                                    class="mx-1 px-3 py-1 rounded bg-gray-700 hover:bg-[#DC143C] transition-colors duration-300"
-                                    x-text="page"></button>
-                            </template>
-                        </div>
+                                    <h3 class="mt-2 text-sm font-medium truncate" x-text="item.title"></h3>
+                                </div>
+                            </a>
+                        </template>
                     </div>
+                    <div x-show="continueWatching.data && continueWatching.data.length > 0" class="flex justify-center mt-8">
+                        <template x-for="page in continueWatching.total_pages">
+                            <button @click="loadContinueWatching(page)"
+                                :class="{'bg-[#DC143C]': continueWatching.current_page === page}"
+                                class="mx-1 px-3 py-1 rounded bg-gray-700 hover:bg-[#DC143C] transition-colors duration-300"
+                                x-text="page"></button>
+                        </template>
+                    </div>
+                </div>
                 </div>
 
                 <!-- Watchlist Tab -->
-                <div x-show="activeTab === 'watchlist'" class="tab-content"
-                    :class="{'active': activeTab === 'watchlist'}">
+                <div x-show="activeTab === 'watchlist'" class="tab-content" :class="{'active': activeTab === 'watchlist'}">
                     <div x-show="loadingWatchlist" class="flex justify-center items-center h-64">
                         <div class="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-[#DC143C]"></div>
                     </div>
@@ -225,15 +235,13 @@
                         <div class="flex justify-between items-center mb-8">
                             <div class="flex items-center gap-3">
                                 <svg class="w-6 h-6 text-[#DC143C]" fill="currentColor" viewBox="0 0 24 24">
-                                    <path
-                                        d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+                                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
                                 </svg>
                                 <h2 class="text-2xl sm:text-3xl font-bold text-white">Watch List</h2>
                             </div>
                             <div class="flex items-center gap-2">
                                 <span class="text-sm text-gray-400">Public</span>
-                                <button
-                                    class="bg-pink-600 rounded-full px-3 py-1 text-xs font-medium text-white">ON</button>
+                                <button class="bg-pink-600 rounded-full px-3 py-1 text-xs font-medium text-white">ON</button>
                             </div>
                         </div>
 
@@ -255,8 +263,17 @@
                             </template>
                         </div>
 
+                        <!-- Empty Watchlist Message -->
+                        <div x-show="!loadingWatchlist && (!watchlist.data || watchlist.data.length === 0)" class="flex flex-col items-center justify-center h-64">
+                            <svg class="w-16 h-16 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <p class="text-gray-400 text-xl font-medium">Nothing here</p>
+                            <p class="text-gray-500 mt-2">Your watchlist is empty</p>
+                        </div>
+
                         <!-- Anime Grid -->
-                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                        <div x-show="watchlist.data && watchlist.data.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                             <template x-for="anime in watchlist.data">
                                 <div class="relative group">
                                     <div class="relative aspect-[3/4] rounded-lg overflow-hidden bg-gray-800">
@@ -264,45 +281,34 @@
                                             class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105">
                                         <!-- Episode Badges -->
                                         <div class="absolute bottom-2 left-2 flex gap-1">
-                                            <div
-                                                class="flex items-center gap-1 bg-black bg-opacity-75 rounded px-1.5 py-0.5">
-                                                <svg class="w-4 h-4 text-green-500" fill="currentColor"
-                                                    viewBox="0 0 24 24">
+                                            <div class="flex items-center gap-1 bg-black bg-opacity-75 rounded px-1.5 py-0.5">
+                                                <svg class="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 24 24">
                                                     <path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z" />
                                                 </svg>
-                                                <span x-text="anime.current"
-                                                    class="text-xs font-medium text-white"></span>
+                                                <span x-text="anime.current" class="text-xs font-medium text-white"></span>
                                             </div>
-                                            <div
-                                                class="flex items-center gap-1 bg-black bg-opacity-75 rounded px-1.5 py-0.5">
-                                                <svg class="w-4 h-4 text-blue-400" fill="currentColor"
-                                                    viewBox="0 0 24 24">
-                                                    <path
-                                                        d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z" />
+                                            <div class="flex items-center gap-1 bg-black bg-opacity-75 rounded px-1.5 py-0.5">
+                                                <svg class="w-4 h-4 text-blue-400" fill="currentColor" viewBox="0 0 24 24">
+                                                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z" />
                                                 </svg>
-                                                <span x-text="anime.total"
-                                                    class="text-xs font-medium text-white"></span>
+                                                <span x-text="anime.total" class="text-xs font-medium text-white"></span>
                                             </div>
                                         </div>
                                         <!-- Age Rating Badge -->
                                         <template x-if="anime.rating">
-                                            <div
-                                                class="absolute top-2 right-2 bg-red-600 text-white text-xs font-bold px-1.5 py-0.5 rounded">
+                                            <div class="absolute top-2 right-2 bg-red-600 text-white text-xs font-bold px-1.5 py-0.5 rounded">
                                                 <span x-text="anime.rating"></span>
                                             </div>
                                         </template>
                                         <!-- Menu Button -->
-                                        <button
-                                            class="absolute top-2 right-2 p-1 rounded-full bg-black bg-opacity-50 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                        <button class="absolute top-2 right-2 p-1 rounded-full bg-black bg-opacity-50 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                                             <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                                                <path
-                                                    d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" />
+                                                <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" />
                                             </svg>
                                         </button>
                                     </div>
                                     <div class="mt-2">
-                                        <h3 class="font-medium text-sm text-gray-100 line-clamp-2" x-text="anime.title">
-                                        </h3>
+                                        <h3 class="font-medium text-sm text-gray-100 line-clamp-2" x-text="anime.title"></h3>
                                         <div class="flex items-center gap-2 mt-1">
                                             <span class="text-xs text-gray-400" x-text="anime.type"></span>
                                             <span class="text-xs text-gray-400">•</span>
@@ -312,7 +318,7 @@
                                 </div>
                             </template>
                         </div>
-                        <div class="flex justify-center mt-8">
+                        <div x-show="watchlist.data && watchlist.data.length > 0" class="flex justify-center mt-8">
                             <template x-for="page in watchlist.total_pages">
                                 <button @click="loadWatchlist(page, watchlistTab)"
                                     :class="{'bg-[#DC143C]': watchlist.current_page === page}"
@@ -322,7 +328,6 @@
                         </div>
                     </div>
                 </div>
-
                 <!-- Notifications Tab -->
                 <div x-show="activeTab === 'notifications'" class="tab-content"
                     :class="{'active': activeTab === 'notifications'}">
@@ -706,5 +711,31 @@
                 }
             }));
         });
+        function joinRealtime(){
+            console.log("lol")
+            return{
+            socket: null,
+            currentRoom: null,
+            initializeSocket() {
+                        this.socket = io({ transports: ['websocket'] });
+
+                        this.socket.on('connect', () => {
+                            console.log('Connected to server');
+                            this.joinRoom();
+                        });
+                    },
+                    joinRoom() {
+                    const part = 'profile'
+                    console.log(part);
+                    if (this.currentRoom) {
+                        this.socket.emit('leave', { room: this.currentRoom });
+                    }
+                    this.currentRoom = part;
+                    this.socket.emit('join', { other_id: this.currentRoom });
+                    this.socket.emit('get_current_room_count', { room: this.currentRoom }); // Request count for the current room
+                }
+                }
+            }
+            window.dispatchEvent(new Event('join-room'));
     </script>
     {% endblock %}

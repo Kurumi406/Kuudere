@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Anime Room Analytics Dashboard</title>
+    <title>Site Users Analytics Dashboard</title>
     <script src="https://unpkg.com/alpinejs" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -171,9 +171,9 @@
 }" x-init="init">
     <div class="max-w-7xl mx-auto">
         <!-- Header -->
-        <div class="glass rounded-2xl p-6 mb-8 flex flex-col md:flex-row justify-between items-center">
+        <div class="glass rounded-2xl p-6 mb-8 flex flex-col md:flex-row justify-between items-center" x-data="joinRealtime()" x-init="initializeSocket()">
             <div>
-                <h1 class="text-3xl md:text-4xl font-bold mb-2 text-theme-white">Anime Room Analytics</h1>
+                <h1 class="text-3xl md:text-4xl font-bold mb-2 text-theme-white">Site Realtime Analytics</h1>
                 <p class="text-blue-200">Real-time User Activity dashboard</p>
             </div>
             <div class="mt-4 md:mt-0 text-center">
@@ -262,6 +262,34 @@
                   d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
         </svg>
     </button>
+    <script>
+        function joinRealtime(){
+            console.log("lol")
+            return{
+            socket: null,
+            currentRoom: null,
+            initializeSocket() {
+                        this.socket = io({ transports: ['websocket'] });
+
+                        this.socket.on('connect', () => {
+                            console.log('Connected to server');
+                            this.joinRoom();
+                        });
+                    },
+                    joinRoom() {
+                    const part = 'analytics'
+                    console.log(part);
+                    if (this.currentRoom) {
+                        this.socket.emit('leave', { room: this.currentRoom });
+                    }
+                    this.currentRoom = part;
+                    this.socket.emit('join', { other_id: this.currentRoom });
+                    this.socket.emit('get_current_room_count', { room: this.currentRoom }); // Request count for the current room
+                }
+                }
+            }
+            window.dispatchEvent(new Event('join-room'));
+    </script>
 </body>
 </html>
 

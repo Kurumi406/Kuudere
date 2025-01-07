@@ -237,7 +237,7 @@
                                 d="M4 6h16M4 12h16M4 18h16" />
                         </svg>
                     </button>
-                    <a href="/home">
+                    <a href="/">
                         <img src="{{ url_for('static', filename='logo.png') }}" width="100px" class="lazyload">
                     </a>
 
@@ -341,6 +341,7 @@
                         isOpen: false,
                         activeTab: 'community',
                         isLoading: false,
+                        notificationCount: 0,
                         notifications: {
                             community: [],
                             anime: [],
@@ -391,6 +392,20 @@
                                 this.$nextTick(() => this.animate());
                             }
                         },
+                        fetchNotificationCount() {
+                            this.loading = true;
+                            fetch('/api/notifications/count')
+                                .then(response => response.json())
+                                .then(data => {
+                                this.notificationCount = data.total;
+                                this.loading = false;
+                                })
+                                .catch(error => {
+                                console.error('Error fetching notification count:', error);
+                                this.loading = false;
+                                });
+                            
+                        },
                         animate() {
                             anime({
                                 targets: '.notification-item',
@@ -420,13 +435,24 @@
                         }
                     }" @click.away="isOpen = false" class="">
                         <!-- Notification Icon -->
-                        <button
+                        <button x-init="fetchNotificationCount()"
                             @click="isOpen = !isOpen; if(isOpen) { activeTab = 'anime'; fetchNotifications('anime') }"
                             class="theme-home-gray hover:text-theme-red transition-colors focus:outline-none relative"
                             aria-label="Open notifications">
                             <i data-lucide="bell" class="w-6 h-6"></i>
                             <span
-                                class="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-theme-red rounded-full">3</span>
+                            x-show="!loading && notificationCount !== '0'"
+                            x-text="notificationCount"
+                            class="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-theme-red rounded-full">
+                        </span>
+                        <span
+                            x-show="loading"
+                            class="absolute top-0 right-0 inline-flex items-center justify-center text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-theme-red rounded-full">
+                            <svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                        </span>
                         </button>
                     
                         <!-- Notification Popup -->
@@ -498,7 +524,8 @@
                                 </div>
                                 <!-- Notifications -->
                                 <template x-for="(notification, index) in notifications[activeTab]" :key="`${activeTab}-${notification.id}`">
-                                    <a x-bind:href="notification.link" class="notification-item border-b border-white/10">
+                                    <a :href="notification.link" 
+                                       class="notification-item border-b border-white/10">
                                         <div class="p-3">
                                             <div class="flex gap-2">
                                                 <img :src="notification.image" 
@@ -509,13 +536,13 @@
                                                      class="rounded object-cover"
                                                      alt="">
                                                 <div>
-                                                    <p class="theme-home-gray font-semibold text-xs" x-text="notification.message"></p>
-                                                    <p class="theme-home-gray /60 text-xs mt-0.5" x-text="notification.time"></p>
+                                                    <p class="theme-home-gray font-semibold text-xs" x-text="notification.message"  :class="{'text-gray-500': notification.isRead}"></p>
+                                                    <p class="theme-home-gray /60 text-xs mt-0.5" x-text="notification.time" :class="{'text-gray-500': notification.isRead}"></p>
                                                 </div>
                                             </div>
                                         </div>
                                     </a>
-                                </template>
+                                </template>                                
                                 <!-- Load More -->
                                 <div x-show="hasMore[activeTab] && !isLoading" class="p-2 text-center">
                                     <button @click="fetchNotifications(activeTab, true)"
@@ -801,7 +828,7 @@
             class="mt-12 border-t border-white/10 bg-black/40 hidden backdrop-blur-xl py-8 px-4 sm:px-6 relative overflow-hidden">
             <div class="flex flex-col items-start justify-between space-y-4 sm:flex-row sm:space-y-0 relative z-10">
                 <div x-data="{ hover: false }" @mouseenter="hover = true" @mouseleave="hover = false" class="group">
-                    <img src="https://g-t9mgc8zy9ce.vusercontent.net/placeholder.svg?height=100&width=100&text=Fox"
+                    <img src="{{ url_for('static', filename='placeholder.svg') }}?height=100&width=100&text=Fox"
                         alt="Sleeping Fox"
                         class="w-[50px] h-[50px] mb-2 transition-transform duration-300 transform group-hover:scale-110">
                     <p class="text-sm text-gray-400 group-hover:text-white transition-colors duration-300">

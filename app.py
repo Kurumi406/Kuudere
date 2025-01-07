@@ -3841,6 +3841,7 @@ def continue_watching():
     })
 
 @app.route('/api/realtime/anime/<id>')
+@limiter.limit("5000 per minute")
 def realtime_anime_info(id):
     secret = os.getenv('SECRET')  
     client = get_client(None,secret)

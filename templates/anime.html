@@ -8,7 +8,7 @@
     </div>
 
     <!-- Main Content -->
-    <div class="container mx-auto px-4 -mt-32 relative z-20">
+    <div class="container mx-auto px-4 -mt-32 relative z-20" x-data="counter()" x-init="initializeSocket()" @join-room.window="joinRoom()">
         <div class="flex flex-col lg:flex-row gap-8">
             <!-- Cover Image -->
             <div class="w-full lg:w-[230px]">
@@ -133,6 +133,106 @@
     </div>
 
     <script>
+        function counter() {
+            return {
+                count: 0,
+                previousCount: 0,
+                increasing: false,
+                decreasing: false,
+                socket: null,
+                currentRoom: null,
+
+                initializeSocket() {
+                    this.socket = io({ transports: ['websocket'] });
+
+                    this.socket.on('connect', () => {
+                        console.log('Connected to server');
+                        this.joinRoom();
+                    });
+
+                    // Listen for updates specific to the current room
+                    this.socket.on('current_room_count', (data) => {
+                        if (data.room === this.currentRoom) {
+                            this.previousCount = this.count;
+                            this.count = data.count || 0;
+
+                            if (this.count > this.previousCount) {
+                                this.animateCountChange('up');
+                            } else if (this.count < this.previousCount) {
+                                this.animateCountChange('down');
+                            }
+                        }
+                    });
+
+                    // Optional: Listen for general room updates if needed
+                    this.socket.on('update_counts', (data) => {
+                        if (data.room === this.currentRoom) {
+                            this.previousCount = this.count;
+                            this.count = data.count || 0;
+
+                            if (this.count > this.previousCount) {
+                                this.animateCountChange('up');
+                            } else if (this.count < this.previousCount) {
+                                this.animateCountChange('down');
+                            }
+                        }
+                    });
+                },
+
+                joinRoom() {
+                    const currentUrl = window.location.href;
+                    const url = new URL(currentUrl);
+                    const pathname = url.pathname;
+
+                    // Replace '/anime/' with '/watch/' and retain the ID part
+                    const newPathname = pathname.replace('/anime/', '/watch/');
+
+                    // Extract the part from '/watch/<id>'
+                    const part = newPathname.substring(newPathname.indexOf('/watch'));
+
+                    console.log(part); // Log the room path, e.g., /watch/123
+
+                    if (this.currentRoom) {
+                        this.socket.emit('leave', { room: this.currentRoom });
+                    }
+
+                    this.currentRoom = part+'/1'; // Set the new room
+                    this.socket.emit('join', { other_id: this.currentRoom });
+                    this.socket.emit('get_current_room_count', { room: this.currentRoom }); // Request count for the current room
+                },
+
+
+
+                formatCount(num) {
+                    return num > 999 ? (num / 1000).toFixed(1) + 'k' : num;
+                },
+
+                animateCountChange(direction) {
+                    if (direction === 'up') {
+                        this.increasing = true;
+                        this.decreasing = false;
+                    } else {
+                        this.increasing = false;
+                        this.decreasing = true;
+                    }
+
+                    setTimeout(() => {
+                        this.increasing = false;
+                        this.decreasing = false;
+                    }, 300);
+                },
+
+                pulse() {
+                    anime({
+                        targets: '.float-counter',
+                        scale: [1, 1.1],
+                        duration: 300,
+                        easing: 'easeInOutQuad',
+                        direction: 'alternate',
+                    });
+                },
+            };
+        }
         function animeData() {
             return {
                 init() {

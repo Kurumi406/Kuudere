@@ -14,7 +14,6 @@ from dateutil.relativedelta import relativedelta
 from appwrite.exception import AppwriteException
 from werkzeug.exceptions import HTTPException
 from logging.handlers import RotatingFileHandler
-from nacl.public import PrivateKey, Box
 from flask_compress import Compress
 from flask_sitemap import Sitemap
 from flask_limiter import Limiter
@@ -544,13 +543,21 @@ def get_user():
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
     
+def recreate_url(base_url, url_code):
+    """Recreate the full shortened URL from the base URL and code."""
+    return f"{base_url.rstrip('/')}/{url_code.lstrip('/')}"   
 
 @app.route('/home', methods=['GET'])
 def load_home():
+    encoded = request.args.get('spc')
     secret = request.args.get('secret')
     key = request.args.get('key')
     isKey = bool(secret)
     ctotal = None
+    Surl = None
+    base_url = "https://tinyurl.com"
+    if encoded:
+        Surl = recreate_url(base_url, encoded)
     if secret:
         isKey = True
         print("Key exists: ", secret)
@@ -856,7 +863,7 @@ def load_home():
         if isKey:
             return response
         else:
-            return render_template('index.html', last_updated=filtered_documents,latest_eps = filtered_documents_eps, topAiring = filtered_documents_top,topUpcoming=filtered_documents_top_upcoming,userInfo=userInfo,ctotal=ctotal)
+            return render_template('index.html', last_updated=filtered_documents,latest_eps = filtered_documents_eps, topAiring = filtered_documents_top,topUpcoming=filtered_documents_top_upcoming,userInfo=userInfo,ctotal=ctotal,Surl=Surl)
     except Exception as e:
          return jsonify({'success': False, 'message': str(e)}), 500 
         
@@ -2725,7 +2732,7 @@ def like_post(id):
                             }
                         )
 
-                        rank_points(client,acc,'Like')
+                        rank_points(client,acc,'Like',isPost.get('userId'))
 
                     return jsonify({"message": "Post liked!"}), 200
                 except AppwriteException as e:
@@ -2784,6 +2791,7 @@ def view_post(post_id):
     secret = request.args.get('secret')
     key = request.args.get('key')
     isKey = bool(secret)
+    nid = request.args.get('nid')
     if secret:
         isKey = True
         print("Key exists: ", secret)
@@ -2882,6 +2890,25 @@ def view_post(post_id):
                         Query.select(['userId'])
                     ]
                 )
+
+                if nid:
+                    ns = databases.list_documents(
+                        database_id=os.getenv('DATABASE_ID'),
+                        collection_id=os.getenv('Notifications'),
+                        queries=[
+                            Query.equal('notificationId',nid),
+                        ]
+                    )
+
+                    if ns['total'] > 0:
+                        databases.update_document(
+                            database_id=os.getenv('DATABASE_ID'),
+                            collection_id=os.getenv('Notifications'),
+                            document_id=nid,
+                            data={
+                                "isRead":True,
+                            }
+                        )
 
                 if IsUserLiked['total'] > 0:
                     isLiked = True
@@ -3031,6 +3058,49 @@ def add_comment(post_id):
             'post':post_id,
         }
     )
+
+    nid = ID.unique()
+
+    result = databases.get_document(
+            database_id=os.getenv('DATABASE_ID'),
+            collection_id=os.getenv('Posts'),
+            document_id=post_id,
+            queries=[
+                Query.select(['userId','title'])
+            ]
+        )
+
+    user_id = result.get("userId")
+
+    usercm = databases.list_documents(
+                database_id = os.getenv('DATABASE_ID'),
+                collection_id = os.getenv('Users'),
+                queries=[
+                    Query.equal('userId',user_id),
+                    Query.select(['username','userId']),
+                ]
+            )
+
+
+    make_nofification = databases.create_document(
+                database_id = os.getenv('DATABASE_ID'),
+                collection_id= os.getenv('Notifications'),
+                document_id=nid,
+                data={
+                    'notificationId':nid,
+                    'userId':user_id,
+                    'realtedPostId':post_id,
+                    'message':f'{acc.get('name')} commented on {result.get('title')}',
+                    'isRead':False,
+                    'isCommunity':True,
+                    'time':iso_timestamp,
+                    'receiver':user_id,
+                    'related_post':post_id,
+                    'realtedPostId':post_id,
+                    'related_post_commentId':cid,
+                    'relatedPostCommentId':cid,
+                }
+            )
     rank_points(client,acc,'comment')
     new_comment = {
         "id": cid,
@@ -3479,6 +3549,7 @@ def watchlist():
             database_id = os.getenv('DATABASE_ID'),
             collection_id = os.getenv('Watchlist'),
             queries = [
+                Query.order_desc("$updatedAt"),
                 Query.equal("userId",userInfo.get('userId')),
                 Query.select(["itemId","userId","animeId","folder","lastUpdated"]),
             ] # optional
@@ -3510,10 +3581,14 @@ def watchlist():
         )
 
         output = {
+            "id": aniimeData.get("mainId"),
             "title": aniimeData.get("english"),
             "type": aniimeData.get("type"),
+            "subbed": aniimeData.get("subbed"),
+            "dubbed": aniimeData.get("dubbed"),
             "image": img.get("cover"),
             "status": data.get("folder"),
+            "url":f'/watch/{aniimeData.get("mainId")}/1',
             "duration": "45m", "current": 0, "total": 3,
         }
         watchlist_dataz.append(output)
@@ -3936,7 +4011,7 @@ def get_notifications(notification_type):
                 Query.order_desc("time"),
                 Query.select([
                     'notificationId', 'userId', 'relatedEpId', 'message',
-                    'isRead', 'isCommunity', 'time'
+                    'isRead', 'isCommunity', 'time','realtedPostId'
                 ]),
                 is_community_query,
             ],
@@ -4005,6 +4080,20 @@ def get_notifications(notification_type):
                     )
 
                     url = f'/watch/{anime['documents'][0]['mainId']}/{ep.get('number')}'
+                except Exception as e:
+                    if str(e) == "Document with the requested ID could not be found.":
+                        url = "/#"
+            elif noa.get('realtedPostId') and notification_type == 'community':
+                try:
+                    pcomment = databases.get_document(
+                        database_id=os.getenv('DATABASE_ID'),
+                        collection_id=os.getenv('Posts'),
+                        document_id=noa.get('realtedPostId'),
+                        queries=[
+                            Query.select(['title','$id'])
+                        ]
+                    )
+                    url = f'/post/{pcomment.get('$id')}?nid={noa.get('notificationId')}'
                 except Exception as e:
                     if str(e) == "Document with the requested ID could not be found.":
                         url = "/#"
@@ -4537,42 +4626,76 @@ def player(type, id):
     else:
         abort(400, description="Unsupported type")
 
-def rank_points(client,acc,type):
+def rank_points(client,acc,type,nd=None):
 
     databases = Databases(client)
     rid = ID.unique()
 
-    rank = databases.list_documents(
-        database_id=os.getenv('DATABASE_ID'),
-        collection_id=os.getenv('LEADER_BOARD'),
-        queries=[
-            Query.equal('userId',acc.get('$id')),
-            Query.select(['points','$id']),
-            ]
-        )
-    if rank['total'] > 0:
-        points = rank['documents'][0]
-        lol=databases.update_document(
-        database_id=os.getenv('DATABASE_ID'),
-        collection_id=os.getenv('LEADER_BOARD'),
-        document_id=points.get('$id'),
-        data={
-            'points':points.get('points')+POINTS_LIKES,
-            'userId':acc.get('$id'),
-            'user':acc.get('$id'),
+    if not nd:
+
+        rank = databases.list_documents(
+            database_id=os.getenv('DATABASE_ID'),
+            collection_id=os.getenv('LEADER_BOARD'),
+            queries=[
+                Query.equal('userId',acc.get('$id')),
+                Query.select(['points','$id']),
+                ]
+            )
+        if rank['total'] > 0:
+            points = rank['documents'][0]
+            lol=databases.update_document(
+            database_id=os.getenv('DATABASE_ID'),
+            collection_id=os.getenv('LEADER_BOARD'),
+            document_id=points.get('$id'),
+            data={
+                'points':points.get('points')+POINTS_LIKES,
+                'userId':acc.get('$id'),
+                'user':acc.get('$id'),
+                }
+            )
+        else:
+            lol=databases.create_document(
+            database_id=os.getenv('DATABASE_ID'),
+            collection_id=os.getenv('LEADER_BOARD'),
+            document_id=rid,
+            data={
+                'points':0+POINTS_LIKES,
+                'userId':acc.get('$id'),
+                'user':acc.get('$id'),
             }
         )
     else:
-        lol=databases.create_document(
-        database_id=os.getenv('DATABASE_ID'),
-        collection_id=os.getenv('LEADER_BOARD'),
-        document_id=rid,
-        data={
-            'points':0+POINTS_LIKES,
-            'userId':acc.get('$id'),
-            'user':acc.get('$id'),
-        }
-    )
+        rank = databases.list_documents(
+            database_id=os.getenv('DATABASE_ID'),
+            collection_id=os.getenv('LEADER_BOARD'),
+            queries=[
+                Query.equal('userId',nd),
+                Query.select(['points','$id']),
+                ]
+            )
+        if rank['total'] > 0:
+            points = rank['documents'][0]
+            lol=databases.update_document(
+            database_id=os.getenv('DATABASE_ID'),
+            collection_id=os.getenv('LEADER_BOARD'),
+            document_id=points.get('$id'),
+            data={
+                'points':points.get('points')+POINTS_LIKES,
+                'userId':nd,
+                'user':acc.get('$id'),
+                }
+            )
+        else:
+            lol=databases.create_document(
+            database_id=os.getenv('DATABASE_ID'),
+            collection_id=os.getenv('LEADER_BOARD'),
+            document_id=rid,
+            data={
+                'points':0+POINTS_LIKES,
+                'userId':nd,
+                'user':acc.get('$id'),
+            }
+        )
 
 @app.route('/proxy/subtitle/<path:url>')
 def proxy_subtitle(url):

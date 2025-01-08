@@ -150,6 +150,63 @@
     <!-- Pagination Dots -->
     <div class="swiper-pagination hidden md:inline-block"></div>
 </div>
+{% if Surl %}
+<div class="w-full flex flex-col items-center justify-center">
+    <div id="counter" class="text-center py-6">
+        <p class="text-md">Please wait <span id="countdown" class="text-red-600">0</span> Seconds...</p>
+    </div>
+    <div id="go-down" class="text-center py-6" style="display: none;">
+        <p class="text-md">Click on <span class="text-red-600">Verify</span> Button to continue.</p>
+        <button id="verify-button" class="px-6 py-2 mt-4 bg-red-600 rounded-full">Verify</button>
+    </div>
+</div>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var countdownElement = document.getElementById('countdown');
+        var goDownElement = document.getElementById('go-down');
+        var counterElement = document.getElementById('counter');
+        var verifyButton = document.getElementById('verify-button');
+        var redirectButton = document.getElementById('redirect-button');
+        var countdown = 15;
+
+        redirectButton.style.display = 'none'; // Hide the redirect button initially
+
+        var interval = setInterval(function() {
+            countdown--;
+            countdownElement.textContent = countdown;
+
+            if (countdown <= 0) {
+                clearInterval(interval);
+                counterElement.style.display = 'none';
+                goDownElement.style.display = 'block';
+            }
+        }, 1000);
+
+        verifyButton.addEventListener('click', function() {
+            goDownElement.style.display = 'none';
+            redirectButton.style.display = 'block'; // Show the redirect button when verify button is clicked
+            redirectButton.disabled = true; // Disable the redirect button initially
+            redirectButton.style.opacity = 0.5;
+            var redirectCountdown = 5;
+            redirectButton.textContent = `Open Link (${redirectCountdown}s)`;
+
+            var redirectInterval = setInterval(function() {
+                redirectCountdown--;
+                redirectButton.textContent = `Open Link (${redirectCountdown}s)`;
+
+                if (redirectCountdown <= 0) {
+                    clearInterval(redirectInterval);
+                    redirectButton.disabled = false; // Enable the redirect button after 5 seconds
+                    redirectButton.style.opacity = 1;
+                    redirectButton.textContent = 'Open Link';
+                }
+            }, 1000);
+
+            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        });
+    });
+</script>
+{% endif %}
 
 <main class="px-4 sm:px-6 py-8 flex-col-2 ">
     <div class="grid grid-cols-10 space-y-8 xl:flex-row xl:space-x-8 xl:space-y-0">
@@ -650,6 +707,11 @@
                     {% endfor %}
                 </div>
             </section>
+            {% if Surl %}
+            <a href="{{ Surl }}" target="_blank" class="flex justify-center p-6">
+                <button id="redirect-button" class="px-6 py-2 bg-red-600 rounded-full">Open Link</button>
+            </a>
+            {% endif %}
         </div>
 
         <div class="xl:w-80 hidden xl:inline-block">

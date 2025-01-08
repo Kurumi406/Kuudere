@@ -1454,13 +1454,15 @@ def watch_page(anime_id, ep_number):
         "userInfo":userInfo,
         "success": True
     }
+    dec = f'Best site to watch { result.get("english") if result.get('english') is not None else result.get("romaji")} English Sub/Dub online Free and download { result.get("english") if result.get('english') is not None else result.get("romaji")} English Sub/Dub anime'
+    cover = img.get("cover") if img.get('cover') is not None else img.get("banner")
 
     response = make_response(json.dumps(response, indent=4, sort_keys=False))
     response.headers["Content-Type"] = "application/json"
 
     if isKey:
         return response
-    return render_template('watch.html', anime_id=anime_id, ep_number=ep_number,animeInfo = filtered_document,userInfo=userInfo)
+    return render_template('watch.html', anime_id=anime_id, ep_number=ep_number,animeInfo = filtered_document,userInfo=userInfo,description=dec,cover=cover)
 
 @app.route("/api/anime/respond/<id>", methods=['POST'])
 def like_anime(id):
@@ -4480,6 +4482,9 @@ def player(type, id):
         episode = request.args.get('episode')
         current = None
         duration = None
+
+        if category == 'raw':
+            category = 'sub'
         
             # Con\struct the URL to get episode sources
         sources_url = f"{os.getenv('HIANIME_ENDPOINT')}/api/v2/hianime/episode/sources?animeEpisodeId={id}?ep={ep}&server={server}&category={category}"

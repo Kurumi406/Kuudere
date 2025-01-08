@@ -3,17 +3,33 @@
 
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ title | default("Kuudere - Free Anime Streaming") }}</title>
-    <meta name="description" content="{{ description | default('Default description') }}">
+    <title>{{ title | default("Kuudere - Watch Anime Free in HD") }}</title>
+    <meta name="description" content="{{ description | default('Stream anime for free in HD on Kuudere. Enjoy the latest episodes with no ads!') }}">
     <link rel="icon" href="{{ url_for('static', filename='favicon.png') }}" type="image/x-icon">
-
+    <link rel="canonical" href="{{ canonical_url | default(request.url) }}">
+    
     <!-- Open Graph Meta Tags -->
-    <meta property="og:title" content="{{ title | default('Default Title') }}">
-    <meta property="og:description" content="{{ description | default('Default description') }}">
+    <meta property="og:title" content="{{ title | default('Kuudere - Watch Anime Free in HD') }}">
+    <meta property="og:description" content="{{ description | default('Stream anime for free in HD on Kuudere. No ads, just anime!') }}">
     <meta property="og:url" content="{{ canonical_url | default(request.url) }}">
-    <meta property="og:image" content="{{ cover | default('https://example.com/default-cover.jpg') }}">
+    <meta property="og:image" content="{{ cover | default(url_for('static', filename='favicon.png', _external=True)) }}">
     <meta property="og:type" content="website">
+    <meta property="og:locale" content="en_US">
+    
+    <!-- Twitter Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ title | default('Kuudere - Watch Anime Free in HD') }}">
+    <meta name="twitter:description" content="{{ description | default('Stream anime for free in HD on Kuudere. No ads, just anime!') }}">
+    <meta name="twitter:image" content="{{ cover | default(url_for('static', filename='favicon.png', _external=True)) }}">
+    <meta name="twitter:site" content="@KuudereAnime">
+    
+    <!-- Robots -->
+    <meta name="robots" content="index, follow">
+    
+    <!-- Preload Resources -->
+    <link rel="preload" href="{{ url_for('static', filename='favicon.png') }}" as="image">
 
     <link href="{{ url_for('static', filename='css/output.css') }}" rel="stylesheet">
     <script defer src="{{ url_for('static', filename='js/alphine.js') }}"></script>

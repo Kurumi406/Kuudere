@@ -58,6 +58,8 @@ app.config.update(
     SESSION_COOKIE_HTTPONLY=True,  # Prevent JavaScript access
     SESSION_COOKIE_SAMESITE='Lax'  # Restrict cross-site cookie usage
 )
+app.config['SESSION_PERMANENT'] = True
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=365) 
 
 limiter = Limiter(
     get_real_ip,
@@ -452,6 +454,7 @@ def register():
             ] # optional
         )
                 # Store both session ID and secret
+        session.permanent = True
         session['session_id'] = session_data['$id']  # Store the session ID for logout
         session['session_secret'] = session_data['secret']  # Store the secret for authentication
         return jsonify({'success': True, 'message': 'User registered successfully'})
@@ -483,6 +486,7 @@ def login():
         
         # Store both session ID and secret
         session.clear()
+        session.permanent = True
         session['session_id'] = session_data['$id']  # Store the session ID for logout
         session['session_secret'] = session_data['secret']  # Store the secret for authentication
         

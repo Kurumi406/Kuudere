@@ -196,7 +196,7 @@
                         this.socket.emit('leave', { room: this.currentRoom });
                     }
 
-                    this.currentRoom = part+'/1'; // Set the new room
+                    this.currentRoom = part; // Set the new room
                     this.socket.emit('join', { other_id: this.currentRoom });
                     this.socket.emit('get_current_room_count', { room: this.currentRoom }); // Request count for the current room
                 },

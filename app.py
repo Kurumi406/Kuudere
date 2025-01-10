@@ -977,6 +977,12 @@ def filter_results():
             year = int(year)
             base_query_list.append(Query.equal("year", year))
 
+        if language and language == "Japanese":
+            base_query_list.append(Query.not_equal("subbed", 0))
+
+        if language and language == "English":
+            base_query_list.append(Query.not_equal("dubbed", 0))
+
         if type and type != "All":
             base_query_list.append(Query.equal("type", type))
 
@@ -2305,7 +2311,7 @@ def get_posts():
     isUnliked = False
 
 
-    valid_folders = ["General", "Suggestion", "Discussion", "Feedback","Question","All"]
+    valid_folders = ["General", "Suggestion", "Discussion", "Feedback","Question","All","Updates"]
     if category not in valid_folders:
         return jsonify({"error": "Invalid Category", "success": False}), 404
 
@@ -2544,7 +2550,7 @@ def create_post():
     
     
     try:
-        valid_folders = ["Updates", "General", "Suggestion", "Discussion", "Feedback","Question"]
+        valid_folders = ["General", "Suggestion", "Discussion", "Feedback","Question"]
         if data.get('category') not in valid_folders:
             return jsonify({"error": "Invalid Category", "success": False}), 400
         client = get_client(key,secret)
@@ -2786,207 +2792,194 @@ def like_post(id):
 
 @app.route('/post/<post_id>', methods=['GET'])
 def view_post(post_id):
-    # In a real application, you would fetch this data from a database
-
-    secret = request.args.get('secret')
-    key = request.args.get('key')
-    isKey = bool(secret)
-    nid = request.args.get('nid')
-    if secret:
-        isKey = True
-        print("Key exists: ", secret)
-    else:
-        isKey = False
-        secret = os.getenv('SECRET')  # Default value
-        print("Key is missing or empty, setting default secret.")
-
-    if 'session_secret' in session:
-         
-         key = session["session_secret"]
-
-         client = get_client(session["session_secret"],None)
-         account = Account(client)
-
-         acc = account.get()
-         
-         userInfo = {
-             "userId":acc.get("$id"),
-             "username" : acc.get("name"),
-             "email" : acc.get("email")
-         }
-    elif bool(key):
-         client = get_client(key,None)
-         account = Account(client)
-
-         acc = account.get()
-         
-         userInfo = {
-             "userId":acc.get("$id"),
-             "username" : acc.get("name"),
-             "email" : acc.get("email")
-         }
-    else:
-        userInfo = None     
-    
     try:
-        client = get_client(key,secret)
+        # Get query parameters
+        secret = request.args.get('secret')
+        key = request.args.get('key')
+        nid = request.args.get('nid')
+        
+        # Handle secret key logic
+        isKey = bool(secret)
+        if secret:
+            print("Key exists: ", secret)
+        else:
+            isKey = False
+            secret = os.getenv('SECRET')
+            print("Key is missing or empty, setting default secret.")
+
+        # Initialize userInfo
+        userInfo = None
+        
+        # Handle session authentication
+        if 'session_secret' in session:
+            key = session["session_secret"]
+            client = get_client(session["session_secret"], None)
+            account = Account(client)
+            acc = account.get()
+            
+            userInfo = {
+                "userId": acc.get("$id", ""),
+                "username": acc.get("name", ""),
+                "email": acc.get("email", "")
+            }
+        elif bool(key):
+            client = get_client(key, None)
+            account = Account(client)
+            acc = account.get()
+            
+            userInfo = {
+                "userId": acc.get("$id", ""),
+                "username": acc.get("name", ""),
+                "email": acc.get("email", "")
+            }
+
+        # Get database client
+        client = get_client(key, secret)
         databases = Databases(client)
 
+        # Fetch post data
         result = databases.get_document(
             database_id=os.getenv('DATABASE_ID'),
             collection_id=os.getenv('Posts'),
             document_id=post_id,
             queries=[
-                Query.select(['postId','title','content','userId','category','added'])
+                Query.select(['postId', 'title', 'content', 'userId', 'category', 'added'])
             ]
         )
 
-        user_id = result.get("userId")# Skip if userId is missing
-
-            # Fetch user details
+        # Check moderator status
+        user_id = result.get("userId", "")
+        client = get_client(None, secret)
         teams = Teams(client)
-
-        client = get_client(None,secret)
-        tem = teams.list_memberships(
-                team_id = os.getenv('MODS'),
-            )
-
-                # Extract all userIds from the memberships
+        tem = teams.list_memberships(team_id=os.getenv('MODS'))
         team_user_ids = {member.get("userId") for member in tem.get("memberships", [])}
+        isMod = user_id in team_user_ids
 
-        # Check if user_id exists in the team
-        if user_id in team_user_ids:
-            print(f"User {user_id} is in the team.")
-            isMod = True
-                # Perform actions for team members
-        else:
-            print(f"User {user_id} is NOT in the team.")
-            isMod = False
-                # Perform actions for non-team members
-
+        # Format timestamp
         added = format_relative_time(result.get("added"))
 
+        # Initialize like status
         isLiked = False
         isUnliked = False
-        if userInfo:
-                IsUserLiked = databases.list_documents(
-                    database_id=os.getenv('DATABASE_ID'),
-                    collection_id=os.getenv('POST_LIKES'),
-                    queries=[
-                        Query.equal('postId', result.get("postId")),
-                        Query.equal('isLiked', True),
-                        Query.equal('userId', acc.get("$id")),
-                        Query.select(['userId'])
-                    ]
-                )
-
-                IsUserunLiked = databases.list_documents(
-                    database_id=os.getenv('DATABASE_ID'),
-                    collection_id=os.getenv('POST_LIKES'),
-                    queries=[
-                        Query.equal('postId', result.get("postId")),
-                        Query.equal('isLiked', False),
-                        Query.equal('userId', acc.get("$id")),
-                        Query.select(['userId'])
-                    ]
-                )
-
-                if nid:
-                    ns = databases.list_documents(
-                        database_id=os.getenv('DATABASE_ID'),
-                        collection_id=os.getenv('Notifications'),
-                        queries=[
-                            Query.equal('notificationId',nid),
-                        ]
-                    )
-
-                    if ns['total'] > 0:
-                        databases.update_document(
-                            database_id=os.getenv('DATABASE_ID'),
-                            collection_id=os.getenv('Notifications'),
-                            document_id=nid,
-                            data={
-                                "isRead":True,
-                            }
-                        )
-
-                if IsUserLiked['total'] > 0:
-                    isLiked = True
-                elif IsUserunLiked['total'] > 0:
-                    isUnliked = True
-
-        user = databases.get_document(
-                database_id = os.getenv('DATABASE_ID'),
-                collection_id = os.getenv('Users'),
-                document_id= user_id,
-                queries=[
-                    Query.select(['username','userId']),
-                ]
-            )
         
-        comms = databases.list_documents(
-                database_id = os.getenv('DATABASE_ID'),
-                collection_id = os.getenv('POST_COMMENTS'),
-                queries=[
-                    Query.equal('postId',post_id),
-                    Query.not_equal('removed',True),
-                    Query.select(['postCommentId','userId','postId','content','added_date'])
-                ]
-        )
-
-        likes = databases.list_documents(
+        # Check user's like status if logged in
+        if userInfo:
+            IsUserLiked = databases.list_documents(
                 database_id=os.getenv('DATABASE_ID'),
                 collection_id=os.getenv('POST_LIKES'),
                 queries=[
+                    Query.equal('postId', result.get("postId")),
                     Query.equal('isLiked', True),
-                    Query.equal('postId', result.get('postId')),
-                    Query.select(['postId']),
+                    Query.equal('userId', acc.get("$id")),
+                    Query.select(['userId'])
                 ]
             )
 
-        comments = []
-
-        for cm in comms['documents']:
-
-            usercm = databases.list_documents(
-                database_id = os.getenv('DATABASE_ID'),
-                collection_id = os.getenv('Users'),
+            IsUserunLiked = databases.list_documents(
+                database_id=os.getenv('DATABASE_ID'),
+                collection_id=os.getenv('POST_LIKES'),
                 queries=[
-                    Query.equal('userId',cm.get('userId')),
-                    Query.select(['username','userId']),
+                    Query.equal('postId', result.get("postId")),
+                    Query.equal('isLiked', False),
+                    Query.equal('userId', acc.get("$id")),
+                    Query.select(['userId'])
                 ]
             )
 
+            # Handle notification
+            if nid:
+                ns = databases.list_documents(
+                    database_id=os.getenv('DATABASE_ID'),
+                    collection_id=os.getenv('Notifications'),
+                    queries=[Query.equal('notificationId', nid)]
+                )
 
-            data = {
-                "id":cm.get('postCommentId'),
-                'author':
-                usercm['documents'][0]['username'], "avatar": "/placeholder.svg?height=32&width=32", "content": cm.get('content'), "time": format_relative_time(cm.get('added_date'))
-            }
+                if ns.get('total', 0) > 0:
+                    databases.update_document(
+                        database_id=os.getenv('DATABASE_ID'),
+                        collection_id=os.getenv('Notifications'),
+                        document_id=nid,
+                        data={"isRead": True}
+                    )
 
-            comments.append(data)
+            isLiked = IsUserLiked.get('total', 0) > 0
+            isUnliked = IsUserunLiked.get('total', 0) > 0
 
+        # Get post author info
+        user = databases.get_document(
+            database_id=os.getenv('DATABASE_ID'),
+            collection_id=os.getenv('Users'),
+            document_id=user_id,
+            queries=[Query.select(['username', 'userId'])]
+        )
 
+        # Get comments
+        comms = databases.list_documents(
+            database_id=os.getenv('DATABASE_ID'),
+            collection_id=os.getenv('POST_COMMENTS'),
+            queries=[
+                Query.equal('postId', post_id),
+                Query.not_equal('removed', True),
+                Query.select(['postCommentId', 'userId', 'postId', 'content', 'added_date'])
+            ]
+        )
+
+        # Get likes count
+        likes = databases.list_documents(
+            database_id=os.getenv('DATABASE_ID'),
+            collection_id=os.getenv('POST_LIKES'),
+            queries=[
+                Query.equal('isLiked', True),
+                Query.equal('postId', result.get('postId')),
+                Query.select(['postId'])
+            ]
+        )
+
+        # Process comments
+        comments = []
+        for cm in comms.get('documents', []):
+            usercm = databases.list_documents(
+                database_id=os.getenv('DATABASE_ID'),
+                collection_id=os.getenv('Users'),
+                queries=[
+                    Query.equal('userId', cm.get('userId', '')),
+                    Query.select(['username', 'userId'])
+                ]
+            )
+
+            if usercm.get('documents'):
+                comment_data = {
+                    "id": cm.get('postCommentId', ''),
+                    "author": usercm['documents'][0].get('username', ''),
+                    "avatar": "/placeholder.svg?height=32&width=32",
+                    "content": cm.get('content', ''),
+                    "time": format_relative_time(cm.get('added_date'))
+                }
+                comments.append(comment_data)
+
+        # Prepare post data
         post = {
-            'id': result.get("postId"),
-            'title': result.get("title"),
-            'content': result.get("content"),
-            'author': user.get('username'),
+            'id': result.get("postId", ""),
+            'title': result.get("title", ""),
+            'content': result.get("content", ""),
+            'author': user.get('username', ""),
             'authorAvatar': '/placeholder.svg?height=32&width=32',
-            'category': result.get("category"),
-            'userLiked':isLiked,
-            'userUnliked':isUnliked,
-            'likes': likes['total'],
-            'comments': comms['total'],
-            'time': format_relative_time(result.get("added"))
+            'category': result.get("category", ""),
+            'userLiked': bool(isLiked),
+            'userUnliked': bool(isUnliked),
+            'likes': likes.get('total', 0),
+            'comments': comms.get('total', 0),
+            'time': format_relative_time(result.get("added", ""))
         }
-        print(result.get("postId"))
-        
-        return render_template('post.html', post=post,comments=comments,userInfo=userInfo)
 
-        
+        return render_template('post.html', 
+                             post=post,
+                             comments=comments,
+                             userInfo=userInfo)
+
     except Exception as e:
-        return jsonify({'success': False, 'message': str(e)})
+        print(f"Error in view_post: {str(e)}")
+        return jsonify({"success": False, "message": str(e)}), 500
     
 @app.route('/post/comment/<post_id>', methods=['POST'])
 def add_comment(post_id):

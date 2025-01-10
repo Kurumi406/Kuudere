@@ -223,7 +223,7 @@
                         @click.away="closeDropdown('language')"
                         class="dropdown-content scrollbar-thin absolute z-40 mt-1 w-full glass rounded-lg">
                         <div class="p-2">
-                            <template x-for="language in ['Japanese', 'English', 'Korean', 'Chinese']">
+                            <template x-for="language in ['Japanese', 'English']">
                                 <div class="flex items-center space-x-2 mb-2">
                                     <input type="checkbox" :id="'language_' + language" :value="language"
                                         x-model="selectedLanguages"

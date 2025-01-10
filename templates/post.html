@@ -118,13 +118,16 @@
 
     <script>
                 function postData() {
-                    const userInfo = {{ userInfo | tojson | safe}};
+                    const userInfo = {{ userInfo | tojson | safe if userInfo else 'null' }};
+                    const post = {{ post | tojson | safe }};
+                    const comments = {{ comments | tojson | safe }};
+                    
                     return {
-                        post: JSON.parse('{{ post | tojson | safe }}'),
-                        comments: JSON.parse('{{ comments | tojson | safe }}'),
-                        isLiked: false,
-                        likeCount: {{ post.likes }},
-                        commentCount: {{ post.comments }},
+                        post: post,
+                        comments: comments,
+                        isLiked: post.userLiked || false,
+                        likeCount: post.likes || 0,
+                        commentCount: post.comments || 0,
                         newComment: '',
                         isLikeLoading: false,
                         isCommentLoading: false,

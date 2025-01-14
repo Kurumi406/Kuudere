@@ -1500,7 +1500,7 @@ def watch_page(anime_id, ep_number):
                 "userUnliked": isUnliked,
                 "likes":likes['total'],
                 "dislikes":dislikes['total'],
-                "url":f'/anime/{result.get('mainId')}',
+                "url":f"/anime/{result.get('mainId')}",
             }
             
     response = {
@@ -1508,7 +1508,7 @@ def watch_page(anime_id, ep_number):
         "userInfo":userInfo,
         "success": True
     }
-    dec = f'Best site to watch { result.get("english") if result.get('english') is not None else result.get("romaji")} English Sub/Dub online Free and download { result.get("english") if result.get('english') is not None else result.get("romaji")} English Sub/Dub anime'
+    dec = f"Best site to watch { result.get('english') if result.get('english') is not None else result.get('romaji')} English Sub/Dub online Free and download { result.get('english') if result.get('english') is not None else result.get('romaji')} English Sub/Dub anime"
     cover = img.get("cover") if img.get('cover') is not None else img.get("banner")
 
     response = make_response(json.dumps(response, indent=4, sort_keys=False))
@@ -2912,7 +2912,7 @@ def create_post():
                     'notificationId':nid,
                     'userId':user['documents'][0]['userId'],
                     'realtedPostId':did,
-                    'message':f'You have been mentioned on post {data.get('title')}',
+                    'message':f"You have been mentioned on post {data.get('title')}",
                     'isRead':False,
                     'isCommunity':True,
                     'time':iso_timestamp,
@@ -3041,7 +3041,7 @@ def reply_post_comment(comment_id):
                     'notificationId':nid,
                     'userId':acc.get('$id'),
                     'realtedPostId':find_comment['documents'][0]['postId'],
-                    'message':f'{acc.get('name')} replied to your comment on {post.get('title')}',
+                    'message':f"{acc.get('name')} replied to your comment on {post.get('title')}",
                     'isRead':False,
                     'isCommunity':True,
                     'time':iso_timestamp,
@@ -3075,7 +3075,7 @@ def reply_post_comment(comment_id):
                     'notificationId':nid,
                     'userId':user['documents'][0]['userId'],
                     'relatedPostCommentId':find_comment['documents'][0]['postCommentId'],
-                    'message':f'{acc.get('name')} mentioned you on post comment {find_comment['documents'][0]['content']}',
+                    'message':f"{acc.get('name')} mentioned you on post comment {find_comment['documents'][0]['content']}",
                     'isRead':False,
                     'isCommunity':True,
                     'time':iso_timestamp,
@@ -3806,7 +3806,7 @@ def add_comment(post_id):
                     'notificationId':nid,
                     'userId':user_id,
                     'realtedPostId':post_id,
-                    'message':f'{acc.get('name')} commented on {result.get('title')}',
+                    'message':f"{acc.get('name')} commented on {result.get('title')}",
                     'isRead':False,
                     'isCommunity':True,
                     'time':iso_timestamp,
@@ -3960,7 +3960,7 @@ def comment():
                     'notificationId':nid,
                     'userId':user['documents'][0]['userId'],
                     'relatedEpId':cid,
-                    'message':f'{acc.get('name')} mentioned you on anime {anime['documents'][0]['english'] if anime['documents'][0]['english'] is not None else anime['documents'][0]['romaji']}',
+                    'message':f"{acc.get('name')} mentioned you on anime {anime['documents'][0]['english'] if anime['documents'][0]['english'] is not None else anime['documents'][0]['romaji']}",
                     'isRead':False,
                     'isCommunity':True,
                     'time':iso_timestamp,
@@ -4091,7 +4091,7 @@ def post_reply():
                     'notificationId':nid,
                     'userId':acc.get('$id'),
                     'relatedEpId':find_comment['documents'][0]['episodeId'],
-                    'message':f'{acc.get('name')} replied to your comment on {anime.get('english') if anime.get('english') is not None else anime.get('romaji')}',
+                    'message':f"{acc.get('name')} replied to your comment on {anime.get('english') if anime.get('english') is not None else anime.get('romaji')}",
                     'isRead':False,
                     'isCommunity':True,
                     'time':iso_timestamp,
@@ -4125,7 +4125,7 @@ def post_reply():
                     'notificationId':nid,
                     'userId':user['documents'][0]['userId'],
                     'relatedCommentId':find_comment['documents'][0]['commentId'],
-                    'message':f'{acc.get('name')} mentioned you on anime comment {find_comment['documents'][0]['comment']}',
+                    'message':f"{acc.get('name')} mentioned you on anime comment {find_comment['documents'][0]['comment']}",
                     'isRead':False,
                     'isCommunity':True,
                     'time':iso_timestamp,
@@ -4521,7 +4521,7 @@ def continue_watching_home():
         
         ff=  {
                 "title": aniimeData["english"] if aniimeData['english'] is not None else aniimeData["romaji"],
-                "link":f'/watch/{aniimeData["mainId"]}/{ep.get('number')}?server={data['server']}&lang={data['language']}',                
+                "link":f"/watch/{aniimeData["mainId"]}/{ep.get('number')}?server={data['server']}&lang={data['language']}",                
                 "episode": ep.get('number'),
                 "progress": f"{int(data['currentTime'] // 60)}:{int(data['currentTime'] % 60):02}",
                 "duration": f"{int(data['duration'] // 60)}:{int(data['duration'] % 60):02}",
@@ -4761,7 +4761,7 @@ def get_notifications(notification_type):
                     ]
                 )
 
-                url = f'/watch/{anime['documents'][0]['mainId']}/{ep.get('number')}?lang={re.search(r'\[(.*?)\]', noa.get('message')).group(1).lower() if re.search(r'\[(.*?)\]', noa.get('message')) else None}&nid={noa.get('notificationId')}&type=anime'
+                url = f"/watch/{anime['documents'][0]['mainId']}/{ep.get('number')}?lang={re.search(r'\[(.*?)\]', noa.get('message')).group(1).lower() if re.search(r'\[(.*?)\]', noa.get('message')) else None}&nid={noa.get('notificationId')}&type=anime"
                 
                 imgurl = img['documents'][0]['cover']
             elif noa.get('relatedEpId') and notification_type == 'community':
@@ -4792,7 +4792,7 @@ def get_notifications(notification_type):
                         ]
                     )
 
-                    url = f'/watch/{anime['documents'][0]['mainId']}/{ep.get('number')}'
+                    url = f"/watch/{anime['documents'][0]['mainId']}/{ep.get('number')}"
                 except Exception as e:
                     if str(e) == "Document with the requested ID could not be found.":
                         url = "/#"
@@ -4806,7 +4806,7 @@ def get_notifications(notification_type):
                             Query.select(['title','$id'])
                         ]
                     )
-                    url = f'/post/{pcomment.get('$id')}?nid={noa.get('notificationId')}'
+                    url = f"/post/{pcomment.get('$id')}?nid={noa.get('notificationId')}"
                 except Exception as e:
                     if str(e) == "Document with the requested ID could not be found.":
                         url = "/#"
@@ -4975,7 +4975,7 @@ def get_anime_data():
         anime_data.append({
             "title": result.get('english') or result.get('romaji') or result.get('native'),
             "image": img.get('cover'),
-            "url":f'/anime/{result.get('mainId')}',
+            "url":f"/anime/{result.get('mainId')}",
             "stats": [
                 {"value": result.get('subbed'), "class": "bg-green-500/20 text-green-400"},
                 {"value": result.get('dubbed'), "class": "bg-blue-500/20 text-blue-400"},
@@ -5123,7 +5123,7 @@ def countdowns():
             "target_date": anii.get("airingAt") * 1000,
             "cover": img.get("cover"),
             "episode": anii.get("nextAiringEpisode"),
-            "url":f'/anime/{anii.get("mainId")}',
+            "url":f"/anime/{anii.get("mainId")}",
         })
 
     return render_template('countdowns.html', animes=animes, userInfo=userInfo)

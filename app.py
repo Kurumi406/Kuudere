@@ -4521,7 +4521,7 @@ def continue_watching_home():
         
         ff=  {
                 "title": aniimeData["english"] if aniimeData['english'] is not None else aniimeData["romaji"],
-                "link":f"/watch/{aniimeData["mainId"]}/{ep.get('number')}?server={data['server']}&lang={data['language']}",                
+                "link":f"/watch/{aniimeData['mainId']}/{ep.get('number')}?server={data['server']}&lang={data['language']}",                
                 "episode": ep.get('number'),
                 "progress": f"{int(data['currentTime'] // 60)}:{int(data['currentTime'] % 60):02}",
                 "duration": f"{int(data['duration'] // 60)}:{int(data['duration'] % 60):02}",

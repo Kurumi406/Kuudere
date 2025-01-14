@@ -51,12 +51,14 @@
 
                     <!-- Action Buttons -->
                     <div x-data="watchlist()" class="flex flex-wrap gap-4 mb-6">
+                        {% if anime.subbedCount > 0 %}
                         <a href="/watch/{{ anime.id }}/1" class="px-6 py-3 border-2 border-theme-red text-theme-red rounded-lg hover:bg-theme-red hover:text-white transition-colors flex items-center gap-2">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                                 <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"/>
                             </svg>
                             Watch Now
                         </a>
+                        {% endif %}
                         {% if userInfo %}
                         <div class="relative">
                             <button x-cloak @click="open = !open" class="px-6 py-3 border-2 border-theme-red text-theme-red rounded-lg hover:bg-theme-red hover:text-white transition-colors flex items-center gap-2">
@@ -97,6 +99,16 @@
                                 </div>
                             </div>
                         </div>
+                        {% else %}
+                        <button @click="isAuthOpen = true" class="px-6 py-3 border-2 border-theme-red text-theme-red rounded-lg hover:bg-theme-red hover:text-white transition-colors flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z"/>
+                            </svg>
+                            <span x-text="inWatchlist ? 'In Watchlist' : 'Add to Watchlist'"></span>
+                            <svg x-show="inWatchlist" class="h-5 w-5 text-green-500 ml-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
                         {% endif %}
                     </div>
 
@@ -196,7 +208,7 @@
                         this.socket.emit('leave', { room: this.currentRoom });
                     }
 
-                    this.currentRoom = part; // Set the new room
+                    this.currentRoom = part+'/'; // Set the new room
                     this.socket.emit('join', { other_id: this.currentRoom });
                     this.socket.emit('get_current_room_count', { room: this.currentRoom }); // Request count for the current room
                 },

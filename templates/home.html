@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kuuere - Free Anime Streaming Platform</title>
+    <title>Kuudere - Free Anime Streaming Platform</title>
     <link href="{{ url_for('static', filename='css/output.css') }}" rel="stylesheet">
     <link rel="icon" href="{{ url_for('static', filename='favicon.png') }}" type="image/x-icon">
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
@@ -60,26 +60,28 @@
                         <!-- Search Bar -->
                         <img src="{{ url_for('static', filename='logo.png') }}" width="200px" class="lazyload">
                         <div class="w-full max-w-md mb-6 mt-6 relative">
-                            <div class="relative">
-                                <input type="text" placeholder="Search anime..."
-                                    class="w-full px-5 py-4 bg-black/40 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-accent/50"
-                                    x-model="searchQuery"
-                                    @input.debounce.300ms="fetchResults"
-                                    @click.away="clearResults">
-                                <button
-                                    class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-accent"
-                                    @click="fetchResults">
+                            <form action="/search" method="get" class="relative" @keydown.enter.prevent="submitSearch">
+                                <input type="text" 
+                                       name="keyword" 
+                                       placeholder="Search anime..."
+                                       class="w-full px-5 py-4 bg-black/40 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-accent/50"
+                                       x-model="searchQuery"
+                                       @input.debounce.300ms="fetchResults"
+                                       @click.away="clearResults">
+                                <button type="button"
+                                        @click="submitSearch"
+                                        class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-accent">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                             d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                                     </svg>
                                 </button>
-                            </div>
+                            </form>
                             <!-- Search Results Dropdown -->
                             <div x-show="searchQuery.length > 0" x-cloak
                                 class="absolute w-full mt-2 bg-black/80 backdrop-blur-md rounded-lg shadow-lg overflow-hidden z-50">
                                 <!-- Loading indicator -->
-                                <div x-show="isLoading" class="px-4 py-2 text-center text-sm text-gray-400">
+                                <div x-cloak x-show="isLoading" class="px-4 py-2 text-center text-sm text-gray-400">
                                     Loading...
                                 </div>
                                 <!-- Search Results -->
@@ -120,20 +122,17 @@
                         </div>
 
                         <!-- Top Search -->
-                        <div class="w-full max-w-md mb-6 text-center">
+                        <div class="w-full max-w-md mx-auto mb-6 text-center px-4">
                             <span class="text-gray-400 text-sm">Top search:</span>
                             <div class="mt-2 flex flex-wrap justify-center gap-2">
-                                <a href="#"
-                                    class="text-sm px-3 py-1 bg-black/30 hover:bg-accent/20 rounded-full text-gray-300 hover:text-white transition-colors">Dandadan</a>
-                                <a href="#"
-                                    class="text-sm px-3 py-1 bg-black/30 hover:bg-accent/20 rounded-full text-gray-300 hover:text-white transition-colors">Blue
-                                    Lock Season 2</a>
-                                <a href="#"
-                                    class="text-sm px-3 py-1 bg-black/30 hover:bg-accent/20 rounded-full text-gray-300 hover:text-white transition-colors">One
-                                    Piece</a>
-                                <a href="#"
-                                    class="text-sm px-3 py-1 bg-black/30 hover:bg-accent/20 rounded-full text-gray-300 hover:text-white transition-colors">Dragon
-                                    Ball Daima</a>
+                                {% for keyword in keywords %}
+                                    <a href="/search?keyword={{ keyword.keyword }}"
+                                        class="inline-block text-sm px-3 py-1 bg-black/30 hover:bg-accent/20 rounded-full text-gray-300 hover:text-white transition-colors mb-2 md:mb-0
+                                            sm:max-w-[150px] md:max-w-none sm:truncate md:overflow-visible"
+                                        title="{{ keyword.keyword }}">
+                                        {{ keyword.keyword }}
+                                    </a>
+                                {% endfor %}
                             </div>
                         </div>
 
@@ -228,6 +227,13 @@
                 searchQuery: '',
                 searchResults: [],
                 isLoading: false,
+
+                submitSearch() {
+                    if (this.searchQuery.trim()) {
+                        // Manually submit by changing window location
+                        window.location.href = `/search?keyword=${encodeURIComponent(this.searchQuery.trim())}`;
+                    }
+                },
 
                 async fetchResults() {
                     if (this.searchQuery.trim().length === 0) {

@@ -202,8 +202,8 @@
                     Home
                 </a>
                 <template x-for="(item, index) in [
-                    { name: 'Subbed Anime', url: '#' },
-                    { name: 'Dubbed Anime', url: '#' },
+                    { name: 'Subbed Anime', url: '/search?language=Japanese&sort=default' },
+                    { name: 'Dubbed Anime', url: '/search?language=English&sort=default' },
                     { name: 'Most Popular', url: '#' },
                     { name: 'Movies', url: '/search?type=Movie&sort=default' },
                     { name: 'TV Series', url: '/search?type=TV&sort=default' },
@@ -220,16 +220,40 @@
             </nav>            
 
             <!-- Genre section with grid layout and glass effect -->
+            <div class="p-2"  x-data="{
+                isDrawerOpen: false,
+                genres: ['Action', 'Adventure', 'Cars', 'Comedy', 'Dementia', 'Demons', 'Drama', 'Ecchi', 'Fantasy', 'Game', 'Harem', 'Historical', 'Horror', 'Isekai', 'Josei', 'Kids', 'Magic', 'Martial Arts', 'Mecha', 'Military', 'Music', 'Mystery', 'Parody', 'Police'],
+                visibleGenres: 8,
+                visibleGenres: 8,
+                showMoreGenres() {
+                    this.visibleGenres = this.genres.length;
+                },
+                showLessGenres() {
+                    this.visibleGenres = 8;
+                }
+            }" >
+                <!-- Genre section with grid layout and glass effect -->
             <div class="p-2">
                 <h3 class="px-4 py-2 text-sm font-semibold text-red-400 uppercase tracking-wider">Genre</h3>
                 <div class="grid grid-cols-2 gap-2 p-2 rounded-lg bg-white/5 backdrop-blur-sm">
-                    <template x-for="genre in ['Action', 'Adventure', 'Comedy', 'Drama', 'Fantasy', 'Horror']">
-                        <a href="#"
+                    <template x-for="(genre, index) in genres.slice(0, visibleGenres)" :key="index">
+                        <a :href="'/search?genres=' + genre"
                             class="px-4 py-2 text-sm text-gray-300 hover:text-white hover:bg-red-500/10 rounded-lg transition-all duration-300 hover:translate-x-1"
                             x-text="genre">
                         </a>
                     </template>
                 </div>
+                <div class="mt-2 flex justify-center space-x-2">
+                    <button x-show="visibleGenres < genres.length" @click="showMoreGenres()"
+                        class="px-4 py-2 bg-red-500/20 text-white rounded-lg hover:bg-red-500/30 transition-colors duration-300">
+                        Show More Genres
+                    </button>
+                    <button x-show="visibleGenres > 8" @click="showLessGenres()"
+                        class="px-4 py-2 bg-red-500/20 text-white rounded-lg hover:bg-red-500/30 transition-colors duration-300">
+                        Show Less
+                    </button>
+                </div>
+            </div>
             </div>
         </div>
 

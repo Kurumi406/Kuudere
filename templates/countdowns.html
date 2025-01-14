@@ -25,7 +25,7 @@
     <div class="max-w-7xl mx-auto">
         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
             {% for anime in animes %}
-            <div class="anime-card relative aspect-[3/4] rounded-md overflow-hidden bg-theme-gray" 
+            <a @click="window.location.href='{{ anime.url }}'" class="anime-card relative aspect-[3/4] rounded-md overflow-hidden bg-theme-gray" 
                  x-data="animeCountdown({{ anime.target_date }})">
                 <img src="{{ anime.cover }}" alt="{{ anime.title }}" class="w-full h-full object-cover">
                 <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
@@ -68,7 +68,7 @@
                         </div>
                     </div>
                 </div>
-            </div>
+            </a>
             {% endfor %}
         </div>
     </div>

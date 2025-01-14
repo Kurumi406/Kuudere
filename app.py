@@ -35,8 +35,9 @@ import logging
 import asyncio
 import dotenv
 import json
-import time
+import time as shitl
 import math
+import pytz
 import base64
 import os
 import re
@@ -64,7 +65,7 @@ app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=365)
 limiter = Limiter(
     get_real_ip,
     app=app,
-    default_limits=["200 per day", "50 per hour"],
+    default_limits=["2500 per day", "100 per hour"],
     storage_uri="memory://",
 )
 
@@ -608,6 +609,17 @@ def load_home():
         client = get_client(None,secret)
         databases = Databases(client)
 
+        Notice = databases.list_documents(
+            database_id=os.getenv('DATABASE_ID'),
+            collection_id=os.getenv('Notices'),
+            queries=[
+                Query.order_desc('$createdAt'),
+                Query.limit(1)
+            ]
+        )
+
+        nData = Notice['documents'][0]
+
         if userInfo:
 
             search = databases.list_documents(
@@ -660,30 +672,33 @@ def load_home():
             ] # optional
         )
 
+        # Fetch the latest episodes
         latest_eps = databases.list_documents(
             database_id = os.getenv('DATABASE_ID'),
             collection_id = os.getenv('Anime_Episodes'),
             queries = [
                 Query.select("animeId"),
                 Query.order_desc("aired"),
-                Query.order_desc("$updatedAt"),
-                Query.limit(20)
+                Query.limit(50),
             ] # optional
         )
 
+        # Extract unique anime IDs
+        documents_eps = latest_eps.get('documents', [])
+        anime_ids = list({anime.get("animeId") for anime in documents_eps if anime.get("animeId")})
         documents = result.get('documents', [])
         processed_ids = set()  # Set to track processed anime IDs
         filtered_documents = []
-        documents_eps = latest_eps.get('documents', [])
         filtered_documents_eps = []
         documents_top = topAiring.get('documents', [])
         filtered_documents_top = []
         documents_top_upcoming = topUpcoming.get('documents', [])
         filtered_documents_top_upcoming = []
+        documents_eps = latest_eps.get('documents', [])
+        filtered_documents_eps = []
 
         latest_ep_data = documents_eps
 
-        # Access specific fields
         for anime in latest_ep_data:
             required_id = anime.get("animeId")
             anime_id = required_id
@@ -698,10 +713,14 @@ def load_home():
                 database_id = os.getenv('DATABASE_ID'),
                 collection_id = os.getenv('Anime'),
                 queries=[
+                    Query.not_equal('english','Sword of Coming'),
                     Query.equal("animeId",required_id),
                     Query.select(["mainId", "english", "romaji", "native", "ageRating", "malScore", "averageScore", "duration", "genres", "season", "startDate", "status", "synonyms", "type", "year", "description","subbed","dubbed"])
                 ]
             )
+
+            if not anii['total'] > 0:
+                continue
 
             anii=anii['documents'][0]
 
@@ -728,7 +747,7 @@ def load_home():
                 "genres": anii.get("genres"),
                 "cover": img.get("cover") ,
                 "season": anii.get("season"),
-                "startDate": anii.get("startDate"),
+                "startDate": datetime.fromisoformat(anii.get("startDate").replace("Z", "+00:00")).strftime("%b %d, %Y") if anii.get("startDate") else None,
                 "status": anii.get("status"),
                 "synonyms": anii.get("synonyms"),
                 "type": anii.get("type"),
@@ -737,6 +756,7 @@ def load_home():
                 "subbedCount": anii.get("subbed"),
                 "dubbedCount": anii.get("dubbed"),
                 "description": anii.get("description"),
+                "url":f'/watch/{anii.get("mainId")}/{anii.get("subbed")}',
             })
 
             if len(filtered_documents_eps) >= 12:
@@ -768,7 +788,7 @@ def load_home():
                 "genres": doc.get("genres"),
                 "cover": img.get("cover"),
                 "season": doc.get("season"),
-                "startDate": doc.get("startDate"),
+                "startDate": datetime.fromisoformat(doc.get("startDate").replace("Z", "+00:00")).strftime("%b %d, %Y") if doc.get("startDate") else None,
                 "status": doc.get("status"),
                 "synonyms": doc.get("synonyms"),
                 "type": doc.get("type"),
@@ -806,7 +826,7 @@ def load_home():
                 "cover":img.get("cover"),
                 "banner": img.get("banner") or new_url,
                 "season": air.get("season"),
-                "startDate": air.get("startDate"),
+                "startDate": datetime.fromisoformat(doc.get("startDate").replace("Z", "+00:00")).strftime("%b %d, %Y") if doc.get("startDate") else None,
                 "status": air.get("status"),
                 "synonyms": air.get("synonyms"),
                 "type": air.get("type"),
@@ -842,7 +862,7 @@ def load_home():
                 "cover":img.get("cover"),
                 "banner": img.get("banner"),
                 "season": upcoming.get("season"),
-                "startDate": upcoming.get("startDate"),
+                "startDate": datetime.fromisoformat(upcoming.get("startDate").replace("Z", "+00:00")).strftime("%b %d, %Y") if upcoming.get("startDate") else None,
                 "status": upcoming.get("status"),
                 "synonyms": upcoming.get("synonyms"),
                 "type": upcoming.get("type"),
@@ -867,7 +887,7 @@ def load_home():
         if isKey:
             return response
         else:
-            return render_template('index.html', last_updated=filtered_documents,latest_eps = filtered_documents_eps, topAiring = filtered_documents_top,topUpcoming=filtered_documents_top_upcoming,userInfo=userInfo,ctotal=ctotal,Surl=Surl)
+            return render_template('index.html', last_updated=filtered_documents,latest_eps = filtered_documents_eps, topAiring = filtered_documents_top,topUpcoming=filtered_documents_top_upcoming,userInfo=userInfo,ctotal=ctotal,Surl=Surl,nData=nData)
     except Exception as e:
          return jsonify({'success': False, 'message': str(e)}), 500 
         
@@ -962,6 +982,8 @@ def filter_results():
         # Search strategies for keyword
         def get_keyword_search_queries(keyword):
             return [
+                Query.equal("english", keyword),
+                Query.equal("romaji", keyword),
                 Query.search("english", keyword),
                 Query.search("romaji", keyword),
                 Query.search("native", keyword),
@@ -1421,6 +1443,17 @@ def watch_page(anime_id, ep_number):
                 elif IsUserunLiked['total'] > 0:
                     isUnliked = True
 
+    eps = databases.list_documents(
+        database_id=os.getenv('DATABASE_ID'),
+        collection_id=os.getenv('Anime_Episodes'),
+        queries=[
+            Query.equal("animeId", result.get("animeId")),
+            Query.equal("number", epASs),
+            Query.select(["animeId"]),
+            Query.limit(1)
+        ]
+    )
+
     bitch = databases.list_documents(
         database_id=os.getenv('DATABASE_ID'),
         collection_id=os.getenv('Anime_Episodes_Links'),
@@ -1431,6 +1464,9 @@ def watch_page(anime_id, ep_number):
             Query.limit(99999)
         ]
     )
+
+    if not eps['total'] > 0:
+        return render_template('404.html'),404
 
     likass = bitch.get("documents", [])
     print("Documents retrieved:", likass)
@@ -1463,7 +1499,8 @@ def watch_page(anime_id, ep_number):
                 "userLiked": isLiked,
                 "userUnliked": isUnliked,
                 "likes":likes['total'],
-                "dislikes":dislikes['total']
+                "dislikes":dislikes['total'],
+                "url":f'/anime/{result.get('mainId')}',
             }
             
     response = {
@@ -1645,7 +1682,169 @@ def like_anime(id):
         else:
             return jsonify({"message": "Type is required!"}), 400
     else:
-        return jsonify({"message": "Post Not Found!"}), 404     
+        return jsonify({"message": "Post Not Found!"}), 404
+
+@app.route("/api/anime/comment/respond/<id>", methods=['POST'])
+def like_anime_comment(id):
+    # Get the JSON data from the request body
+    data = request.get_json()
+
+    secret = request.args.get('secret')
+    key = request.args.get('key')
+    isKey = bool(secret)
+    
+    if secret:
+        isKey = True
+        print("Key exists: ", secret)
+    else:
+        isKey = False
+        secret = os.getenv('SECRET')  # Default value
+        print("Key is missing or empty, setting default secret.")
+
+    if 'session_secret' in session:
+        
+        key = session["session_secret"]
+
+        client = get_client(session["session_secret"], None)
+        account = Account(client)
+
+        acc = account.get()
+
+        userInfo = {
+            "userId": acc.get("$id"),
+            "username": acc.get("name"),
+            "email": acc.get("email")
+        }
+        
+    elif bool(key):
+        client = get_client(key, None)
+        account = Account(client)
+
+        acc = account.get()
+
+        userInfo = {
+            "userId": acc.get("$id"),
+            "username": acc.get("name"),
+            "email": acc.get("email")
+        }
+    else:
+        return jsonify({'success': False, 'message': "Unauthorized"}), 401
+
+    lid = ID.unique()
+    iso_timestamp = datetime.now(timezone.utc).isoformat()
+
+    client = get_client(key, None)
+    databases = Databases(client)
+
+    # Extract the 'type' from the data
+    response_type = data.get('type')
+
+    isAnime = databases.get_document(
+        database_id=os.getenv('DATABASE_ID'),
+        collection_id=os.getenv('Episode_Comments'),
+        document_id=id,
+        queries=[Query.select(['commentId','userId'])]
+    )
+
+    if isAnime.get('commentId'):
+        try:
+            isliked = databases.list_documents(
+                database_id=os.getenv('DATABASE_ID'),
+                collection_id=os.getenv('Episode_Comments_Likes'),
+                queries=[
+                    Query.equal('relatedEpCommentId', id),
+                    Query.equal('userId', acc.get("$id")),
+                    Query.select(['likeId', 'userId']),
+                ]
+            )
+        except Exception as e:
+            return e    
+
+        # Check if 'type' is provided
+        if response_type:
+            # Process the request based on 'type' (like or dislike)
+            if response_type == 'like':
+                try:
+                    if isliked['documents']:
+                        # If documents exist, update the like status
+                        like = databases.update_document(
+                            database_id=os.getenv('DATABASE_ID'),
+                            collection_id=os.getenv('Episode_Comments_Likes'),
+                            document_id=isliked['documents'][0]['likeId'],  # Use the document ID here
+                            data={
+                                "likeId": isliked['documents'][0]['likeId'],
+                                "userId": acc.get("$id"),
+                                "relatedEpCommentId": id,
+                                "likedUser": acc.get("$id"),
+                                "related_ep_comment": id,
+                                "isLiked": True,
+                            }
+                        )
+                    else:
+                        # Create a new like
+                        like = databases.create_document(
+                            database_id=os.getenv('DATABASE_ID'),
+                            collection_id=os.getenv('Episode_Comments_Likes'),
+                            document_id=lid,
+                            data={
+                                "likeId": lid,
+                                "userId": acc.get("$id"),
+                                "relatedEpCommentId": id,
+                                "likedUser": acc.get("$id"),
+                                "related_ep_comment": id,
+                                "isLiked": True,
+                            }
+                        )
+
+                        rank_points(client,acc,'Like',isAnime.get('userId'))
+
+                    return jsonify({"message": "Anime liked!"}), 200
+                except AppwriteException as e:
+                    return jsonify({"message": f"Something went wrong: {e}"}), 500
+            elif response_type == 'dislike':
+                try:
+                    if isliked['documents']:
+                        # If documents exist, update the like status
+                        like = databases.update_document(
+                            database_id=os.getenv('DATABASE_ID'),
+                            collection_id=os.getenv('Episode_Comments_Likes'),
+                            document_id=isliked['documents'][0]['likeId'],  # Use the document ID here
+                            data={
+                                "likeId": isliked['documents'][0]['likeId'],
+                                "userId": acc.get("$id"),
+                                "relatedEpCommentId": id,
+                                "likedUser": acc.get("$id"),
+                                "related_ep_comment": id,
+                                "isLiked": False,
+                            }
+                        )
+                    else:
+                        # Create a new like
+                        like = databases.create_document(
+                            database_id=os.getenv('DATABASE_ID'),
+                            collection_id=os.getenv('Episode_Comments_Likes'),
+                            document_id=lid,
+                            data={
+                                "likeId": lid,
+                                "userId": acc.get("$id"),
+                                "relatedEpCommentId": id,
+                                "likedUser": acc.get("$id"),
+                                "related_ep_comment": id,
+                                "isLiked": False,
+                            }
+                        )
+
+                        rank_points(client,acc,'Like',isAnime.get('userId'))
+
+                    return jsonify({"message": "Anime disliked!"}), 200
+                except AppwriteException as e:
+                    return jsonify({"message": f"Something went wrong: {e}"}), 500
+            else:
+                return jsonify({"message": "Invalid type!"}), 400
+        else:
+            return jsonify({"message": "Type is required!"}), 400
+    else:
+        return jsonify({"message": "Post Not Found!"}), 404        
     
 @app.route('/add-to-watchlist/<folder>/<animeid>', methods=['GET'])
 def add_to_watchlist(folder, animeid):
@@ -1817,7 +2016,7 @@ def search_api():
                 result = None
 
         if result['total'] <= 0:
-            return None
+            return jsonify({"error": "Nothing Found", "success": False}), 404
         # Process documents if results were found
         if result and result.get('documents'):
             documents = result.get('documents', [])
@@ -1858,6 +2057,45 @@ def fetch_episode_info(anime_id,ep_number):
     idz = anime_id
     epASs = int(ep_number)
     secret = os.getenv('SECRET')  # Default value
+    secret = request.args.get('secret')
+    key = request.args.get('key')
+    if secret:
+        isKey = True
+        print("Key exists: ", secret)
+    else:
+        isKey = False
+        secret = os.getenv('SECRET')  # Default value
+        print("Key is missing or empty, setting default secret.")
+
+        try:
+            if 'session_secret' in session:
+                
+
+                client = get_client(session["session_secret"],None)
+                account = Account(client)
+
+                acc = account.get()
+                
+                userInfo = {
+                    "userId":acc.get("$id"),
+                    "username" : acc.get("name"),
+                    "email" : acc.get("email")
+                }
+            elif bool(key):
+                client = get_client(key,None)
+                account = Account(client)
+
+                acc = account.get()
+                
+                userInfo = {
+                    "userId":acc.get("$id"),
+                    "username" : acc.get("name"),
+                    "email" : acc.get("email")
+                }
+            else:
+                userInfo = None
+        except Exception as e:
+            userInfo = None       
     print("Key is missing or empty, setting default secret.")
 
         # Initialize client and database
@@ -1922,7 +2160,8 @@ def fetch_episode_info(anime_id,ep_number):
             "titles": episode.get("titles", []),
             "filler": episode.get("filler"),
             "number": episode.get("number"),
-            "recap": episode.get("recap")
+            "recap": episode.get("recap"),
+            "aired": datetime.fromisoformat(episode.get("aired").replace("Z", "+00:00")).strftime("%b %d, %Y") if episode.get("aired") else None
         }
         episode_details.append(episode_info)
 
@@ -1949,6 +2188,18 @@ def fetch_episode_info(anime_id,ep_number):
                 "dataType": links.get("dataType"),
                 "dataLink": links.get("dataLink").replace("https://hianime.to/watch/", "/player/Hianime/") + f"&episode={epinfo['documents'][0]['$id']}&anime={anime_id}&vide=Hianime"
             }
+            ep_links.append(link_info)
+
+            # Second item for Hianime-2 (duplicate with modifications)
+            link_info_hianime_2 = {
+                "$id": "jvjvh",  # Replace with your logic or desired value
+                "serverId": 10001,
+                "serverName": "Hianime-2",
+                "episodeNumber": links.get("episodeNumber"),
+                "dataType": links.get("dataType"),
+                "dataLink": links.get("dataLink").replace("https://hianime.to/watch/", "/player2/Hianime/") + f"&episode={epinfo['documents'][0]['$id']}&anime={anime_id}&vide=Hianime-2"
+            }
+            ep_links.append(link_info_hianime_2)
         else:    
             link_info = {
                 "$id": links.get("$id"),
@@ -1958,7 +2209,7 @@ def fetch_episode_info(anime_id,ep_number):
                 "dataType": links.get("dataType"),
                 "dataLink": links.get("dataLink")
             }
-        ep_links.append(link_info)
+            ep_links.append(link_info)
 
     ep_links.sort(key=lambda x: x['serverId'])
 
@@ -1978,6 +2229,9 @@ def fetch_episode_info(anime_id,ep_number):
 
     for comment in comz:
         replys = []
+        isLiked = False  # Reset to False for each comment
+        isUnliked = False  # Reset to False for each comment
+
         reply = databases.list_documents(
             database_id=os.getenv('DATABASE_ID'),
             collection_id=os.getenv('Episode_Comments_Replys'),
@@ -1986,17 +2240,19 @@ def fetch_episode_info(anime_id,ep_number):
                 Query.not_equal("removed", True),
             ]
         )
-        userifo =databases.get_document(
-                database_id=os.getenv('DATABASE_ID'),
-                collection_id=os.getenv('Users'),
-                document_id=comment.get('userId'),
-                queries=[
-                    Query.select('username')
-                ]
-            )
+
+        userifo = databases.get_document(
+            database_id=os.getenv('DATABASE_ID'),
+            collection_id=os.getenv('Users'),
+            document_id=comment.get('userId'),
+            queries=[
+                Query.select('username')
+            ]
+        )
+
         rz = reply.get("documents", [])
         for rzls in rz:
-            userifo0 =databases.get_document(
+            userifo0 = databases.get_document(
                 database_id=os.getenv('DATABASE_ID'),
                 collection_id=os.getenv('Users'),
                 document_id=rzls.get('userId'),
@@ -2005,12 +2261,61 @@ def fetch_episode_info(anime_id,ep_number):
                 ]
             )
             data = {
-                'id': rzls.get("commentId"),
-                "author":userifo0.get('username'),
+                'id': rzls.get("episodeCommentReplyId"),
+                "author": userifo0.get('username'),
                 "time": format_relative_time(rzls.get("added_date")),
                 "content": rzls.get("content")
             }
             replys.append(data)
+
+        likes = databases.list_documents(
+            database_id=os.getenv('DATABASE_ID'),
+            collection_id=os.getenv('Episode_Comments_Likes'),
+            queries=[
+                Query.equal('isLiked', True),
+                Query.equal('relatedEpCommentId', comment.get("commentId")),
+                Query.select(['relatedEpCommentId']),
+            ]
+        )
+
+        dislikes = databases.list_documents(
+            database_id=os.getenv('DATABASE_ID'),
+            collection_id=os.getenv('Episode_Comments_Likes'),
+            queries=[
+                Query.equal('isLiked', False),
+                Query.equal('relatedEpCommentId', comment.get("commentId")),
+                Query.select(['relatedEpCommentId']),
+            ]
+        )
+
+        if userInfo:
+            IsUserLiked = databases.list_documents(
+                database_id=os.getenv('DATABASE_ID'),
+                collection_id=os.getenv('Episode_Comments_Likes'),
+                queries=[
+                    Query.equal('relatedEpCommentId', comment.get("commentId")),
+                    Query.equal('isLiked', True),
+                    Query.equal('userId', acc.get("$id")),
+                    Query.select(['userId'])
+                ]
+            )
+
+            IsUserunLiked = databases.list_documents(
+                database_id=os.getenv('DATABASE_ID'),
+                collection_id=os.getenv('Episode_Comments_Likes'),
+                queries=[
+                    Query.equal('relatedEpCommentId', comment.get("commentId")),
+                    Query.equal('isLiked', False),
+                    Query.equal('userId', acc.get("$id")),
+                    Query.select(['userId'])
+                ]
+            )
+
+            if IsUserLiked['total'] > 0:
+                isLiked = True
+            elif IsUserunLiked['total'] > 0:
+                isUnliked = True
+
         detail_info = {
             "id": comment.get("commentId"),
             "author": userifo.get('username'),
@@ -2018,6 +2323,9 @@ def fetch_episode_info(anime_id,ep_number):
             "content": comment.get("comment"),
             "showReplyForm": False,
             "showReplies": False,
+            "isLiked": isLiked,
+            "isUnliked": isUnliked,
+            "likes": likes['total'],
             "replyContent": "",
             "replies": replys,
         }
@@ -2029,7 +2337,7 @@ def fetch_episode_info(anime_id,ep_number):
         "episode_links": ep_links,
         "episode_comments":coms,
         "total_comments":comm['total'],
-        "success": True
+        "success": True,
     }
 
     response = make_response(json.dumps(response, indent=4, sort_keys=False))
@@ -2627,6 +2935,170 @@ def create_post():
     except Exception as e:
         return jsonify({'success': False, 'message': e}),500
     
+@app.route("/api/post/comment/reply/<comment_id>",methods=['POST'])
+def reply_post_comment(comment_id):
+    data = request.json
+    reply_content = data.get('content')
+    secret = request.args.get('secret')
+    key = request.args.get('key')
+    isKey = bool(secret)
+    if secret:
+        isKey = True
+        print("Key exists: ", secret)
+    else:
+        isKey = False
+        secret = os.getenv('SECRET')  # Default value
+        print("Key is missing or empty, setting default secret.")
+
+    if 'session_secret' in session:
+         
+
+         client = get_client(session["session_secret"],None)
+         account = Account(client)
+
+         acc = account.get()
+         
+         userInfo = {
+             "userId":acc.get("$id"),
+             "username" : acc.get("name"),
+             "email" : acc.get("email")
+         }
+         
+    elif bool(key):
+         client = get_client(key,None)
+         account = Account(client)
+
+         acc = account.get()
+         
+         userInfo = {
+             "userId":acc.get("$id"),
+             "username" : acc.get("name"),
+             "email" : acc.get("email")
+         }
+    else:
+       return jsonify({'success': False, 'message':"Unauthorized"}), 401
+    
+
+    if not comment_id or not reply_content:
+        return jsonify({"error": "commentId and content are required"}), 400
+    
+    if comment_filter(reply_content):
+        remove = True
+    else:
+        remove = False
+
+    try:
+        client = get_client(None,secret)
+        databases = Databases(client)
+        
+        find_comment = databases.list_documents(
+            database_id=os.getenv('DATABASE_ID'),
+            collection_id=os.getenv('POST_COMMENTS'),
+            queries=[
+                Query.equal("postCommentId", comment_id),  # Ensure `anii` is properly defined
+                Query.select(["postCommentId","content","userId","postId"]),
+            ]
+        )
+
+        post = databases.get_document(
+            database_id=os.getenv('DATABASE_ID'),
+            collection_id=os.getenv('Posts'),
+            document_id=find_comment['documents'][0]['postId'],
+            queries=[
+                Query.select(["title"])
+            ]
+        )
+
+        if find_comment['total'] <= 0:
+            return jsonify({"error": "Comment Not Found"}), 404
+
+        rid =ID.unique()
+        iso_timestamp = datetime.now(timezone.utc).isoformat()
+
+        reply = databases.create_document(
+            database_id=os.getenv('DATABASE_ID'),
+            collection_id=os.getenv('POST_COMMENTS_REPLYS'),
+            document_id=rid,
+            data={
+                "postCommentReplyId":rid,
+                "userId":acc.get('$id'),
+                "replyedPostCommentId":comment_id,
+                "content":reply_content,
+                "removed":remove,
+                "added_date":iso_timestamp,
+                "replyed_post_comment":comment_id,
+            }
+        )
+        rank_points(client,acc,'comment')
+
+        nid= ID.unique()
+
+        make_nofification_l = databases.create_document(
+                database_id = os.getenv('DATABASE_ID'),
+                collection_id= os.getenv('Notifications'),
+                document_id=nid,
+                data={
+                    'notificationId':nid,
+                    'userId':acc.get('$id'),
+                    'realtedPostId':find_comment['documents'][0]['postId'],
+                    'message':f'{acc.get('name')} replied to your comment on {post.get('title')}',
+                    'isRead':False,
+                    'isCommunity':True,
+                    'time':iso_timestamp,
+                    'receiver':find_comment['documents'][0]['userId'],
+                    'related_post':find_comment['documents'][0]['postId'],
+                }
+            )
+
+        mentions = re.findall(r'@(\w+)', data.get('content', ''))
+
+        for usernames in mentions:
+            user = databases.list_documents(
+                database_id = os.getenv('DATABASE_ID'),
+                collection_id= os.getenv('Users'),
+                queries=[
+                    Query.equal('username',usernames),
+                    Query.select('userId'),
+                    Query.limit(1)
+                ]
+            )
+
+            print(user['documents'][0]['userId'])
+
+            nid= ID.unique()
+
+            make_nofification = databases.create_document(
+                database_id = os.getenv('DATABASE_ID'),
+                collection_id= os.getenv('Notifications'),
+                document_id=nid,
+                data={
+                    'notificationId':nid,
+                    'userId':user['documents'][0]['userId'],
+                    'relatedPostCommentId':find_comment['documents'][0]['postCommentId'],
+                    'message':f'{acc.get('name')} mentioned you on post comment {find_comment['documents'][0]['content']}',
+                    'isRead':False,
+                    'isCommunity':True,
+                    'time':iso_timestamp,
+                    'receiver':user['documents'][0]['userId'],
+                    'related_post_commentId':find_comment['documents'][0]['postCommentId'],
+                }
+            )
+
+            print(user['documents'][0]['userId'])
+
+        # Create the new reply
+        new_reply = {
+            "id": rid,
+            "avatar":f"{url_for('static', filename='placeholder.svg')}?height=32&width=32",
+            "author": acc.get("name"),  # Generate a dummy author
+            "time": "Just now",
+            "content": reply_content
+        }
+        # Return the newly created reply
+        return jsonify(new_reply), 201
+    except Exception as e:
+          return jsonify({"error": f"Error:{e}"}), 500
+    
 @app.route("/api/post/respond/<id>", methods=['POST'])
 def like_post(id):
     # Get the JSON data from the request body
@@ -2793,6 +3265,171 @@ def like_post(id):
             return jsonify({"message": "Type is required!"}), 400
     else:
         return jsonify({"message": "Post Not Found!"}), 404     
+    
+@app.route("/api/post/comment/respond/<id>", methods=['POST'])
+def like_post_comment(id):
+    # Get the JSON data from the request body
+    data = request.get_json()
+
+    secret = request.args.get('secret')
+    key = request.args.get('key')
+    isKey = bool(secret)
+    
+    if secret:
+        isKey = True
+        print("Key exists: ", secret)
+    else:
+        isKey = False
+        secret = os.getenv('SECRET')  # Default value
+        print("Key is missing or empty, setting default secret.")
+
+    if 'session_secret' in session:
+        
+        key = session["session_secret"]
+
+        client = get_client(session["session_secret"], None)
+        account = Account(client)
+
+        acc = account.get()
+
+        userInfo = {
+            "userId": acc.get("$id"),
+            "username": acc.get("name"),
+            "email": acc.get("email")
+        }
+        
+    elif bool(key):
+        client = get_client(key, None)
+        account = Account(client)
+
+        acc = account.get()
+
+        userInfo = {
+            "userId": acc.get("$id"),
+            "username": acc.get("name"),
+            "email": acc.get("email")
+        }
+    else:
+        return jsonify({'success': False, 'message': "Unauthorized"}), 401
+
+    lid = ID.unique()
+    iso_timestamp = datetime.now(timezone.utc).isoformat()
+
+    client = get_client(key, None)
+    databases = Databases(client)
+
+    # Extract the 'type' from the data
+    response_type = data.get('type')
+
+    isAnime = databases.get_document(
+        database_id=os.getenv('DATABASE_ID'),
+        collection_id=os.getenv('POST_COMMENTS'),
+        document_id=id,
+        queries=[Query.select(['postId','userId'])]
+    )
+
+    if isAnime.get('postId'):
+        try:
+            isliked = databases.list_documents(
+                database_id=os.getenv('DATABASE_ID'),
+                collection_id=os.getenv('POST_COMMENTS_LIKES'),
+                queries=[
+                    Query.equal('postCommentId', id),
+                    Query.equal('userId', acc.get("$id")),
+                    Query.select(['postCommentLikesId', 'userId']),
+                ]
+            )
+        except Exception as e:
+            return e    
+
+        # Check if 'type' is provided
+        if response_type:
+            # Process the request based on 'type' (like or dislike)
+            if response_type == 'like':
+                try:
+                    if isliked['documents']:
+                        # If documents exist, update the like status
+                        like = databases.update_document(
+                            database_id=os.getenv('DATABASE_ID'),
+                            collection_id=os.getenv('POST_COMMENTS_LIKES'),
+                            document_id=isliked['documents'][0]['postCommentLikesId'],  # Use the document ID here
+                            data={
+                                "postCommentLikesId": isliked['documents'][0]['postCommentLikesId'],
+                                "userId": acc.get("$id"),
+                                "postCommentId": id,
+                                "likedUser": acc.get("$id"),
+                                "post_comment": id,
+                                "liked": True,
+                            }
+                        )
+                    else:
+                        # Create a new like
+                        like = databases.create_document(
+                            database_id=os.getenv('DATABASE_ID'),
+                            collection_id=os.getenv('POST_COMMENTS_LIKES'),
+                            document_id=lid,
+                            data={
+                                "postCommentLikesId": lid,
+                                "userId": acc.get("$id"),
+                                "postId":isAnime.get('postId'),
+                                "postCommentId": id,
+                                "likedUser": acc.get("$id"),
+                                "post_comment": id,
+                                "liked": True,
+                            }
+                        )
+
+                        rank_points(client,acc,'Like',isAnime.get('userId'))
+
+                    return jsonify({"message": "Post liked!"}), 200
+                except AppwriteException as e:
+                    return jsonify({"message": f"Something went wrong: {e},lol"}), 500
+            elif response_type == 'dislike':
+                try:
+                    if isliked['documents']:
+                        print(isliked['documents'][0]['postCommentLikesId'])
+                        # If documents exist, update the like status
+                        like = databases.update_document(
+                            database_id=os.getenv('DATABASE_ID'),
+                            collection_id=os.getenv('POST_COMMENTS_LIKES'),
+                            document_id=isliked['documents'][0]['postCommentLikesId'],  # Use the document ID here
+                            data={
+                                "postCommentLikesId": isliked['documents'][0]['postCommentLikesId'],
+                                "userId": acc.get("$id"),
+                                "postCommentId": id,
+                                "likedUser": acc.get("$id"),
+                                "post_comment": id,
+                                "liked": False,
+                            }
+                        )
+                    else:
+                        # Create a new like
+                        like = databases.create_document(
+                            database_id=os.getenv('DATABASE_ID'),
+                            collection_id=os.getenv('POST_COMMENTS_LIKES'),
+                            document_id=lid,
+                            data={
+                                "postCommentLikesId": lid,
+                                "userId": acc.get("$id"),
+                                "postCommentId": id,
+                                "likedUser": acc.get("$id"),
+                                "post_comment": id,
+                                "postId":isAnime.get('postId'),
+                                "liked": False,
+                            }
+                        )
+
+                        rank_points(client,acc,'Like',isAnime.get('userId'))
+
+                    return jsonify({"message": "Post disliked!"}), 200
+                except AppwriteException as e:
+                    return jsonify({"message": f"Something went wrong: {e},lol2"}), 500
+            else:
+                return jsonify({"message": "Invalid type!"}), 400
+        else:
+            return jsonify({"message": "Type is required!"}), 400
+    else:
+        return jsonify({"message": "Post Not Found!"}), 404        
 
 @app.route('/post/<post_id>', methods=['GET'])
 def view_post(post_id):
@@ -2942,6 +3579,8 @@ def view_post(post_id):
         # Process comments
         comments = []
         for cm in comms.get('documents', []):
+            isLikedz = False
+            isUnlikedz = False
             usercm = databases.list_documents(
                 database_id=os.getenv('DATABASE_ID'),
                 collection_id=os.getenv('Users'),
@@ -2951,23 +3590,103 @@ def view_post(post_id):
                 ]
             )
 
-            if usercm.get('documents'):
-                comment_data = {
-                    "id": cm.get('postCommentId', ''),
-                    "author": usercm['documents'][0].get('username', ''),
-                    "avatar": "/placeholder.svg?height=32&width=32",
-                    "content": cm.get('content', ''),
-                    "time": format_relative_time(cm.get('added_date'))
-                }
-                comments.append(comment_data)
+            replies = []
 
+            reply = databases.list_documents(
+                database_id=os.getenv('DATABASE_ID'),
+                collection_id=os.getenv('POST_COMMENTS_REPLYS'),
+                queries=[
+                    Query.equal("replyedPostCommentId", cm.get('postCommentId', '')),
+                    Query.not_equal("removed", True),
+                    Query.select(['userId','content','$id','$createdAt'])
+                ]
+            )
+
+            for rs in reply.get('documents', []):
+                userz = databases.get_document(
+                    database_id=os.getenv('DATABASE_ID'),
+                    collection_id=os.getenv('Users'),
+                    document_id=rs.get('userId'),
+                    queries=[Query.select(['username', 'userId'])]
+                )
+                data = {
+                    "id":rs.get('$id'),
+                    "avatar":f"{url_for('static', filename='placeholder.svg')}?height=32&width=32",
+                    "author":userz.get('username', "Unknown"),
+                    "time":format_relative_time(rs.get('$createdAt')),
+                    "content":rs.get('content'),
+                }
+                replies.append(data)
+
+            likesz = databases.list_documents(
+                database_id=os.getenv('DATABASE_ID'),
+                collection_id=os.getenv('POST_COMMENTS_LIKES'),
+                queries=[
+                    Query.equal('liked', True),
+                    Query.equal('postCommentId', cm.get('postCommentId')),
+                    Query.select(['postCommentId']),
+                ]
+            )
+            dislikes = databases.list_documents(
+                        database_id=os.getenv('DATABASE_ID'),
+                        collection_id=os.getenv('POST_COMMENTS_LIKES'),
+                        queries=[
+                            Query.equal('liked', False),
+                            Query.equal('postCommentId', cm.get('postCommentId')),
+                            Query.select(['postCommentId']),
+                        ]
+                    )
+            if userInfo:
+                    IsUserLikedz = databases.list_documents(
+                        database_id=os.getenv('DATABASE_ID'),
+                        collection_id=os.getenv('POST_COMMENTS_LIKES'),
+                        queries=[
+                            Query.equal('postCommentId', cm.get('postCommentId')),
+                            Query.equal('liked', True),
+                            Query.equal('userId', acc.get("$id")),
+                            Query.select(['userId'])
+                        ]
+                    )
+
+                    IsUserunLikedz = databases.list_documents(
+                        database_id=os.getenv('DATABASE_ID'),
+                        collection_id=os.getenv('POST_COMMENTS_LIKES'),
+                        queries=[
+                            Query.equal('postCommentId',cm.get('postCommentId')),
+                            Query.equal('liked', False),
+                            Query.equal('userId', acc.get("$id")),
+                            Query.select(['userId'])
+                        ]
+                    )
+                            
+
+                    if IsUserLikedz['total'] > 0:
+                        isLikedz = True
+                    elif IsUserunLikedz['total'] > 0:
+                        isUnlikedz = True
+
+            if usercm.get('documents'):
+                        comment_data = {
+                            "id": cm.get('postCommentId', ''),
+                            "author": usercm['documents'][0].get('username', ''),
+                            'avatar': f"{url_for('static', filename='placeholder.svg')}?height=32&width=32",
+                            "content": cm.get('content', ''),
+                            "isLiked":isLikedz,
+                            "isUnliked":isUnlikedz,
+                            "likes":likesz['total'],
+                            "time": format_relative_time(cm.get('added_date')),
+                            "replies":replies,
+                        }
+                        comments.append(comment_data)
+
+        print(comments)
         # Prepare post data
         post = {
             'id': result.get("postId", ""),
             'title': result.get("title", ""),
             'content': result.get("content", ""),
             'author': user.get('username', ""),
-            'authorAvatar': '/placeholder.svg?height=32&width=32',
+            'authorAvatar': f"{url_for('static', filename='placeholder.svg')}?height=32&width=32",
             'category': result.get("category", ""),
             'userLiked': bool(isLiked),
             'userUnliked': bool(isUnliked),
@@ -3102,7 +3821,7 @@ def add_comment(post_id):
     new_comment = {
         "id": cid,
         "author": acc.get("name"),  # In a real app, you'd get this from user authentication
-        "avatar": "/placeholder.svg?height=32&width=32",
+        "avatar": f"{url_for('static', filename='placeholder.svg')}?height=32&width=32",
         "content": data['content'],
         "time": "Just now"
     }
@@ -3522,7 +4241,6 @@ def profile():
 
 @app.route('/api/watchlist')
 def watchlist():
-    time.sleep(1)  # Simulate delay
     page = int(request.args.get('page', 1))
     status = request.args.get('status', 'All')
     secret = request.args.get('secret')
@@ -3607,7 +4325,6 @@ def watchlist():
 
 @app.route('/api/notifications')
 def notifications():
-    time.sleep(1)  # Simulate delay
     page = int(request.args.get('page', 1))
     per_page = 2
     start = (page - 1) * per_page
@@ -3620,7 +4337,7 @@ def notifications():
         "current_page": page
     })
 @app.route('/save/progress',methods=['POST'])
-@limiter.limit("15 per minute")
+@limiter.limit("50 per minute")
 def save_continue_watching():
     data = request.json
 
@@ -3670,7 +4387,6 @@ def save_continue_watching():
                 queries=[
                     Query.equal("userId",acc.get("$id")),
                     Query.equal("animeId",data.get('anime')),
-                    Query.equal("episodeId",data.get('episode')),
                     Query.select(['continueId']),
                 ]
             )
@@ -3767,6 +4483,7 @@ def continue_watching_home():
                     Query.equal("userId",acc.get("$id")),
                     Query.order_desc('$updatedAt'),
                     Query.select(['continueId','animeId','episodeId','currentTime','duration','server','language']),
+                    Query.limit(6)
                 ]
             )
     animes = []
@@ -3815,7 +4532,6 @@ def continue_watching_home():
 
 @app.route('/api/continue-watching')
 def continue_watching():
-    time.sleep(1)  # Simulate delay
     
     page = int(request.args.get('page', 1))
     per_page = 8
@@ -4191,6 +4907,83 @@ def get_notifications_count():
     except Exception as e:
         print(f"Error: {e}")
         return (f"Error: {e}")
+    
+@app.route('/api/top/anime/', methods=['GET'])
+def get_anime_data():
+    secret = os.getenv('SECRET')
+    client = get_client(None, secret)
+    databases = Databases(client)
+
+    tab = request.args.get('tab', 'today')
+    if tab == 'today':
+        dy = 1
+    elif tab == 'week':
+        dy = 7
+    else:
+        dy = 30
+
+    one_month_ago = datetime.now(pytz.UTC) - timedelta(days=dy)
+    iso_timestamp = one_month_ago.isoformat()
+
+    # Query for anime views
+    key = databases.list_documents(
+        database_id=os.getenv('DATABASE_ID'),
+        collection_id=os.getenv('Anime_Views'),
+        queries=[
+            Query.select(['animeId']),
+            Query.greater_than_equal('$createdAt', iso_timestamp),
+            Query.limit(10000000)
+        ]
+    )
+
+    anime_data = []
+    # Create a list of all anime IDs
+    keywords = [doc['animeId'] for doc in key['documents']]
+
+    # Count occurrences of each anime ID
+    keyword_counts = Counter(keywords)
+
+    # Get the top 10 most common anime
+    top_10 = keyword_counts.most_common(10)
+
+    for top, count in top_10:
+        # Fetch anime details
+        result = databases.get_document(
+            database_id=os.getenv('DATABASE_ID'),
+            collection_id=os.getenv('Anime'),
+            document_id=top,
+            queries=[
+                Query.select([
+                    "mainId", "english", "romaji", "native", "ageRating", 
+                    "malScore", "averageScore", "duration", "studios", 
+                    "genres", "season", "startDate", "status", 
+                    "synonyms", "type", "year", "subbed", "dubbed", "description"
+                ])
+            ]
+        )
+
+        # Fetch anime cover image
+        img = databases.get_document(
+            database_id=os.getenv('DATABASE_ID'),
+            collection_id=os.getenv('ANIME_IMGS'),
+            document_id=result.get('mainId'),
+            queries=[
+                Query.select(['cover'])
+            ]
+        )
+
+        anime_data.append({
+            "title": result.get('english') or result.get('romaji') or result.get('native'),
+            "image": img.get('cover'),
+            "url":f'/anime/{result.get('mainId')}',
+            "stats": [
+                {"value": result.get('subbed'), "class": "bg-green-500/20 text-green-400"},
+                {"value": result.get('dubbed'), "class": "bg-blue-500/20 text-blue-400"},
+                {"value": format_views(count), "class": "bg-red-500/20 text-red-400"},
+            ]
+        })
+
+    return jsonify(anime_data)
 
 @app.route('/api/top/posts', methods=['GET'])
 def get_top_posts():
@@ -4241,6 +5034,8 @@ def get_top_posts():
 
     return jsonify({"posts": postz})
 
+from time import time
+
 @app.route('/countdowns')
 def countdowns():
     animes = []
@@ -4257,80 +5052,81 @@ def countdowns():
 
     if 'session_secret' in session:
         try:
-            
-
-            client = get_client(session["session_secret"],None)
+            client = get_client(session["session_secret"], None)
             account = Account(client)
 
             acc = account.get()
             
             userInfo = {
-                "userId":acc.get("$id"),
-                "username" : acc.get("name"),
-                "email" : acc.get("email")
+                "userId": acc.get("$id"),
+                "username": acc.get("name"),
+                "email": acc.get("email")
             }
 
         except Exception as e:
             userInfo = None      
     elif bool(key):
         try:
-            client = get_client(key,None)
+            client = get_client(key, None)
             account = Account(client)
 
             acc = account.get()
             
             userInfo = {
-                "userId":acc.get("$id"),
-                "username" : acc.get("name"),
-                "email" : acc.get("email")
+                "userId": acc.get("$id"),
+                "username": acc.get("name"),
+                "email": acc.get("email")
             }
         except Exception as e:
             userInfo = None  
     else:
         userInfo = None
 
-    client = get_client(None,os.getenv('SECRET'),)
+    client = get_client(None, os.getenv('SECRET'))
     databases = Databases(client)
 
-
     topUpcoming = databases.list_documents(
-            database_id = os.getenv('DATABASE_ID'),
-            collection_id = os.getenv('Anime'),
-            queries = [
-                Query.equal("public",True),
-                Query.is_not_null('airingAt'),
-                Query.select(["mainId", "english","romaji","airingAt","nextAiringEpisode"]),
-                Query.order_asc("airingAt"),
-                Query.limit(100)
-            ] # optional
-        )
+        database_id=os.getenv('DATABASE_ID'),
+        collection_id=os.getenv('Anime'),
+        queries=[
+            Query.equal("public", True),
+            Query.is_not_null('airingAt'),
+            Query.select(["mainId", "english", "romaji", "airingAt", "nextAiringEpisode"]),
+            Query.order_asc("airingAt"),
+            Query.limit(100)
+        ]  # optional
+    )
 
     count = topUpcoming.get('documents', [])
     animes = []
-    
+    current_time = int(time())  # Current time in seconds since epoch
 
     for anii in count:
+        if anii.get('airingAt') and anii.get('airingAt') < (current_time - 24 * 3600):
+            # Skip animes that aired more than 24 hours ago
+            continue
+
         print(anii.get('mainId'), anii.get('english'))
 
         img = databases.get_document(
-                database_id = os.getenv('DATABASE_ID'),
-                collection_id = os.getenv('ANIME_IMGS'),
-                document_id=anii.get('mainId'),
-                queries=[
-                    Query.select(['cover'])
-                ]
-            )
-
+            database_id=os.getenv('DATABASE_ID'),
+            collection_id=os.getenv('ANIME_IMGS'),
+            document_id=anii.get('mainId'),
+            queries=[
+                Query.select(['cover'])
+            ]
+        )
 
         animes.append({
-                    "id": anii.get("mainId"),
-                    "title": anii.get("english") if anii.get('english') is not None else anii.get("romaji"),
-                    "target_date":anii.get("airingAt")* 1000,
-                    "cover": img.get("cover") ,
-                    "episode":anii.get("nextAiringEpisode"),
-                })
+            "id": anii.get("mainId"),
+            "title": anii.get("english") if anii.get('english') is not None else anii.get("romaji"),
+            "target_date": anii.get("airingAt") * 1000,
+            "cover": img.get("cover"),
+            "episode": anii.get("nextAiringEpisode"),
+            "url":f'/anime/{anii.get("mainId")}',
+        })
 
-    return render_template('countdowns.html', animes=animes,userInfo=userInfo)
+    return render_template('countdowns.html', animes=animes, userInfo=userInfo)
 
 @app.route('/api/schedule', methods=['GET'])
 def get_schedule():
@@ -4385,6 +5181,10 @@ def get_schedule():
     for anime in documents:
         airing_timestamp = anime.get("airingAt")
         if not airing_timestamp:
+            continue
+        current_time = int(time())
+        if anime.get('airingAt') and anime.get('airingAt') < (current_time - 24 * 3600):
+            # Skip animes that aired more than 24 hours ago
             continue
 
         # Convert timestamp to user's timezone
@@ -4486,6 +5286,17 @@ def format_views(views):
     else:
         return f"{views} Views"
     
+
+def format_views_without_view(views):
+    if views >= 1_000_000:
+        return f"{views / 1_000_000:.1f}M"
+    elif views >= 1_000:
+        return f"{views / 1_000:.1f}k"
+    elif views == 1:
+        return f"1"
+    else:
+        return f"{views}"
+    
 def format_likes(views):
     if views >= 1_000_000:
         return f"{views / 1_000_000:.1f}M Likes"
@@ -4524,9 +5335,157 @@ def callback():
 def realtime():
     return render_template('rtest.html')
 
+@app.route('/recently-updated', methods=['GET'])
+def recently_updated():
+    secret = request.args.get('secret')
+    key = request.args.get('key')
+    isKey = bool(secret)
+    ctotal = None
+    if secret:
+        isKey = True
+        print("Key exists: ", secret)
+    else:
+        isKey = False
+        secret = os.getenv('SECRET')  # Default value
+        print("Key is missing or empty, setting default secret.")
+
+    if 'session_secret' in session:
+        try:
+            
+
+            client = get_client(session["session_secret"],None)
+            account = Account(client)
+
+            acc = account.get()
+            
+            userInfo = {
+                "userId":acc.get("$id"),
+                "username" : acc.get("name"),
+                "email" : acc.get("email")
+            }
+
+        except Exception as e:
+            userInfo = None      
+    elif bool(key):
+        try:
+            client = get_client(key,None)
+            account = Account(client)
+
+            acc = account.get()
+            
+            userInfo = {
+                "userId":acc.get("$id"),
+                "username" : acc.get("name"),
+                "email" : acc.get("email")
+            }
+        except Exception as e:
+            userInfo = None  
+    else:
+        userInfo = None     
+    
+    try:
+        client = get_client(None,secret)
+        databases = Databases(client)
+
+
+        latest_eps = databases.list_documents(
+            database_id = os.getenv('DATABASE_ID'),
+            collection_id = os.getenv('Anime_Episodes'),
+            queries = [
+                Query.select("animeId"),
+                Query.order_desc("aired"),
+                Query.limit(200),
+            ] # optional
+        )
+
+        processed_ids = set()  # Set to track processed anime IDs
+        filtered_documents = []
+        documents_eps = latest_eps.get('documents', [])
+        filtered_documents_eps = []
+
+        latest_ep_data = documents_eps
+
+        # Access specific fields
+        for anime in latest_ep_data:
+            required_id = anime.get("animeId")
+            anime_id = required_id
+
+            # Skip if this anime ID has already been processed
+            if anime_id in processed_ids:
+                continue
+
+            processed_ids.add(anime_id)
+
+            anii = databases.list_documents(
+                database_id = os.getenv('DATABASE_ID'),
+                collection_id = os.getenv('Anime'),
+                queries=[
+                    Query.greater_than_equal('year',2024),
+                    Query.equal("animeId",required_id),
+                    Query.select(["mainId", "english", "romaji", "native", "ageRating", "malScore", "averageScore", "duration", "genres", "season", "startDate", "status", "synonyms", "type", "year", "description","subbed","dubbed"])
+                ]
+            )
+
+            anii=anii['documents'][0]
+
+            img = databases.get_document(
+                database_id = os.getenv('DATABASE_ID'),
+                collection_id = os.getenv('ANIME_IMGS'),
+                document_id=anii.get('mainId'),
+                queries=[
+                    Query.select(['cover'])
+                ]
+            )
+
+            ass = anii.get('mainId')
+
+            filtered_documents_eps.append({
+                "id": anii.get("mainId"),
+                "english": anii.get("english") if anii.get('english') is not None else anii.get("romaji"),
+                "romaji": anii.get("romaji"),
+                "native": anii.get("native"),
+                "ageRating": anii.get("ageRating"),
+                "malScore": anii.get("malScore"),
+                "averageScore": anii.get("averageScore"),
+                "duration": anii.get("duration"),
+                "genres": anii.get("genres"),
+                "cover": img.get("cover") ,
+                "season": anii.get("season"),
+                "startDate": datetime.fromisoformat(anii.get("startDate").replace("Z", "+00:00")).strftime("%b %d, %Y") if anii.get("startDate") else None,
+                "status": anii.get("status"),
+                "synonyms": anii.get("synonyms"),
+                "type": anii.get("type"),
+                "year": anii.get("year"),
+                "epCount": anii.get("subbed"),
+                "subbedCount": anii.get("subbed"),
+                "dubbedCount": anii.get("dubbed"),
+                "description": anii.get("description"),
+                "url":f'/watch/{anii.get("mainId")}/{anii.get("subbed")}',
+            })
+
+            if len(filtered_documents_eps) >= 27:
+                break
+
+        data = {
+            "latestEps": filtered_documents_eps,
+            "userInfo": userInfo,
+        }    
+        
+        response = make_response(json.dumps(data, indent=4, sort_keys=False))
+        response.headers["Content-Type"] = "application/json"
+
+        if isKey:
+            return response
+        else:
+            return render_template('latestEps.html',result = filtered_documents_eps,userInfo=userInfo)
+    except Exception as e:
+         return jsonify({'success': False, 'message': str(e)}), 500 
+
 @app.route('/player/<type>/<id>')
-@limiter.limit("5 per minute") 
+@app.route('/player2/<type>/<id>')
+@limiter.limit("120 per minute") 
 def player(type, id):
+    accessed_route = request.url_rule.rule.split('/')[1]
     try:
         if 'session_secret' in session:
             
@@ -4616,9 +5575,14 @@ def player(type, id):
                 data = search['documents'][0]
                 current = data.get('currentTime')
                 duration = data.get('duration')
+            
+            print(subtitles)
 
+        if accessed_route == 'player':
+            return render_template('hi.html', video_url=video_url, subtitles=subtitles,userInfo=userInfo,current=current, duration=duration)
+        elif accessed_route == 'player2':
+            return render_template('player.html', video_url=video_url, subtitles=subtitles,userInfo=userInfo,current=current, duration=duration)
 
-        return render_template('hi.html', video_url=video_url, subtitles=subtitles,userInfo=userInfo,current=current, duration=duration)
 
     else:
         abort(400, description="Unsupported type")
@@ -4716,7 +5680,42 @@ def timeline():
 @app.route('/')
 @cache.cached(timeout=60)
 def home():
-    return render_template("home.html")
+    secret = os.getenv('SECRET')
+    client = get_client(None, secret)
+    databases = Databases(client)
+
+    one_month_ago = datetime.now(pytz.UTC) - timedelta(days=30)
+    iso_timestamp = one_month_ago.isoformat()
+
+    key = databases.list_documents(
+        database_id=os.getenv('DATABASE_ID'),
+        collection_id=os.getenv('SEARCH_DATA'),
+        queries=[
+            Query.select(['Keyword']),
+            Query.greater_than_equal('$createdAt', iso_timestamp),
+            Query.limit(200)
+        ]
+    )
+
+    words = []
+    # Create a list of all keywords
+    keywords = [doc['Keyword'] for doc in key['documents']]
+
+    # Count occurrences of each keyword
+    keyword_counts = Counter(keywords)
+
+    # Get the 5 most common keywords and their counts
+    top_5_searches = keyword_counts.most_common(5)
+
+    # Print the results
+    print("\nTop 5 Searches:")
+    for keyword, count in top_5_searches:
+        word = {
+            "keyword":keyword
+        }
+        words.append(word)
+    print(words)
+    return render_template("home.html",keywords=words)
 
 # Custom error handler for 404 errors
 @app.errorhandler(404)

@@ -192,8 +192,7 @@
                             </div>
                         </div>
                     </div>
-
-                    <!-- Quality Selection -->
+                    
                     <!-- Quality Selection -->
                     <div class="flex-1 xl:ml-4 bg-[#1a1a1a] rounded-lg p-4">
                         <div class="space-y-4">
@@ -268,8 +267,35 @@
                         </div>
                     </div>
                 </div>
-                <div class="mt-8 bg-[#1a1a1a] rounded-lg p-6" x-data="comments()">
-                    <h2 class="text-2xl font-semibold mb-4 text-white" x-text="'Comments: ' + total_comments"></h2>
+                <div class="mt-8 bg-[#1a1a1a] rounded-lg p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-2xl font-semibold text-white" x-text="'Comments: ' + total_comments"></h2>
+                        <div class="flex items-center space-x-2">
+                            <button @click="switchToBuiltIn" 
+                                    class="p-2 rounded-full bg-gray-700 hover:bg-gray-600 transition-colors duration-200"
+                                    :class="{ 'bg-red-500 hover:bg-red-600': !useDisqus }">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16l-4-4m0 0l4-4m-4 4h18" />
+                                </svg>
+                            </button>
+                            <span class="text-white font-medium" x-text="useDisqus ? 'Disqus' : 'Built-in'"></span>
+                            <button @click="switchToDisqus" 
+                                    class="p-2 rounded-full bg-gray-700 hover:bg-gray-600 transition-colors duration-200"
+                                    :class="{ 'bg-red-500 hover:bg-red-600': useDisqus }">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                
+                    <!-- Built-in comment system -->
+                    <div x-show="!useDisqus" x-transition:enter="transition ease-out duration-300"
+                         x-transition:enter-start="opacity-0 transform scale-95"
+                         x-transition:enter-end="opacity-100 transform scale-100"
+                         x-transition:leave="transition ease-in duration-200"
+                         x-transition:leave-start="opacity-100 transform scale-100"
+                         x-transition:leave-end="opacity-0 transform scale-95">
                     <div class="mb-6">
                         <div class="flex items-center gap-2 mb-2">
                             <div class="w-8 h-8 rounded-full bg-[#2a2a2a] flex items-center justify-center">
@@ -335,37 +361,62 @@
                             <div class="py-4 border-b border-[#2a2a2a] last:border-b-0">
                                 <div class="flex items-start gap-4">
                                     <!-- Vote buttons column -->
-                                    <div class="flex flex-col items-center gap-1">
-                                        <button @click="upvoteComment(comment.id)" 
-                                            class="p-1 rounded hover:bg-[#2a2a2a] transition-colors"
-                                            :class="comment.voted === 'up' ? 'text-[#FF0000]' : 'text-[#808080]'">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
-                                                viewBox="0 0 24 24" stroke="currentColor">
+                                    <div class="flex flex-col items-center gap-1" :data-comment-id="comment.id">
+                                        <button @click="vote(comment.id,'like')" 
+                                            :data-comment-id="comment.id+'like'"
+                                            class="like-button p-1 rounded hover:bg-[#2a2a2a] transition-colors"
+                                            :class="{
+                                                'text-red-500': comment.isLiked,
+                                                'text-gray-500': !comment.isLiked,
+                                                'opacity-50 cursor-not-allowed': isLoading
+                                            }">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                     d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
                                             </svg>
                                         </button>
-                                        <span class="text-sm font-medium" 
+                                        <div 
+                                            :data-button-id="comment.id+'lb'"
+                                            class="flex items-center justify-center hidden">
+                                            <svg class="animate-spin h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                        </div>
+                                        <span class="likes text-xs font-medium text-gray-500" :data-comment-id="comment.id+'lCount'" x-text="comment.likes || 0"></span>
+                                        <span class="text-xs font-medium" 
                                             :class="comment.voted ? 'text-[#FF0000]' : 'text-[#808080]'"
                                             x-text="comment.votes"></span>
-                                        <button @click="downvoteComment(comment.id)"
-                                            class="p-1 rounded hover:bg-[#2a2a2a] transition-colors"
-                                            :class="comment.voted === 'down' ? 'text-[#FF0000]' : 'text-[#808080]'">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
-                                                viewBox="0 0 24 24" stroke="currentColor">
+                                        <button @click="vote(comment.id,'dislike')"
+                                            :data-comment-id="comment.id+'dislike'"
+                                            class="dislike-button p-1 rounded hover:bg-[#2a2a2a] transition-colors"
+                                            :class="{
+                                                'text-blue-500': comment.isUnliked,
+                                                'text-gray-500': !comment.isUnliked,
+                                                'opacity-50 cursor-not-allowed': isLoading
+                                            }">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                     d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018a2 2 0 01.485.06l3.76.94m-7 10v5a2 2 0 002 2h.096c.5 0 .905-.405.905-.904 0-.715.211-1.413.608-2.008L17 13V4m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5" />
                                             </svg>
                                         </button>
+                                        <div 
+                                            :data-button-id="comment.id+'disb'"
+                                            class="flex items-center justify-center hidden">
+                                            <svg class="animate-spin h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                        </div>
                                     </div>
                 
                                     <!-- Comment content -->
                                     <div class="flex-1">
                                         <div class="flex items-center gap-2 mb-1">
-                                            <span class="text-sm font-medium text-white" x-text="comment.author"></span>
-                                            <span class="text-xs text-[#808080]" x-text="comment.time"></span>
+                                            <span class="text-md font-medium text-white" x-text="comment.author"></span>
+                                            <span class="text-sm text-[#808080]" x-text="comment.time"></span>
                                         </div>
-                                        <p class="text-sm text-[#808080] mb-2" x-text="comment.content"></p>
+                                        <p class="text-md text-[#808080] mb-2" x-text="comment.content"></p>
                                         
                                         <!-- Action buttons -->
                                         <div class="flex items-center gap-4">
@@ -418,34 +469,13 @@
                                             <template x-for="reply in comment.replies" :key="reply.id">
                                                 <div class="pl-8 border-l-2 border-[#2a2a2a]">
                                                     <div class="flex items-start gap-4">
-                                                        <!-- Reply vote buttons -->
-                                                        <div class="flex flex-col items-center gap-1">
-                                                            <button @click="upvoteReply(comment.id, reply.id)" 
-                                                                class="p-1 rounded hover:bg-[#2a2a2a] transition-colors"
-                                                                :class="reply.voted === 'up' ? 'text-[#FF0000]' : 'text-[#808080]'">
-                                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                                                                    <path fill-rule="evenodd" d="M3.293 9.707a1 1 0 010-1.414l6-6a1 1 0 011.414 0l6 6a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L4.707 9.707a1 1 0 01-1.414 0z" clip-rule="evenodd" />
-                                                                </svg>
-                                                            </button>
-                                                            <span class="text-xs font-medium" 
-                                                                :class="reply.voted ? 'text-[#FF0000]' : 'text-[#808080]'"
-                                                                x-text="reply.votes"></span>
-                                                            <button @click="downvoteReply(comment.id, reply.id)"
-                                                                class="p-1 rounded hover:bg-[#2a2a2a] transition-colors"
-                                                                :class="reply.voted === 'down' ? 'text-[#FF0000]' : 'text-[#808080]'">
-                                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                                                                    <path fill-rule="evenodd" d="M16.707 10.293a1 1 0 010 1.414l-6 6a1 1 0 01-1.414 0l-6-6a1 1 0 111.414-1.414L9 14.586V3a1 1 0 012 0v11.586l4.293-4.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-                                                                </svg>
-                                                            </button>
-                                                        </div>
-                
                                                         <!-- Reply content -->
                                                         <div class="flex-1">
                                                             <div class="flex items-center gap-2 mb-1">
-                                                                <span class="text-sm font-medium text-white" x-text="reply.author"></span>
-                                                                <span class="text-xs text-[#808080]" x-text="reply.time"></span>
+                                                                <span class="text-md font-medium text-white" x-text="reply.author"></span>
+                                                                <span class="text-sm text-[#808080]" x-text="reply.time"></span>
                                                             </div>
-                                                            <p class="text-sm text-[#808080]" x-text="reply.content"></p>
+                                                            <p class="text-md text-[#808080]" x-text="reply.content"></p>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -455,6 +485,16 @@
                                 </div>
                             </div>
                         </template>
+                    </div>
+                    </div>
+                    <!-- Disqus comments -->
+                    <div x-show="useDisqus" x-transition:enter="transition ease-out duration-300"
+                        x-transition:enter-start="opacity-0 transform scale-95"
+                        x-transition:enter-end="opacity-100 transform scale-100"
+                        x-transition:leave="transition ease-in duration-200"
+                        x-transition:leave-start="opacity-100 transform scale-100"
+                        x-transition:leave-end="opacity-0 transform scale-95">
+                    <div id="disqus_thread"></div>
                     </div>
                 </div>
             </div>
@@ -492,7 +532,7 @@
                                         <div>
                                             <h3 class="font-semibold text-white"
                                                 x-text="episode.number +'. ' + episode.titles[0]"></h3>
-                                            <p class="text-sm text-[#808080]">49m</p>
+                                            <p class="text-sm text-[#808080]" x-text="'Aired '+episode.aired"></p>
                                         </div>
                                     </div>
                                 </div>
@@ -502,10 +542,10 @@
                 </div>
                 <div class="bg-[#1a1a1a] rounded-lg p-6 shadow-lg mb-4" x-data="{ showFullDescription: false }">
                     <div class="flex items-start mb-4">
-                        <img src="{{animeInfo.cover}}?height=150&width=100" alt="Anime Cover"
+                        <img @click="window.location.href='{{ animeInfo.url }}'" src="{{animeInfo.cover}}?height=150&width=100" alt="Anime Cover"
                             class="w-24 h-36 object-cover rounded-md mr-4" />
                         <div>
-                            <h2 class="text-xl font-semibold text-white mb-2">{{animeInfo.english}}</h2>
+                            <h2 @click="window.location.href='{{ animeInfo.url }}'" class="text-xl font-semibold text-white mb-2 hover:cursor-pointer">{{animeInfo.english}}</h2>
                             <div class="flex items-center mb-2">
                                 <svg class="w-5 h-5 text-yellow-400 mr-1" fill="currentColor" viewBox="0 0 20 20"
                                     xmlns="http://www.w3.org/2000/svg">
@@ -526,15 +566,13 @@
                             </p>
                         </div>
                     </div>
-                    <p class="text-gray-300 text-sm line-clamp-3" x-show="!showFullDescription">
-                        {{animeInfo.description}}
-                        <button @click="showFullDescription = true" class="text-[#FF0000] hover:underline ml-1">Read
-                            more</button>
+                    <p class="text-gray-300 text-sm" x-show="!showFullDescription">
+                        <span class="line-clamp-3">{{animeInfo.description | safe }}</span>
+                        <button @click="showFullDescription = true" class="text-[#FF0000] hover:underline ml-1">Read more</button>
                     </p>
                     <p class="text-gray-300 text-sm" x-show="showFullDescription">
-                        {{animeInfo.description}}
-                        <button @click="showFullDescription = false" class="text-[#FF0000] hover:underline ml-1">Read
-                            less</button>
+                        {{animeInfo.description | safe}}
+                        <button @click="showFullDescription = false" class="text-[#FF0000] hover:underline ml-1">Read less</button>
                     </p>
                 </div>
             </aside>
@@ -696,6 +734,9 @@
                 title: '',
                 description: 'Dude Check It Out They Added Episode {{ animeInfo.ep | safe }}',
                 copySuccess: false,
+                useDisqus: false,
+                unique: '',
+                uniqueUrll: '',
                 
 
                 init() {
@@ -737,6 +778,15 @@
                         // Fetch data for the episode
                         const response = await fetch(`/watch-api/${this.animeId}/${episodeNumber}`);
                         const data = await response.json();
+                        this.unique = `/watch/${this.animeId}/${episodeNumber}`;
+                        this.uniqueUrll = `https://kuudere.to/watch/${this.animeId}/${episodeNumber}`;
+
+                        if (this.useDisqus && document.getElementById('disqus_thread')) {
+                            // Clear existing Disqus thread
+                            document.getElementById('disqus_thread').innerHTML = '';
+                            // Reload with new configuration
+                            this.loadDisqus();
+                        }
 
                         this.animeInfo = data.anime_info || {};
                         this.allEpisodes = (data.all_episodes || []).sort((a, b) => a.number - b.number);
@@ -787,6 +837,7 @@
                         } else {
                             this.currentVideoLink = '';
                         }
+                        
                     } catch (error) {
                         console.error('Error fetching episode data:', error);
                         this.animeInfo = {};
@@ -796,6 +847,58 @@
                     } finally {
                         this.isLoading = false;
                     }
+                },
+
+                switchToBuiltIn() {
+                    this.useDisqus = false;
+                    this.animateSwitch('left');
+                },
+                
+                switchToDisqus() {
+                    this.useDisqus = true;
+                    this.animateSwitch('right');
+                    this.loadDisqus();
+                },
+                
+                animateSwitch(direction) {
+                    const target = direction === 'left' ? '.built-in-comments' : '#disqus_thread';
+                    anime({
+                        targets: target,
+                        translateX: [direction === 'left' ? '100%' : '-100%', 0],
+                        opacity: [0, 1],
+                        duration: 500,
+                        easing: 'easeOutQuad'
+                    });
+                },
+                
+                loadDisqus() {
+                    const component = this;
+                    
+                    // Remove any existing Disqus script
+                    const existingScript = document.querySelector('script[src*="disqus.com/embed.js"]');
+                    if (existingScript) {
+                        existingScript.remove();
+                    }
+
+                    // Clear the disqus thread
+                    if (document.getElementById('disqus_thread')) {
+                        document.getElementById('disqus_thread').innerHTML = '';
+                    }
+
+                    // Reset DISQUS object
+                    window.DISQUS = undefined;
+
+                    // Configure new Disqus instance
+                    window.disqus_config = function () {
+                        this.page.identifier = component.unique;
+                        this.page.url = component.uniqueUrll;
+                    };
+
+                    // Load new Disqus script
+                    var d = document, s = d.createElement('script');
+                    s.src = 'https://kuudere-to.disqus.com/embed.js';
+                    s.setAttribute('data-timestamp', +new Date());
+                    (d.head || d.body).appendChild(s);
                 },
 
                 selectServer(server) {
@@ -1024,7 +1127,129 @@
                         left: 100,
                         behavior: 'smooth'
                     });
-                }
+                },
+                async vote(commentId, voteType) {
+                    const userInfo = {{ userInfo | tojson | safe if userInfo else 'null' }};
+                    if (typeof userInfo === "undefined" || userInfo === null) {
+                            window.dispatchEvent(new CustomEvent('trigger-auth-modal'));
+                    }else{
+                        const likesElement = document.querySelector(`[data-comment-id="${commentId}lCount"]`);
+                        const likeButtonElement = document.querySelector(`[data-comment-id="${commentId}like"]`);
+                        const dislikeButtonElement = document.querySelector(`[data-comment-id="${commentId}dislike"]`);
+                        const dislikeButtonLoadingElement = document.querySelector(`[data-button-id="${commentId}disb"]`);
+                        const likeButtonLodingElement = document.querySelector(`[data-button-id="${commentId}lb"]`);
+                        
+                        if (!likesElement) {
+                            console.error("Likes element not found for commentId:", commentId);
+                            return;
+                        }
+
+                        let likes = parseInt(likesElement.textContent.trim(), 10) || 0;
+
+                        try {
+                            // Check if voteType should be blocked
+                            let don = false;
+                            let donl = false;
+
+                            // Block dislike vote if already disliked
+                            if (dislikeButtonElement.classList.contains('text-blue-500') && voteType === 'dislike') {
+                                don = true;  // Dislike already applied, prevent further vote
+                            }
+                            // Block like vote if already liked
+                            else if (likeButtonElement.classList.contains('text-red-500') && voteType === 'like') {
+                                donl = true;  // Like already applied, prevent further vote
+                            }
+
+                            // If not already voted
+                            if (!don && !donl) {
+                                
+                                if (voteType === 'like') {
+                                    likeButtonElement.classList.add('hidden')
+                                    likeButtonLodingElement.classList.remove('hidden')
+                                    dislikeButtonElement.disabled = true;
+                                }else if(voteType === 'dislike'){
+                                    dislikeButtonElement.classList.add('hidden')
+                                    dislikeButtonLoadingElement.classList.remove('hidden')
+                                    likeButtonElement.disabled = true;
+                                }
+
+                                const response = await fetch('/api/anime/comment/respond/' + commentId, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ type: voteType }),
+                                });
+
+                                if (!response.ok){
+                                    if (voteType === 'like') {
+                                        likeButtonElement.classList.remove('hidden')
+                                        likeButtonLodingElement.classList.add('hidden')
+                                        dislikeButtonElement.disabled = false;
+                                    }else if(voteType === 'dislike'){
+                                        dislikeButtonElement.classList.remove('hidden')
+                                        dislikeButtonLoadingElement.classList.add('hidden')
+                                        likeButtonElement.disabled = false;
+                                    }
+                                    throw new Error('Failed to vote');
+                                };
+
+                                // Handling the "like" vote
+                                if (voteType === 'like') {
+                                    likes++; // Increment likes count
+
+                                    // Add "text-red-500" to like button and remove "text-gray-500"
+                                    likeButtonElement.classList.add('text-red-500');
+                                    likeButtonElement.classList.remove('text-gray-500');
+
+                                    // Add "text-gray-500" to dislike button and remove "text-blue-500"
+                                    dislikeButtonElement.classList.add('text-gray-500');
+                                    dislikeButtonElement.classList.remove('text-blue-500');
+
+                                    likeButtonElement.classList.remove('hidden')
+                                    likeButtonLodingElement.classList.add('hidden')
+                                    dislikeButtonElement.disabled = false;
+
+                                    // Animate the like button
+                                    anime({
+                                        targets: likeButtonElement,
+                                        scale: [1, 1.2, 1],
+                                        duration: 300,
+                                        easing: 'easeInOutQuad'
+                                    });
+                                }
+                                // Handling the "dislike" vote
+                                else if (voteType === 'dislike') {
+                                    likes--; // Decrement likes count
+
+                                    // Add "text-blue-500" to dislike button and remove "text-gray-500"
+                                    dislikeButtonElement.classList.add('text-blue-500');
+                                    dislikeButtonElement.classList.remove('text-gray-500');
+
+                                    // Add "text-gray-500" to like button and remove "text-red-500"
+                                    likeButtonElement.classList.add('text-gray-500');
+                                    likeButtonElement.classList.remove('text-red-500');
+
+                                    dislikeButtonElement.classList.remove('hidden')
+                                    dislikeButtonLoadingElement.classList.add('hidden')
+                                    likeButtonElement.disabled = false;
+
+                                    // Animate the dislike button
+                                    anime({
+                                        targets: dislikeButtonElement,
+                                        scale: [1, 1.2, 1],
+                                        duration: 300,
+                                        easing: 'easeInOutQuad'
+                                    });
+                                }
+                            }
+
+                            // Update DOM with the new likes count
+                            likesElement.textContent = likes;
+
+                        } catch (error) {
+                            console.error('Error voting:', error);
+                        }
+                    }
+                },
             };
         }
 
@@ -1214,7 +1439,7 @@
                     duration: 300,
                     easing: 'easeInOutQuad'
                 });
-            }
+            },
         };
     }
 

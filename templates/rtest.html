@@ -73,7 +73,7 @@
             return await response.json();
         } catch (error) {
             console.error('Error fetching anime details:', error);
-            return { title: 'Unknown Anime', cover: 'https://via.placeholder.com/300x450?text=No+Image' };
+            return { title: 'Unknown Anime', cover: '{{ url_for('static', filename='placeholder.svg') }}' };
         }
     },
     getAnimeIdFromRoom(room) {
@@ -197,7 +197,7 @@
             <template x-for="(data, room) in roomData" :key="room">
                 <div class="room-card glass rounded-xl overflow-hidden transform transition-all duration-300 hover:scale-105 hover:shadow-xl">
                     <div class="relative h-48 bg-theme-dark">
-                        <img :src="data.animeCover || 'https://via.placeholder.com/300x450?text=No+Image'" 
+                        <img :src="data.animeCover || '{{ url_for('static', filename='placeholder.svg') }}?text=No+Image'" 
                              :alt="data.animeTitle || 'Anime Cover'"
                              class="w-full h-full object-cover">
                         <div class="absolute inset-0 bg-theme-dark/80 flex items-end p-4">

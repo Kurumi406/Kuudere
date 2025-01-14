@@ -78,10 +78,10 @@
             </footer>
         </article>
 
-        <div class="glass p-6 mb-6">
-            <h2 class="text-xl font-bold mb-4">Comments</h2>
+        <div class="max-w-4xl mx-auto p-4">
+            <h2 class="text-xl font-bold mb-4 text-white">Comments</h2>
             <form @submit.prevent="addComment" class="mb-6">
-                <textarea x-model="newComment" class="w-full p-2 bg-gray-800 text-white rounded-md" rows="3" required placeholder="Add a comment..."></textarea>
+                <textarea x-model="newComment" class="w-full p-2 glass text-white rounded-md" rows="3" required placeholder="Add a comment..."></textarea>
                 {% if userInfo %}
                 <button type="submit" class="mt-2 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors" :disabled="isCommentLoading">
                     <span x-cloak x-show="!isCommentLoading">Post Comment</span>
@@ -94,21 +94,95 @@
                     </span>
                 </button>
                 {% else %}
-                <button @click="isAuthOpen = true" @submit.prevent="default"  class="mt-2 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors" >
+                <button @click="isAuthOpen = true" @submit.prevent="default" class="mt-2 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors">
                     <span>Login to Comment</span>
                 </button>
                 {% endif %}
             </form>
-            <div class="space-y-4">
+            <div class="space-y-6">
                 <template x-for="comment in comments" :key="comment.id">
-                    <div class="flex gap-4">
-                        <img :src="comment.avatar" :alt="comment.author + '\'s avatar'" class="w-10 h-10 rounded-full">
-                        <div>
-                            <div class="flex items-center gap-2 mb-1">
-                                <h3 class="font-semibold" x-text="comment.author"></h3>
-                                <span class="text-sm text-gray-400" x-text="comment.time"></span>
+                    <div class="border-b border-gray-700 pb-4">
+                        <div class="flex items-center gap-2 mb-2">
+                            <img :src="comment.avatar" :alt="comment.author + '\'s avatar'" class="w-6 h-6 rounded-full">
+                            <span class="font-semibold text-sm text-white" x-text="comment.author"></span>
+                            <span class="text-xs text-gray-400" x-text="comment.time"></span>
+                        </div>
+                        <p class="text-sm text-gray-300 mb-2" x-text="comment.content"></p>
+                        <div class="flex items-center gap-4 text-xs text-gray-400">
+                            <button @click="vote(comment.id,'like')" 
+                                :data-comment-id="comment.id+'like'"
+                                class="like-button p-1 rounded hover:bg-[#2a2a2a] transition-colors"
+                                :class="{
+                                    'text-red-500': comment.isLiked,
+                                    'text-gray-500': !comment.isLiked,
+                            }">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
+                        </svg>
+                        </button>
+                            <div 
+                                :data-button-id="comment.id+'lb'"
+                                class="flex items-center justify-center hidden">
+                                <svg class="animate-spin h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
                             </div>
-                            <p class="text-gray-300" x-text="comment.content"></p>
+                                <span class="likes text-xs font-medium text-gray-500" :data-comment-id="comment.id+'lCount'" x-text="comment.likes || 0"></span>
+                                <span class="text-xs font-medium" 
+                                    :class="comment.voted ? 'text-[#FF0000]' : 'text-[#808080]'"
+                                    x-text="comment.votes"></span>
+                                <button @click="vote(comment.id,'dislike')"
+                                    :data-comment-id="comment.id+'dislike'"
+                                    class="dislike-button p-1 rounded hover:bg-[#2a2a2a] transition-colors"
+                                    :class="{
+                                        'text-blue-500': comment.isUnliked,
+                                        'text-gray-500': !comment.isUnliked,
+                                    }">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018a2 2 0 01.485.06l3.76.94m-7 10v5a2 2 0 002 2h.096c.5 0 .905-.405.905-.904 0-.715.211-1.413.608-2.008L17 13V4m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5" />
+                                </svg>
+                                </button>
+                                    <div 
+                                        :data-button-id="comment.id+'disb'"
+                                        class="flex items-center justify-center hidden">
+                                        <svg class="animate-spin h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                    </div>
+                            <button @click="comment.showReplyForm = !comment.showReplyForm" class="hover:text-red-500 text-red-600">
+                                Reply
+                            </button>
+                            <button 
+                                x-show="comment.replies && comment.replies.length > 0"
+                                @click="comment.showReplies = !comment.showReplies" 
+                                class="hover:text-red-500 text-red-600"
+                            >
+                                <span x-text="comment.showReplies ? 'Hide' : 'Show'"></span> 
+                                <span x-text="comment.replies.length"></span> 
+                                <span x-text="comment.replies.length === 1 ? 'reply' : 'replies'"></span>
+                            </button>
+                        </div>
+                        <div x-show="comment.showReplyForm" class="mt-2">
+                            <textarea x-model="comment.replyContent" class="w-full p-2 glass text-white rounded-md text-sm" rows="2" placeholder="Write a reply..."></textarea>
+                            <button @click="addReply(comment)" class="mt-2 px-3 py-1 bg-red-600 text-white text-xs rounded-md hover:bg-red-700 transition-colors">
+                                Post Reply
+                            </button>
+                        </div>
+                        <div x-show="comment.showReplies" class="mt-2 space-y-2 pl-4 border-l border-gray-700">
+                            <template x-for="reply in comment.replies" :key="reply.id">
+                                <div class="py-2">
+                                    <div class="flex items-center gap-2 mb-1">
+                                        <img :src="reply.avatar" :alt="reply.author + '\'s avatar'" class="w-5 h-5 rounded-full">
+                                        <span class="font-semibold text-xs text-white" x-text="reply.author"></span>
+                                        <span class="text-xs text-gray-400" x-text="reply.time"></span>
+                                    </div>
+                                    <p class="text-xs text-gray-300" x-text="reply.content"></p>
+                                </div>
+                            </template>
                         </div>
                     </div>
                 </template>
@@ -124,7 +198,13 @@
                     
                     return {
                         post: post,
-                        comments: comments,
+                        comments: comments.map(comment => ({
+                            ...comment,
+                            showReplies: false,
+                            showReplyForm: false,
+                            replyContent: '',
+                            replies: comment.replies || []
+                        })),
                         isLiked: post.userLiked || false,
                         likeCount: post.likes || 0,
                         commentCount: post.comments || 0,
@@ -224,7 +304,163 @@
                             this.isCommentLoading = false;
                         }
                     }
-                }
+                },
+
+                async vote(commentId, voteType) {
+                    const userInfo = {{ userInfo | tojson | safe if userInfo else 'null' }};
+                    if (typeof userInfo === "undefined" || userInfo === null) {
+                            window.dispatchEvent(new CustomEvent('trigger-auth-modal'));
+                    }else{
+                        const likesElement = document.querySelector(`[data-comment-id="${commentId}lCount"]`);
+                        const likeButtonElement = document.querySelector(`[data-comment-id="${commentId}like"]`);
+                        const dislikeButtonElement = document.querySelector(`[data-comment-id="${commentId}dislike"]`);
+                        const dislikeButtonLoadingElement = document.querySelector(`[data-button-id="${commentId}disb"]`);
+                        const likeButtonLodingElement = document.querySelector(`[data-button-id="${commentId}lb"]`);
+                        
+                        if (!likesElement) {
+                            console.error("Likes element not found for commentId:", commentId);
+                            return;
+                        }
+
+                        let likes = parseInt(likesElement.textContent.trim(), 10) || 0;
+
+                        try {
+                            // Check if voteType should be blocked
+                            let don = false;
+                            let donl = false;
+
+                            // Block dislike vote if already disliked
+                            if (dislikeButtonElement.classList.contains('text-blue-500') && voteType === 'dislike') {
+                                don = true;  // Dislike already applied, prevent further vote
+                            }
+                            // Block like vote if already liked
+                            else if (likeButtonElement.classList.contains('text-red-500') && voteType === 'like') {
+                                donl = true;  // Like already applied, prevent further vote
+                            }
+
+                            // If not already voted
+                            if (!don && !donl) {
+                                
+                                if (voteType === 'like') {
+                                    likeButtonElement.classList.add('hidden')
+                                    likeButtonLodingElement.classList.remove('hidden')
+                                    dislikeButtonElement.disabled = true;
+                                }else if(voteType === 'dislike'){
+                                    dislikeButtonElement.classList.add('hidden')
+                                    dislikeButtonLoadingElement.classList.remove('hidden')
+                                    likeButtonElement.disabled = true;
+                                }
+
+                                const response = await fetch('/api/post/comment/respond/' + commentId, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ type: voteType }),
+                                });
+
+                                if (!response.ok){
+                                    if (voteType === 'like') {
+                                        likeButtonElement.classList.remove('hidden')
+                                        likeButtonLodingElement.classList.add('hidden')
+                                        dislikeButtonElement.disabled = false;
+                                    }else if(voteType === 'dislike'){
+                                        dislikeButtonElement.classList.remove('hidden')
+                                        dislikeButtonLoadingElement.classList.add('hidden')
+                                        likeButtonElement.disabled = false;
+                                    }
+                                    throw new Error('Failed to vote');
+                                }
+                                
+
+                                // Handling the "like" vote
+                                if (voteType === 'like') {
+                                    likes++; // Increment likes count
+
+                                    // Add "text-red-500" to like button and remove "text-gray-500"
+                                    likeButtonElement.classList.add('text-red-500');
+                                    likeButtonElement.classList.remove('text-gray-500');
+
+                                    // Add "text-gray-500" to dislike button and remove "text-blue-500"
+                                    dislikeButtonElement.classList.add('text-gray-500');
+                                    dislikeButtonElement.classList.remove('text-blue-500');
+
+                                    likeButtonElement.classList.remove('hidden')
+                                    likeButtonLodingElement.classList.add('hidden')
+                                    dislikeButtonElement.disabled = false;
+
+                                    // Animate the like button
+                                    anime({
+                                        targets: likeButtonElement,
+                                        scale: [1, 1.2, 1],
+                                        duration: 300,
+                                        easing: 'easeInOutQuad'
+                                    });
+                                }
+                                // Handling the "dislike" vote
+                                else if (voteType === 'dislike') {
+                                    likes--; // Decrement likes count
+
+                                    // Add "text-blue-500" to dislike button and remove "text-gray-500"
+                                    dislikeButtonElement.classList.add('text-blue-500');
+                                    dislikeButtonElement.classList.remove('text-gray-500');
+
+                                    // Add "text-gray-500" to like button and remove "text-red-500"
+                                    likeButtonElement.classList.add('text-gray-500');
+                                    likeButtonElement.classList.remove('text-red-500');
+
+                                    dislikeButtonElement.classList.remove('hidden')
+                                    dislikeButtonLoadingElement.classList.add('hidden')
+                                    likeButtonElement.disabled = false;
+
+                                    // Animate the dislike button
+                                    anime({
+                                        targets: dislikeButtonElement,
+                                        scale: [1, 1.2, 1],
+                                        duration: 300,
+                                        easing: 'easeInOutQuad'
+                                    });
+                                }
+                            }
+
+                            // Update DOM with the new likes count
+                            likesElement.textContent = likes;
+
+                        } catch (error) {
+                            console.error('Error voting:', error);
+                        }
+                    }
+                },
+
+
+                async addReply(comment) {
+                    if (comment.replyContent && comment.replyContent.trim()) {
+                        const response = await fetch(`/api/post/comment/reply/${comment.id}`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ content: comment.replyContent }),
+                        });
+                        if (response.ok) {
+                            const newReply = await response.json();
+                            if (!comment.replies) comment.replies = [];
+                            comment.replies.push(newReply);
+                            comment.replyContent = '';
+                            comment.showReplyForm = false;
+                            this.$nextTick(() => {
+                                anime({
+                                    targets: `#comment-${comment.id} .replies > div:last-child`,
+                                    translateY: [20, 0],
+                                    opacity: [0, 1],
+                                    duration: 500,
+                                    easing: 'easeOutQuad'
+                                });
+                            });
+                        }
+                    }
+                },
+                toggleReplies(comment) {
+                    comment.showReplies = !comment.showReplies;
+                },
             }
         }
 

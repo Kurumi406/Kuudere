@@ -1,7 +1,7 @@
 <div x-data="{ 
     openDialog: false, 
     shouldShow: true,
-    currentVersion: '0.9.1 Hotfix 2',
+    currentVersion: '{{nData.version}}',
     init() {
         const storedData = JSON.parse(sessionStorage.getItem('infoDialogPreference') || '{}');
         if (storedData.version === this.currentVersion && storedData.show === false) {
@@ -74,38 +74,100 @@
             <!-- Swiper -->
             <div class="swiper-container-notification flex-grow">
                 <div class="swiper-wrapper">
+                    <!-- Notices -->
+                    <div class="swiper-slide overflow-hidden p-4 ">
+                        <h3 class="text-xl font-bold text-white mb-3 border-b border-white/20 pb-2">Notice</h3>
+                        <div class="space-y-4 text-white">
+                            <div class="p-4 space-y-2 bg-white/10 rounded-lg border border-white/20 shadow-md backdrop-blur-sm">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="font-semibold text-lg">{{nData.Title}}</span>
+                                </div>
+                                {% for messages in nData.Message %}
+                                <div class="flex items-start space-x-2" 
+                                     x-data="{ 
+                                        message: '{{messages}}',
+                                        formatMessage() {
+                                            let formattedText = this.message;
+                                            
+                                            // Format custom link pattern [title : url]
+                                            const linkPattern = /\[(.*?)\s*:\s*(https?:\/\/[^\]]+)\]/g;
+                                            formattedText = formattedText.replace(linkPattern, (match, title, url) => {
+                                                return `<a href='${url}' class='text-blue-400 hover:text-blue-300 underline' target='_blank'>${title}</a>`;
+                                            });
+                                            
+                                            // Format email pattern [title : email@domain.com]
+                                            const emailPattern = /\[(.*?)\s*:\s*([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\]/g;
+                                            formattedText = formattedText.replace(emailPattern, (match, title, email) => {
+                                                return `<a href='mailto:${email}' class='text-green-400 hover:text-green-300 underline'>${title}</a>`;
+                                            });
+                                            
+                                            // Also make standalone emails clickable
+                                            const standaloneEmailPattern = /(?![^<]*>)([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g;
+                                            formattedText = formattedText.replace(standaloneEmailPattern, (match, email) => {
+                                                return `<a href='mailto:${email}' class='text-green-400 hover:text-green-300 underline'>${email}</a>`;
+                                            });
+                                            
+                                            return formattedText;
+                                        }
+                                     }">
+                                    <span class="text-sm">•</span>
+                                    <p class="text-gray-200 text-sm leading-tight" x-html="formatMessage()"></p>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% if nData.time %}
+                            <div class="mt-4" x-data="animeCountdown({{ nData.time }})">
+                                <div class="grid grid-cols-4 gap-2 text-center">
+                                    <div class="bg-white/5 rounded p-2">
+                                        <div class="text-lg font-bold tabular-nums text-yellow-300" x-text="countdown.days"></div>
+                                        <div class="text-[10px] uppercase text-gray-400">Days</div>
+                                    </div>
+                                    <div class="bg-white/5 rounded p-2">
+                                        <div class="text-lg font-bold tabular-nums text-yellow-300" x-text="countdown.hours"></div>
+                                        <div class="text-[10px] uppercase text-gray-400">Hours</div>
+                                    </div>
+                                    <div class="bg-white/5 rounded p-2">
+                                        <div class="text-lg font-bold tabular-nums text-yellow-300" x-text="countdown.minutes"></div>
+                                        <div class="text-[10px] uppercase text-gray-400">Mins</div>
+                                    </div>
+                                    <div class="bg-white/5 rounded p-2">
+                                        <div class="text-lg font-bold tabular-nums text-yellow-300" x-text="countdown.seconds"></div>
+                                        <div class="text-[10px] uppercase text-gray-400">Secs</div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
                     <!-- Changelog -->
                     <div class="swiper-slide overflow-y-auto p-6">
                         <h3 class="text-xl font-semibold text-white mb-4">Changelog</h3>
                         <div class="space-y-4 text-white">
                             <div class="p-4 space-y-3 bg-white/5 rounded-lg border border-white/10">
                                 <div class="flex items-center justify-between mb-2">
-                                    <span class="font-semibold text-white">Version 0.9.1 Hotfix 2</span>
+                                    <span class="font-semibold text-white">Version {{nData.version}}</span>
                                     <span class="text-sm text-black bg-white px-2 py-1 rounded-full">Latest
                                         Release</span>
                                 </div>
                                 <div class="flex items-start space-x-2">
                                     <span class="text-white">•</span>
-                                    <p>Notifications for post comments (Added) </p>
+                                    <p>Disqus For Anime Comments </p>
                                 </div>
                                 <div class="flex items-start space-x-2">
                                     <span class="text-white">•</span>
-                                    <p>Session Issue (Fixed) </p>
+                                    <p>Can reply to post comments </p>
                                 </div>
                                 <div class="flex items-start space-x-2">
                                     <span class="text-white">•</span>
-                                    <p>Search Filter (Language Fixed)</p>
+                                    <p>Can like to post comments</p>
                                 </div>
                                 <div class="flex items-start space-x-2">
                                     <span class="text-white">•</span>
-                                    <p>Undefined Post Issue Fixed </p>
+                                    <p>Top Anime On Home</p>
                                 </div>
                                 <div class="flex items-start space-x-2">
                                     <span class="text-white">•</span>
-                                    <div>
-                                        <p>Added Continue Watching Sync</p>
-                                        <p>Supported Servers: Hianime, NoAds</p>
-                                    </div>
+                                    <p>New Backup video Player(Hianime-2)</p>
                                 </div>
                             </div>
                         </div>
@@ -330,3 +392,38 @@
         </div>
     </div>
 </div>
+<script>
+    function animeCountdown(targetDate) {
+            return {
+                countdown: { days: 0, hours: 0, minutes: 0, seconds: 0 },
+                init() {
+                    this.updateCountdown();
+                    setInterval(() => this.updateCountdown(), 1000);
+
+                    anime({
+                        targets: this.$el.querySelectorAll('.text-lg'),
+                        innerHTML: [0, el => el.innerHTML],
+                        easing: 'linear',
+                        round: 1,
+                        duration: 1000
+                    });
+                },
+                updateCountdown() {
+                    const now = new Date().getTime();
+                    const distance = targetDate - now;
+
+                    if (distance < 0) {
+                        this.countdown = { days: 0, hours: 0, minutes: 0, seconds: 0 };
+                        return;
+                    }
+
+                    this.countdown = {
+                        days: Math.floor(distance / (1000 * 60 * 60 * 24)),
+                        hours: Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
+                        minutes: Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60)),
+                        seconds: Math.floor((distance % (1000 * 60)) / 1000)
+                    };
+                }
+            }
+        }
+</script>

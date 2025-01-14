@@ -8,279 +8,462 @@
     <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <style>
-        body {
-            background-color: black;
-            color: white;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
+        body, html {
             margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #000;
+            font-family: Arial, sans-serif;
         }
-
-        .plyr__video-embed {
-            aspect-ratio: 16 / 9;
-            max-width: 100%;
+        #video-container {
+            width: 100%;
+            height: 100%;
             position: relative;
         }
-
+        #video-player {
+            width: 100%;
+            height: 100%;
+            display: none;
+        }
         #loading-screen {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 0.8);
+            background-color: #000;
             display: flex;
             justify-content: center;
             align-items: center;
-            z-index: 999;
+            flex-direction: column;
+            z-index: 1000;
         }
-
-        .spinner {
+        .loader {
             width: 50px;
             height: 50px;
-            border: 4px solid rgba(255, 255, 255, 0.3);
-            border-top: 4px solid white;
+            border: 3px solid #333;
+            border-top: 3px solid #fff;
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
-
         @keyframes spin {
-            0% {
-                transform: rotate(0deg);
-            }
-
-            100% {
-                transform: rotate(360deg);
-            }
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
-
+        .loading-text {
+            color: #fff;
+            margin-top: 20px;
+            font-size: 18px;
+        }
+        .plyr--video {
+            height: 100%;
+        }
+        .plyr__video-wrapper {
+            height: 100%;
+        }
         .plyr__caption {
-            background: transparent;
+            background: rgba(0, 0, 0, 0.7);  /* Semi-transparent background */
             color: white;
-            text-shadow:
-                0px 0px 4px rgba(0, 0, 0, 0.7),
-                0px 2px 2px rgba(0, 0, 0, 0.5);
+            text-shadow: 
+                -1px -1px 0 #000,
+                1px -1px 0 #000,
+                -1px 1px 0 #000,
+                1px 1px 0 #000,
+                0px 0px 6px rgba(0, 0, 0, 1);  /* Stronger shadow */
             font-weight: 600;
-            padding: 0;
-            font-size: 4.5vw;
-        }
-
-        @media screen and (min-width: 768px) {
-            .plyr__caption {
-                font-size: 3.5vw;
-            }
-        }
-
-        @media screen and (min-width: 1024px) {
-            .plyr__caption {
-                font-size: 2.5vw;
-            }
-        }
-
-        @media screen and (min-width: 1440px) {
-            .plyr__caption {
-                font-size: 36px;
-            }
-        }
-
-        .plyr--fullscreen-active .plyr__caption {
-            font-size: 4vw;
+            padding: 5px 10px;  /* Add some padding */
+            font-size: 24px;
+            border-radius: 4px;  /* Optional: rounded corners */
         }
 
         .plyr--captions-active .plyr__captions {
             background: transparent;
         }
 
+        /* Only make background transparent on hover if needed */
         .plyr__caption:hover {
-            background: transparent;
+            background: rgba(0, 0, 0, 0.8);  /* Slightly darker on hover */
         }
     </style>
 </head>
 
-<body class="bg-gray-900 text-white h-screen flex items-center justify-center">
-    <!-- Video Player -->
-    <div class="w-full h-full">
-        <video id="video-player" class="plyr w-full h-full" controls crossorigin="anonymous">
-
-            <!-- Fallback -->
+<body>
+    <div id="video-container">
+        <div id="loading-screen">
+            <div class="loader"></div>
+            <div class="loading-text">Loading your anime...</div>
+        </div>
+        <video id="video-player" controls crossorigin="anonymous">
             Your browser does not support HTML5 video. Upgrade your browser to view this content.
         </video>
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const video = document.getElementById('video-player');
-            const loadingScreen = document.getElementById('loading-screen');
-            const source = "{{ video_url }}";
-            const subtitles = {{ subtitles| tojson | safe}};
+document.addEventListener('DOMContentLoaded', () => {
+    const video = document.getElementById('video-player');
+    const loadingScreen = document.getElementById('loading-screen');
+    const videoContainer = document.getElementById('video-container');
+    const currentsv = '{{ current }}';
+    const durationsv = '{{ duration }}';
+    const userInfo = '{{ userInfo | tojson | safe}}';
+    const source = "{{ video_url }}";
+    const subtitles = {{ subtitles| tojson | safe}};
 
-        // Add custom styles for subtitles
-        const subtitleStyles = `
-        .plyr__captions {
-            background: transparent;
-            padding: 0;
-        }
-
-        .plyr__caption {
-            background-color: transparent;
+    // Add custom styles
+    const styleSheet = document.createElement('style');
+    styleSheet.textContent = `
+        .plyr__controls button.skip-button,
+        .plyr__controls button.rewind-button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 5px;
+            width: 32px;
+            height: 32px;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
             color: white;
-            text-shadow:
-                -2px -2px 0 #000,
-                2px -2px 0 #000,
-                -2px 2px 0 #000,
-                2px 2px 0 #000;
-            font-weight: 600;
+            border-radius: 50%;
+            margin: 0 2px;
+            transition: background-color 0.2s;
         }
 
-        @media screen and (min-width: 768px) {
-            .plyr__caption {
-                font-size: 14px;
-                text-shadow: 
-                    -1px -1px 0 #000,
-                    1px -1px 0 #000,
-                    -1px 1px 0 #000,
-                    1px 1px 0 #000,
-                    0px 0px 6px rgba(0, 0, 0, 1);
-            }
+        .plyr__controls button.skip-button:hover,
+        .plyr__controls button.rewind-button:hover {
+            background: rgba(255, 255, 255, 0.2);
         }
 
-        @media screen and (min-width: 1024px) {
-            .plyr__caption {
-                 font-size: 20px;
-                text-shadow: 
-                    -1px -1px 0 #000,
-                    1px -1px 0 #000,
-                    -1px 1px 0 #000,
-                    1px 1px 0 #000,
-                    0px 0px 6px rgba(0, 0, 0, 1);
-            }
+        .plyr__preview-thumb {
+            background-color: rgba(0, 0, 0, 0.8);
+            border-radius: 4px;
+            bottom: 100%;
+            margin-bottom: 10px;
+            opacity: 0;
+            padding: 5px;
+            pointer-events: none;
+            position: absolute;
+            transform: translate(0, 10px) scale(0.8);
+            transform-origin: 50% 100%;
+            transition: transform .2s .1s ease,opacity .2s .1s ease;
+            z-index: 2;
         }
 
-        @media screen and (min-width: 1440px) {
-            .plyr__caption {
-                 font-size: 36px;
-                text-shadow: 
-                    -1px -1px 0 #000,
-                    1px -1px 0 #000,
-                    -1px 1px 0 #000,
-                    1px 1px 0 #000,
-                    0px 0px 6px rgba(0, 0, 0, 1);
-            }
-        }
-
-        .plyr--fullscreen-active .plyr__caption {
-            font-size: 4vw;
-        }
-
-        .plyr--captions-active .plyr__captions {
-            background: transparent;
-        }
-
-        .plyr__caption:hover {
-            background: transparent;
+        .plyr__preview-thumb--is-shown {
+            opacity: 1;
+            transform: translate(0, 0) scale(1);
         }
     `;
+    document.head.appendChild(styleSheet);
 
-        const styleSheet = document.createElement("style");
-        styleSheet.textContent = subtitleStyles;
-        document.head.appendChild(styleSheet);
+    function showLoading() {
+        loadingScreen.style.display = 'flex';
+        video.style.display = 'none';
+    }
 
-        function showLoading() {
-            loadingScreen.style.display = 'flex';
+    function hideLoading() {
+        loadingScreen.style.display = 'none';
+        video.style.display = 'block';
+        videoContainer.style.backgroundColor = 'black';
+    }
+
+    function formatTime(seconds) {
+        const date = new Date(seconds * 1000);
+        const hh = date.getUTCHours();
+        const mm = date.getUTCMinutes();
+        const ss = date.getUTCSeconds().toString().padStart(2, '0');
+        if (hh) {
+            return `${hh}:${mm.toString().padStart(2, '0')}:${ss}`;
         }
+        return `${mm}:${ss}`;
+    }
 
-        function hideLoading() {
-            loadingScreen.style.display = 'none';
+    async function saveProgress() {
+        const currentTime = video.currentTime;
+        const duration = video.duration;
+        const progress = {
+            currentTime: currentTime,
+            duration: duration
+        };
+        const urlParams = new URLSearchParams(window.location.search);
+        urlParams.forEach((value, key) => {
+            progress[key] = value;
+        });
+
+        if (userInfo != 'null') {
+            if (!video.paused) {
+                const url = '/save/progress';
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(progress)
+                });
+            }    
         }
+        sessionStorage.setItem(window.location.href, JSON.stringify(progress));
+    }
 
-        if (Hls.isSupported()) {
-            hls = new Hls({
-                capLevelToPlayerSize: true,
-                autoStartLoad: true
+    function loadProgress() {
+        const savedProgress = sessionStorage.getItem(window.location.href);
+        if (savedProgress) {
+            const progress = JSON.parse(savedProgress);
+            if (progress.currentTime && progress.duration) {
+                video.currentTime = progress.currentTime;
+            }
+        }
+    }
+
+    function generatePreviewThumbnails() {
+        const thumbnailWidth = 160;
+        const thumbnailHeight = 90;
+        
+        const canvas = document.createElement('canvas');
+        canvas.width = thumbnailWidth;
+        canvas.height = thumbnailHeight;
+        const ctx = canvas.getContext('2d');
+        
+        return {
+            src: source,
+            generate: function(time) {
+                return new Promise((resolve) => {
+                    video.currentTime = time;
+                    video.addEventListener('seeked', function onSeeked() {
+                        ctx.drawImage(video, 0, 0, thumbnailWidth, thumbnailHeight);
+                        resolve(canvas.toDataURL());
+                        video.removeEventListener('seeked', onSeeked);
+                    }, { once: true });
+                });
+            }
+        };
+    }
+
+    async function updatePreviewThumbnail(player, time, posX) {
+        try {
+            const thumbnail = await player.config.previewThumbnails.src.generate(time);
+            let preview = document.querySelector('.plyr__preview-thumb');
+            if (!preview) {
+                preview = document.createElement('div');
+                preview.className = 'plyr__preview-thumb';
+                player.elements.progress.appendChild(preview);
+            }
+            
+            preview.innerHTML = `
+                <img src="${thumbnail}" alt="Preview" style="width: 160px; height: 90px;">
+                <div style="text-align: center; color: white; margin-top: 4px;">
+                    ${formatTime(time)}
+                </div>
+            `;
+            
+            const previewWidth = 160;
+            const offset = Math.min(Math.max(0, posX - (previewWidth / 2)), player.elements.progress.offsetWidth - previewWidth);
+            preview.style.left = `${offset}px`;
+            preview.classList.add('plyr__preview-thumb--is-shown');
+        } catch (error) {
+            console.error('Error generating preview:', error);
+        }
+    }
+
+    function hidePreviewThumbnail() {
+        const preview = document.querySelector('.plyr__preview-thumb');
+        if (preview) {
+            preview.classList.remove('plyr__preview-thumb--is-shown');
+        }
+    }
+
+    if (Hls.isSupported()) {
+        const hls = new Hls({
+            capLevelToPlayerSize: true,
+            autoStartLoad: true
+        });
+
+        hls.loadSource(source);
+        hls.on(Hls.Events.MANIFEST_PARSED, function (event, data) {
+            const availableQualities = hls.levels.map((l) => l.height);
+
+            const player = new Plyr(video, {
+                captions: { active: true, update: true, language: 'en' },
+                quality: {
+                    default: availableQualities[0],
+                    options: availableQualities,
+                    forced: true,
+                    onChange: (e) => updateQuality(e)
+                },
+                controls: [
+                    'play-large',
+                    'play',
+                    'progress',
+                    'current-time',
+                    'duration',
+                    'mute',
+                    'volume',
+                    'captions',
+                    'settings',
+                    'pip',
+                    'airplay',
+                    'fullscreen'
+                ],
+                keyboard: {
+                    focused: true,
+                    global: true
+                }
             });
 
-            // Load source into hls
-            hls.loadSource(source);
-            hls.on(Hls.Events.MANIFEST_PARSED, function (event, data) {
-                const availableQualities = hls.levels.map((l) => l.height);
+            // Add custom controls after player is ready
+            player.on('ready', () => {
+                const container = player.elements.controls;
+                
+                // Add rewind button
+                const rewindButton = document.createElement('button');
+                rewindButton.type = 'button';
+                rewindButton.classList.add('rewind-button');
+                rewindButton.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24">
+                        <path fill="currentColor" d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/>
+                        <text x="11" y="14" fill="currentColor" font-size="8">10</text>
+                    </svg>
+                `;
+                rewindButton.addEventListener('click', () => player.rewind(10));
+                
+                // Add forward button
+                const forwardButton = document.createElement('button');
+                forwardButton.type = 'button';
+                forwardButton.classList.add('skip-button');
+                forwardButton.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24">
+                        <path fill="currentColor" d="M12 5V1l5 5-5 5V7c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6h2c0 4.42-3.58 8-8 8s-8-3.58-8-8 3.58-8 8-8z"/>
+                        <text x="11" y="14" fill="currentColor" font-size="8">10</text>
+                    </svg>
+                `;
+                forwardButton.addEventListener('click', () => player.forward(10));
+                
+                // Insert buttons in the controls
+                const playButton = container.querySelector('.plyr__controls__item.plyr__control');
+                if (playButton) {
+                    container.insertBefore(rewindButton, playButton);
+                    container.insertBefore(forwardButton, playButton.nextSibling);
+                }
 
-                // Initialize Plyr
-                const player = new Plyr(video, {
-                    captions: { active: true, update: true, language: 'en' },
-                    quality: {
-                        default: availableQualities[0],
-                        options: availableQualities,
-                        forced: true,
-                        onChange: (e) => updateQuality(e)
-                    },
-                    controls: [
-                        'play-large',
-                        'play',
-                        'progress',
-                        'current-time',
-                        'mute',
-                        'volume',
-                        'settings',
-                        'fullscreen'
-                    ]
+                // Add preview thumbnail functionality
+                const progress = player.elements.progress;
+                progress.addEventListener('mousemove', (e) => {
+                    const rect = progress.getBoundingClientRect();
+                    const percent = Math.min(Math.max(0, e.pageX - rect.left), rect.width) / rect.width;
+                    const time = percent * player.duration;
+                    updatePreviewThumbnail(player, time, e.pageX);
                 });
 
-                // Attach media to video element
-                hls.attachMedia(video);
+                progress.addEventListener('mouseleave', hidePreviewThumbnail);
+
+                // Add keyboard shortcuts
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'ArrowLeft') {
+                        player.rewind(10);
+                    } else if (e.key === 'ArrowRight') {
+                        player.forward(10);
+                    }
+                });
+            });
+
+            hls.attachMedia(video);
+
+            video.addEventListener('loadedmetadata', () => {
+                console.log('Video metadata loaded');
                 hideLoading();
+                loadProgress();
+            });
 
-                // Handle quality changes
-                function updateQuality(newQuality) {
-                    if (newQuality === 0) {
-                        hls.currentLevel = -1; //Enable AUTO quality if option "Default" is chosen
-                    } else {
-                        hls.levels.forEach((level, levelIndex) => {
-                            if (level.height === newQuality) {
-                                hls.currentLevel = levelIndex;
-                            }
-                        });
-                    }
+            video.addEventListener('canplay', () => {
+                console.log('Video can play');
+                hideLoading();
+                player.play().catch(error => {
+                    console.error('Auto-play was prevented:', error);
+                });
+            });
+
+            video.addEventListener('timeupdate', () => {
+                if (Math.floor(video.currentTime) % 5 === 0) {
+                    saveProgress();
                 }
             });
 
-            // Optional: Handle HLS errors
-            hls.on(Hls.Events.ERROR, function (event, data) {
-                if (data.fatal) {
-                    switch (data.type) {
-                        case Hls.ErrorTypes.NETWORK_ERROR:
-                            hls.startLoad();
-                            break;
-                        case Hls.ErrorTypes.MEDIA_ERROR:
-                            hls.recoverMediaError();
-                            break;
-                        default:
-                            initPlayer();
-                            break;
-                    }
-                }
-            });
-        }
+            video.addEventListener('pause', saveProgress);
+            video.addEventListener('ended', saveProgress);
 
-        subtitles.forEach(subtitle => {
-            if (subtitle.kind === 'captions') {
-                const track = document.createElement('track');
-                track.kind = subtitle.kind;
-                track.label = subtitle.label;
-                track.srclang = subtitle.label.split(' ')[0].toLowerCase();
-                track.src = subtitle.file;
-                if (subtitle.default) {
-                    track.default = true;
+            function updateQuality(newQuality) {
+                if (newQuality === 0) {
+                    hls.currentLevel = -1;
+                } else {
+                    hls.levels.forEach((level, levelIndex) => {
+                        if (level.height === newQuality) {
+                            hls.currentLevel = levelIndex;
+                        }
+                    });
                 }
-                video.appendChild(track);
             }
         });
 
-        showLoading();
-        video.addEventListener('canplay', hideLoading);
+        hls.on(Hls.Events.ERROR, function (event, data) {
+            if (data.fatal) {
+                switch (data.type) {
+                    case Hls.ErrorTypes.NETWORK_ERROR:
+                        hls.startLoad();
+                        break;
+                    case Hls.ErrorTypes.MEDIA_ERROR:
+                        hls.recoverMediaError();
+                        break;
+                    default:
+                        initPlayer();
+                        break;
+                }
+            }
+        });
+
+        // Add subtitles
+        function getLanguageCode(label) {
+            const normalizedLabel = label.toLowerCase();
+            if (normalizedLabel === 'english') return 'en';
+            
+            // Get first word and handle special cases
+            const firstWord = normalizedLabel.split(' ')[0];
+            const languageMap = {
+                'english': 'en',
+                'spanish': 'es',
+                'portuguese': 'pt',
+                'arabic': 'ar',
+                'french': 'fr',
+                'german': 'de',
+                'italian': 'it',
+                'russian': 'ru'
+            };
+            
+            return languageMap[firstWord] || firstWord;
+        }
+
+        subtitles.forEach(subtitle => {
+            const track = document.createElement('track');
+            track.kind = subtitle.kind || 'subtitles';
+            track.label = subtitle.label;
+            track.srclang = getLanguageCode(subtitle.label);
+            track.src = subtitle.file;
+            
+            if (subtitle.default) {
+                track.default = true;
+            }
+            
+            video.appendChild(track);
+        });
+    }
+
+    showLoading();
+    video.addEventListener('error', (e) => {
+        console.error('Video error:', e);
+        loadingScreen.innerHTML = '<div class="loading-text">Error loading video. Please try again later.</div>';
+    });
 });
     </script>
 </body>

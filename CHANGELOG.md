@@ -45,4 +45,5 @@
  - Imports/Exports & sync Not working(Will Be added after completing library)
  - Can't change/add profile picture
  - Mark All As read Not working in notifications
+ - UI is laggy & Causes High Ram Usage on firefox Based Browsers(Unknown Reason)
 

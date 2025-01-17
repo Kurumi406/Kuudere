@@ -1,7 +1,7 @@
 ## [0.9.0] - 2024-12-29
 ### Added
 - Initial Github Release
-## [0.9.1] - 2024-01-07
+## [0.9.1] - 2025-01-07
 ### Added
 - Initial Public Release
 - Continue Watching Sync
@@ -18,7 +18,7 @@
  - Watchlist UI In Profile is Awful
  - Mark All As read Not working in notifications
 
-## [0.9.2] - 2024-01-14
+## [0.9.2] - 2025-01-14
 ### Added
 - Can mention users in comments by their username ex: @Kurumi
 - Can reply to post comments

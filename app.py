@@ -5426,6 +5426,9 @@ def recently_updated():
                 ]
             )
 
+            if anii['total'] == 0:
+                continue
+
             anii=anii['documents'][0]
 
             img = databases.get_document(

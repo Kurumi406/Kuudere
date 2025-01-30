@@ -62,7 +62,32 @@
             @click.stop style="z-index: 10000;">
             <!-- Header -->
             <div class="flex items-center justify-between p-6 border-b border-white/20 bg-white/5">
-                <h2 class="text-2xl font-bold text-white">Latest Updates</h2>
+                <div class="flex items-center gap-4">
+                    <h2 class="text-2xl font-bold text-white">Latest Updates</h2>
+                    <div class="flex items-center gap-2 md:gap-3">
+                        <!-- Discord Icon -->
+                         {% if nData.discord %}
+                        <a href="{{nData.discord}}" target="_blank"
+                            class="hover:opacity-75 transition-opacity duration-200 bg-white rounded-full p">
+                            <svg class="w-5 h-5 md:w-6 md:h-6" viewBox="0 0 24 24">
+                                <path fill="#5865F2"
+                                    d="M19.27 5.33C17.94 4.71 16.5 4.26 15 4a.09.09 0 0 0-.07.03c-.18.33-.39.76-.53 1.09a16.09 16.09 0 0 0-4.8 0c-.14-.34-.35-.76-.54-1.09c-.01-.02-.04-.03-.07-.03c-1.5.26-2.93.71-4.27 1.33c-.01 0-.02.01-.03.02c-2.72 4.07-3.47 8.03-3.1 11.95c0 .02.01.04.03.05c1.8 1.32 3.53 2.12 5.24 2.65c.03.01.06 0 .07-.02c.4-.55.76-1.13 1.07-1.74c.02-.04 0-.08-.04-.09c-.57-.22-1.11-.48-1.64-.78c-.04-.02-.04-.08-.01-.11c.11-.08.22-.17.33-.25c.02-.02.05-.02.07-.01c3.44 1.57 7.15 1.57 10.55 0c.02-.01.05-.01.07.01c.11.09.22.17.33.26c.04.03.04.09-.01.11c-.52.31-1.07.56-1.64.78c-.04.01-.05.06-.04.09c.32.61.68 1.19 1.07 1.74c.03.01.06.02.09.01c1.72-.53 3.45-1.33 5.25-2.65c.02-.01.03-.03.03-.05c.44-4.53-.73-8.46-3.1-11.95c-.01-.01-.02-.02-.04-.02zM8.52 14.91c-1.03 0-1.89-.95-1.89-2.12s.84-2.12 1.89-2.12c1.06 0 1.9.96 1.89 2.12c0 1.17-.84 2.12-1.89 2.12zm6.96 0c-1.03 0-1.89-.95-1.89-2.12s.84-2.12 1.89-2.12c1.06 0 1.9.96 1.89 2.12c0 1.17-.83 2.12-1.89 2.12z" />
+                            </svg>
+                        </a>
+                        {% endif %}
+
+                        <!-- Telegram Icon -->
+                         {% if nData.telegram %}
+                         <a href="{{nData.telegram}}" target="_blank"
+                            class="hover:opacity-75 transition-opacity duration-200 bg-white rounded-full">
+                            <svg class="w-5 h-5 md:w-6 md:h-6" viewBox="0 0 24 24">
+                                <path fill="#0088CC"
+                                    d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.14.14-.26.26-.429.26l.213-3.05 5.56-5.022c.24-.213-.054-.333-.373-.121l-6.869 4.326-2.96-.924c-.64-.203-.658-.64.135-.954l11.566-4.458c.538-.196 1.006.128.832.941z" />
+                            </svg>
+                        </a>
+                         {% endif %}
+                    </div>
+                </div>
                 <button @click="closeDialog()" class="text-gray-500 hover:text-white transition-colors duration-200">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
@@ -78,13 +103,13 @@
                     <div class="swiper-slide overflow-hidden p-4 ">
                         <h3 class="text-xl font-bold text-white mb-3 border-b border-white/20 pb-2">Notice</h3>
                         <div class="space-y-4 text-white">
-                            <div class="p-4 space-y-2 bg-white/5 rounded-lg border border-white/20 shadow-md backdrop-blur-sm">
+                            <div
+                                class="p-4 space-y-2 bg-white/5 rounded-lg border border-white/20 shadow-md backdrop-blur-sm">
                                 <div class="flex items-center justify-between mb-2">
                                     <span class="font-semibold text-lg">{{nData.Title}}</span>
                                 </div>
                                 {% for messages in nData.Message %}
-                                <div class="flex items-start space-x-2" 
-                                     x-data="{ 
+                                <div class="flex items-start space-x-2" x-data="{ 
                                         message: '{{messages}}',
                                         formatMessage() {
                                             let formattedText = this.message;
@@ -119,19 +144,23 @@
                             <div class="mt-4" x-data="animeCountdown({{ nData.time }})">
                                 <div class="grid grid-cols-4 gap-2 text-center">
                                     <div class="bg-white/5 rounded p-2">
-                                        <div class="text-lg font-bold tabular-nums text-yellow-300" x-text="countdown.days"></div>
+                                        <div class="text-lg font-bold tabular-nums text-yellow-300"
+                                            x-text="countdown.days"></div>
                                         <div class="text-[10px] uppercase text-gray-400">Days</div>
                                     </div>
                                     <div class="bg-white/5 rounded p-2">
-                                        <div class="text-lg font-bold tabular-nums text-yellow-300" x-text="countdown.hours"></div>
+                                        <div class="text-lg font-bold tabular-nums text-yellow-300"
+                                            x-text="countdown.hours"></div>
                                         <div class="text-[10px] uppercase text-gray-400">Hours</div>
                                     </div>
                                     <div class="bg-white/5 rounded p-2">
-                                        <div class="text-lg font-bold tabular-nums text-yellow-300" x-text="countdown.minutes"></div>
+                                        <div class="text-lg font-bold tabular-nums text-yellow-300"
+                                            x-text="countdown.minutes"></div>
                                         <div class="text-[10px] uppercase text-gray-400">Mins</div>
                                     </div>
                                     <div class="bg-white/5 rounded p-2">
-                                        <div class="text-lg font-bold tabular-nums text-yellow-300" x-text="countdown.seconds"></div>
+                                        <div class="text-lg font-bold tabular-nums text-yellow-300"
+                                            x-text="countdown.seconds"></div>
                                         <div class="text-[10px] uppercase text-gray-400">Secs</div>
                                     </div>
                                 </div>
@@ -151,23 +180,23 @@
                                 </div>
                                 <div class="flex items-start space-x-2">
                                     <span class="text-white">•</span>
-                                    <p>Disqus For Anime Comments </p>
+                                    <p>Disqus As Main Comments </p>
                                 </div>
                                 <div class="flex items-start space-x-2">
                                     <span class="text-white">•</span>
-                                    <p>Can reply to post comments </p>
+                                    <p>Auto Next: Added </p>
                                 </div>
                                 <div class="flex items-start space-x-2">
                                     <span class="text-white">•</span>
-                                    <p>Can like to post comments</p>
+                                    <p>Skip Intro & Outro: Added</p>
                                 </div>
                                 <div class="flex items-start space-x-2">
                                     <span class="text-white">•</span>
-                                    <p>Top Anime On Home</p>
+                                    <p>Notification In Profile: Added</p>
                                 </div>
                                 <div class="flex items-start space-x-2">
                                     <span class="text-white">•</span>
-                                    <p>New Backup video Player(Hianime-2)</p>
+                                    <p>Settings : Added</p>
                                 </div>
                             </div>
                         </div>
@@ -199,7 +228,7 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                 </svg>
-                                <span>No Public Profile page</span>
+                                <span>Preview Public Profile page</span>
                             </li>
                             <li class="flex items-start space-x-2">
                                 <svg class="w-5 h-5 text-white flex-shrink-0 mt-0.5" fill="none" stroke="currentColor"
@@ -207,7 +236,8 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                 </svg>
-                                <span>We Will Continue to improve user experiance much as possible & If you don't like current state come back in few months :)</span>
+                                <span>We Will Continue to improve user experiance much as possible & If you don't like
+                                    current state come back in few months :)</span>
                             </li>
                         </ul>
                     </div>
@@ -230,7 +260,8 @@
                     </div>
                     <!-- Cryptocurrency Information -->
                     <div class="swiper-slide overflow-y-auto p-6">
-                        <h3 class="text-xl font-semibold text-white mb-4 text-center">Donate us if you have some extra :)</h3>
+                        <h3 class="text-xl font-semibold text-white mb-4 text-center">Donate us if you have some extra
+                            :)</h3>
                         <div class="space-y-4">
                             <!-- USDT -->
                             <div x-data="{ copied: false }"
@@ -378,36 +409,36 @@
 </div>
 <script>
     function animeCountdown(targetDate) {
-            return {
-                countdown: { days: 0, hours: 0, minutes: 0, seconds: 0 },
-                init() {
-                    this.updateCountdown();
-                    setInterval(() => this.updateCountdown(), 1000);
+        return {
+            countdown: { days: 0, hours: 0, minutes: 0, seconds: 0 },
+            init() {
+                this.updateCountdown();
+                setInterval(() => this.updateCountdown(), 1000);
 
-                    anime({
-                        targets: this.$el.querySelectorAll('.text-lg'),
-                        innerHTML: [0, el => el.innerHTML],
-                        easing: 'linear',
-                        round: 1,
-                        duration: 1000
-                    });
-                },
-                updateCountdown() {
-                    const now = new Date().getTime();
-                    const distance = targetDate - now;
+                anime({
+                    targets: this.$el.querySelectorAll('.text-lg'),
+                    innerHTML: [0, el => el.innerHTML],
+                    easing: 'linear',
+                    round: 1,
+                    duration: 1000
+                });
+            },
+            updateCountdown() {
+                const now = new Date().getTime();
+                const distance = targetDate - now;
 
-                    if (distance < 0) {
-                        this.countdown = { days: 0, hours: 0, minutes: 0, seconds: 0 };
-                        return;
-                    }
-
-                    this.countdown = {
-                        days: Math.floor(distance / (1000 * 60 * 60 * 24)),
-                        hours: Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
-                        minutes: Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60)),
-                        seconds: Math.floor((distance % (1000 * 60)) / 1000)
-                    };
+                if (distance < 0) {
+                    this.countdown = { days: 0, hours: 0, minutes: 0, seconds: 0 };
+                    return;
                 }
+
+                this.countdown = {
+                    days: Math.floor(distance / (1000 * 60 * 60 * 24)),
+                    hours: Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
+                    minutes: Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60)),
+                    seconds: Math.floor((distance % (1000 * 60)) / 1000)
+                };
             }
         }
+    }
 </script>

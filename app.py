@@ -5,6 +5,7 @@ from appwrite.services.databases import Databases
 from flask_limiter.util import get_remote_address
 from flask import Response
 from flask_socketio import SocketIO, join_room, leave_room, rooms
+from skipData import get_skip_data
 from appwrite.services.account import Account
 from collections import defaultdict
 from appwrite.client import Client
@@ -41,6 +42,14 @@ import pytz
 import base64
 import os
 import re
+from urllib.parse import urlparse, urljoin
+
+def is_valid_url(url):
+    try:
+        result = urlparse(url)
+        return all([result.scheme, result.netloc])
+    except ValueError:
+        return False
 
 os.environ['no_proxy'] = 'localhost,127.0.0.1'
 POINTS_LIKES = 25
@@ -78,7 +87,7 @@ ext = Sitemap(app)
 cache = Cache(app, config={'CACHE_TYPE': 'SimpleCache'})
 def get_client(session_id=None, secret=None):
     client = Client()
-    client.set_endpoint(os.getenv('PROJECT_ENDPOINT'))
+    client.set_endpoint(os.getenv('PROJECT_ENDPOINT') )
     client.set_project(os.getenv('PROJECT_ID') )
     
     if session_id:
@@ -427,7 +436,7 @@ def register():
         )
 
         if user_check['total'] > 0:
-            return jsonify({"error": "Username already exists"}), 400
+            return jsonify({'success': False, 'message': "Username already exists"}),400
         
         account = Account(client)
         result = account.create(ID.unique(), email=email, password=password, name=name)
@@ -490,11 +499,58 @@ def login():
         session.permanent = True
         session['session_id'] = session_data['$id']  # Store the session ID for logout
         session['session_secret'] = session_data['secret']  # Store the secret for authentication
+
+        client = get_client(session_data['secret'], None)
+        databases = Databases(client)
+
+        try:
+            settings_response = databases.list_documents(
+                database_id=os.getenv('DATABASE_ID'),
+                collection_id=os.getenv('SETTINGS'),
+                queries=[
+                    Query.order_desc("$updatedAt"),
+                    Query.equal("userId", session_data['userId']),
+                ]
+            )
+
+            print(f"lol{settings_response}")
+
+            # Check if any documents exist and extract data
+            if settings_response['total'] > 0 and settings_response['documents']:
+                settings_data = settings_response['documents'][0]  # Safely get the first document
+                data = {
+                    "defaultComments": (
+                        'true' if settings_data.get('defaultComments') is True 
+                        else 'false' if settings_data.get('defaultComments') is False 
+                        else settings_data.get('defaultComments')
+                    ),
+                    "defaultLang": (
+                        'japanese' if settings_data.get('defaultLang') == True
+                        else 'english' if settings_data.get('defaultLang') == False
+                        else 'japanese'  # Default to Japanese if invalid or missing
+                    ),
+                    "autoNext": settings_data.get('autoNext', True),
+                    "autoPlay": settings_data.get('autoPlay', False),
+                    "autoSkipIntro": settings_data.get('skipIntro', False),
+                    "autoSkipOutro": settings_data.get('skipOutro', False),
+                }
+            else:
+                # Default values if no settings exist
+                data = {
+                    "defaultComments": 'false',
+                    "defaultLang": 'japanese',
+                    "autoNext": True,
+                    "autoPlay": False,
+                    "autoSkipIntro": False,
+                    "autoSkipOutro": False,
+                }
+        except AppwriteException as e:
+            print(e)
         
         return jsonify({
             'success': True, 
             'message': 'Logged in successfully',
-            'session_id': session_data['secret']
+            'pref': data
         })
     except Exception as e:
         return jsonify({'success': False, 'message': 'Invalid email or password'}),401
@@ -640,6 +696,7 @@ def load_home():
             collection_id = os.getenv('Anime'),
             queries = [
                 Query.equal("public",True),
+                Query.greater_than_equal("subbed",1),
                 Query.select(["mainId", "english", "romaji", "native", "ageRating", "malScore", "averageScore", "duration", "genres", "season", "startDate", "status", "synonyms", "type", "year", "description","subbed","dubbed"]),
                 Query.order_desc("lastUpdated"),
                 Query.limit(12)
@@ -1980,6 +2037,8 @@ def search_api():
         # Search strategies for the keyword
         def get_keyword_search_queries(keyword):
             return [
+                Query.equal("english", keyword),
+                Query.equal("romaji", keyword),
                 Query.search("english", keyword),
                 Query.search("romaji", keyword),
                 Query.search("native", keyword),
@@ -2053,6 +2112,13 @@ def search_api():
 
 @app.route('/watch-api/<anime_id>/<int:ep_number>')
 def fetch_episode_info(anime_id,ep_number):
+    duration = 0
+    current = 0
+    intro_start = 0
+    intro_end = 0
+    outro_start = 0
+    outro_end = 0
+    cwatching = False
     client_ip = request.headers.get('X-Forwarded-For', request.remote_addr).split(',')[0]
     idz = anime_id
     epASs = int(ep_number)
@@ -2108,7 +2174,7 @@ def fetch_episode_info(anime_id,ep_number):
         collection_id=os.getenv('Anime'),
         document_id=idz,
         queries=[
-            Query.select(["animeId"]),
+            Query.select(["animeId","anilistId","malId","animeId"]),
         ]
     )
 
@@ -2149,6 +2215,42 @@ def fetch_episode_info(anime_id,ep_number):
         ]
     )
 
+    skip = databases.list_documents(
+        database_id=os.getenv('DATABASE_ID'),
+        collection_id = os.getenv('EPISODE_SKIP_DATA'),
+        queries =[
+            Query.equal("animeId", result.get('animeId')),
+            Query.equal("episodeId", epinfo['documents'][0].get('$id'),),
+            Query.select(['intro_start','intro_end','outro_start','outro_end']),
+        ]
+    )
+
+    if skip['total'] <= 0:
+
+        skipd=get_skip_data(ep_number,result.get("anilistId"),result.get("malId"))
+    else:
+        skipdd = skip['documents'][0]
+        skipd = {'anilist_id': f'{result.get("anilistId")}','mal_id': f'{result.get("mal_id")}','intro_start': f'{skipdd.get('intro_start')}', 'intro_end': f'{skipdd.get('intro_end')}', 'outro_start': f'{skipdd.get('outro_start')}', 'outro_end': f'{skipdd.get('outro_end')}'}
+
+    print(skipd)
+    try:
+        if result.get("anilistId"):
+            if skipd.get('anilist_id') == str(result.get("anilistId")):
+                intro_start = skipd.get('intro_start')
+                intro_end = skipd.get('intro_end')
+                outro_start = skipd.get('outro_start')
+                outro_end = skipd.get('outro_end')
+        elif result.get("malId"):
+            if skipd.get('mal_id') == str(result.get("malId")):
+                intro_start = skipd.get('intro_start')
+                intro_end = skipd.get('intro_end')
+                outro_start = skipd.get('outro_start')
+                outro_end = skipd.get('outro_end')
+    except Exception as e:
+        print(e)
+
+    dddd = epinfo['documents'][0].get('$id')
+
     # Extract episode data
     episodes = epiList.get("documents", [])
     episode_details = []
@@ -2180,36 +2282,81 @@ def fetch_episode_info(anime_id,ep_number):
 
     for links in likass:
         if links.get("serverName") == "Hianime":
+            # Get base components
+            original_link = links.get("dataLink")
+            clean_path = original_link.replace("https://hianime.to/watch/", "")
+            current_domain = request.url_root.strip('/')
+            hostname = "http://127.0.0.1:5000"  # Handle port if present
+            
+            # Construct Hianime URL
+            hianime_url = f"{current_domain}/player/Hianime/{clean_path}"
+            
+            # Add query parameters properly
+            parsed = urlparse(hianime_url)
+            separator = '?' if not parsed.query else '&'
+            
             link_info = {
                 "$id": links.get("$id"),
                 "serverId": links.get("serverId"),
+                "continue":True,
                 "serverName": links.get("serverName"),
                 "episodeNumber": links.get("episodeNumber"),
                 "dataType": links.get("dataType"),
-                "dataLink": links.get("dataLink").replace("https://hianime.to/watch/", "/player/Hianime/") + f"&episode={epinfo['documents'][0]['$id']}&anime={anime_id}&vide=Hianime"
+                "dataLink": f"{hianime_url}{separator}episode={epinfo['documents'][0]['$id']}"
+                            f"&anime={anime_id}&vide=Hianime&api={hostname}"
             }
             ep_links.append(link_info)
 
-            # Second item for Hianime-2 (duplicate with modifications)
+            # Construct Hianime-2 URL
+            hianime2_url = f"{current_domain}/player2/Hianime/{clean_path}"
+            parsed_h2 = urlparse(hianime2_url)
+            separator_h2 = '?' if not parsed_h2.query else '&'
+            
             link_info_hianime_2 = {
-                "$id": "jvjvh",  # Replace with your logic or desired value
+                "$id": "jvjvh",
                 "serverId": 10001,
+                "continue":True,
                 "serverName": "Hianime-2",
                 "episodeNumber": links.get("episodeNumber"),
                 "dataType": links.get("dataType"),
-                "dataLink": links.get("dataLink").replace("https://hianime.to/watch/", "/player2/Hianime/") + f"&episode={epinfo['documents'][0]['$id']}&anime={anime_id}&vide=Hianime-2"
+                "dataLink": f"{hianime2_url}{separator_h2}episode={epinfo['documents'][0]['$id']}"
+                        f"&anime={anime_id}&vide=Hianime-2&api={hostname}"
             }
             ep_links.append(link_info_hianime_2)
         else:    
-            link_info = {
-                "$id": links.get("$id"),
-                "serverId": links.get("serverId"),
-                "serverName": links.get("serverName"),
-                "episodeNumber": links.get("episodeNumber"),
-                "dataType": links.get("dataType"),
-                "dataLink": links.get("dataLink")
-            }
-            ep_links.append(link_info)
+            hostname = request.host.split(':')[0]  # Handle port if present
+            # Handle other servers with validation
+            try:
+                parsed_link = urlparse(links.get("dataLink"))
+                if not parsed_link.netloc:
+                    # Convert relative URLs to absolute
+                    full_url = urljoin(current_domain, links.get("dataLink"))
+                else:
+                    full_url = links.get("dataLink")
+                    
+                # Validate URL
+                if not is_valid_url(full_url):
+                    raise ValueError("Invalid URL format")
+                names  = ["Kumi","HD-0"]
+
+                if links.get("serverName") in names:
+                    full_url =f"{full_url}&api=all"
+                    cwatching = True
+                    
+                link_info = {
+                    "$id": links.get("$id"),
+                    "continue":cwatching,
+                    "serverId": links.get("serverId"),
+                    "serverName": links.get("serverName"),
+                    "episodeNumber": links.get("episodeNumber"),
+                    "dataType": links.get("dataType"),
+                    "dataLink": full_url
+                }
+                ep_links.append(link_info)
+                
+            except Exception as e:
+                print(f"Skipping invalid URL: {links.get('dataLink')}")
+                continue
 
     ep_links.sort(key=lambda x: x['serverId'])
 
@@ -2331,60 +2478,43 @@ def fetch_episode_info(anime_id,ep_number):
         }
         coms.append(detail_info)
 
+    if userInfo:
+
+            search = databases.list_documents(
+                    database_id=os.getenv('DATABASE_ID'),
+                    collection_id=os.getenv('CONTINUE_WATCHING'),
+                    queries=[
+                        Query.equal("userId",acc.get("$id")),
+                        Query.equal("animeId",anime_id),
+                        Query.equal("episodeId",dddd),
+                        Query.select(['continueId','currentTime','duration']),
+                    ]
+                )
             
+            if search['total'] > 0:
+                data = search['documents'][0]
+                current = data.get('currentTime')
+                duration = data.get('duration')
+
     response = {
-        "all_episodes": episode_details,
-        "episode_links": ep_links,
-        "episode_comments":coms,
-        "total_comments":comm['total'],
-        "success": True,
-    }
+                "all_episodes": episode_details,
+                "episode_links": ep_links,
+                "episode_comments":coms,
+                "total_comments":comm['total'],
+                "episode_id":dddd,
+                "success": True,
+                "duration": duration,
+                "current":current,
+                "intro_start":intro_start,
+                "intro_end" :intro_end,
+                "outro_start" :outro_start,
+                "outro_end" :outro_end,
+            }
 
     response = make_response(json.dumps(response, indent=4, sort_keys=False))
     response.headers["Content-Type"] = "application/json"
 
     return response
-
-posts = [
-    {
-        "id": 1,
-        "title": "Join Our Discord Community for Support and Anime Fun!",
-        "content": "Hello everyone, We understand that many of you have been experiencing various issues with the website. While our moderators do their best to assist here when possible, it's simply not feasible to address every concern directly on the site. For more...",
-        "author": "mugiwara_no_L4R",
-        "category": "Updates",
-        "likes": 368,
-        "comments": 337,
-        "time": "4 months ago",
-        "pinned": True,
-        "isMod": True
-    },
-    {
-        "id": 2,
-        "title": "Pinned posts now found here 8-10-24",
-        "content": "In order to reduce the number of pinned posts, we will have links to the pinned community posts here. This will allow us to mostly only have one pinned post. This post may be changed or edited as needed. Hanime Download Guide...",
-        "author": "agaric1",
-        "category": "Updates",
-        "likes": 149,
-        "comments": 90,
-        "time": "4 months ago",
-        "pinned": True,
-        "isMod": True
-    }
-    ,
-        {
-            'id': 3,
-            'title': 'Pinned posts now found here 8-10-24',
-            'content': 'In order to reduce the number of pinned posts, we will have links to the pinned community posts here. This will allow us to mostly only have one pinned post. This post may be changed or edited as needed. Hanime Download Guide...',
-            'author': 'agaric1',
-            'authorAvatar': '/placeholder.svg?height=32&width=32',
-            'category': 'Suggestion',
-            'likes': 149,
-            'comments': 90,
-            'time': '4 months ago',
-            'pinned': True,
-            'isMod': True
-        }
-]
 
 @app.route('/community')
 def community():
@@ -4147,80 +4277,7 @@ def post_reply():
         return jsonify(new_reply), 201
     except Exception as e:
           return jsonify({"error": f"Error:{e}"}), 500
-# Simulated data (replace with database queries in a real application)
-
-notifications_data = [
-    {
-        "id": 1,
-        "title": "Is It Wrong to Try to Pick Up Girls in a Dungeon? V - Episode 11 [SUB] available NOW!",
-        "time": "an hour ago",
-        "image": "https://cdn.noitatnemucod.net/cover/danmachi-v.jpg",
-        "type": "anime"
-    },
-    {
-        "id": 2,
-        "title": "Tasuketsu -Fate of the Majority- - Episode 23 [SUB] available NOW!",
-        "time": "2 days ago",
-        "image": "https://cdn.noitatnemucod.net/cover/tasuketsu.jpg",
-        "type": "anime"
-    },
-    {
-        "id": 3,
-        "title": "I'll Become a Villainess Who Goes Down in History - Episode 12 [SUB] available NOW!",
-        "time": "2 days ago",
-        "image": "https://cdn.noitatnemucod.net/cover/akuyaku.jpg",
-        "type": "anime"
-    },
-    {
-        "id": 4,
-        "title": "Tying the Knot with an Amagami Sister - Episode 12 [SUB] available NOW!",
-        "time": "2 days ago",
-        "image": "https://cdn.noitatnemucod.net/cover/amagami.jpg",
-        "type": "anime"
-    },
-    {
-        "id": 5,
-        "title": "Seirei Gensouki: Spirit Chronicles Season 2 - Episode 11 [SUB] available NOW!",
-        "time": "3 days ago",
-        "image": "https://cdn.noitatnemucod.net/cover/seirei-gensouki-2nd-season.jpg",
-        "type": "anime"
-    },
-    {
-        "id": 7,
-        "title": "Is It Wrong to Try to Pick Up Girls in a Dungeon? V - Episode 11 [SUB] available NOW!",
-        "time": "an hour ago",
-        "image": "https://cdn.noitatnemucod.net/cover/danmachi-v.jpg",
-        "type": "anime"
-    },
-    {
-        "id": 8,
-        "title": "Tasuketsu -Fate of the Majority- - Episode 23 [SUB] available NOW!",
-        "time": "2 days ago",
-        "image": "https://cdn.noitatnemucod.net/cover/tasuketsu.jpg",
-        "type": "anime"
-    },
-    {
-        "id": 9,
-        "title": "I'll Become a Villainess Who Goes Down in History - Episode 12 [SUB] available NOW!",
-        "time": "2 days ago",
-        "image": "https://cdn.noitatnemucod.net/cover/akuyaku.jpg",
-        "type": "anime"
-    },
-    {
-        "id": 10,
-        "title": "Tying the Knot with an Amagami Sister - Episode 12 [SUB] available NOW!",
-        "time": "2 days ago",
-        "image": "https://cdn.noitatnemucod.net/cover/amagami.jpg",
-        "type": "anime"
-    },
-    {
-        "id": 11,
-        "title": "Seirei Gensouki: Spirit Chronicles Season 2 - Episode 11 [SUB] available NOW!",
-        "time": "3 days ago",
-        "image": "https://cdn.noitatnemucod.net/cover/seirei-gensouki-2nd-season.jpg",
-        "type": "anime"
-    }
-]
+# Simulated data (replace with database queries in a real application
    
 @app.route('/profile')
 @app.route('/user/<path:subpath>')
@@ -4238,7 +4295,148 @@ def profile():
     userInfo = get_user_info(key,secret)
  
     return jsonify(userInfo)
+@app.route('/api/settings')
+def settings():
+    secret = request.args.get('secret')
+    key = request.args.get('key')
+    userInfo = get_user_info(key, secret)
+    isKey = bool(secret)
 
+    if isKey:
+        print("Key exists: ", secret)
+    else:
+        secret = os.getenv('SECRET')  # Default value
+        print("Key is missing or empty, setting default secret.")
+
+    # Initialize Appwrite client and database
+    client = get_client(None, secret)
+    databases = Databases(client)
+
+    # Query the settings
+    try:
+        settings_response = databases.list_documents(
+            database_id=os.getenv('DATABASE_ID'),
+            collection_id=os.getenv('SETTINGS'),
+            queries=[
+                Query.order_desc("$updatedAt"),
+                Query.equal("userId", userInfo.get('userId')),
+            ]
+        )
+    except Exception as e:
+        print(f"Error querying database: {e}")
+        return jsonify({
+            "error": "Failed to fetch settings. Please try again later."
+        }), 500
+
+    # Check if any documents exist and extract data
+    if settings_response.get('total', 0) > 0 and settings_response.get('documents'):
+        settings_data = settings_response['documents'][0]  # Safely get the first document
+        data = {
+            "defaultComments": (
+                'true' if settings_data.get('defaultComments') is True 
+                else 'false' if settings_data.get('defaultComments') is False 
+                else settings_data.get('defaultComments')
+            ),
+            "defaultLang": (
+                'japanese' if settings_data.get('defaultLang') == True
+                else 'english' if settings_data.get('defaultLang') == False
+                else 'japanese'  # Default to Japanese if invalid or missing
+            ),
+            "autoNext": settings_data.get('autoNext', True),
+            "autoPlay": settings_data.get('autoPlay', False),
+            "autoSkipIntro": settings_data.get('skipIntro', False),
+            "autoSkipOutro": settings_data.get('skipOutro', False),
+        }
+    else:
+        # Default values if no settings exist
+        data = {
+            "defaultComments": 'true',
+            "defaultLang": 'japanese',
+            "autoNext": True,
+            "autoPlay": False,
+            "autoSkipIntro": False,
+            "autoSkipOutro": False,
+        }
+
+    # Return the response
+    return jsonify({
+        "data": data,
+    }), 200
+
+
+@app.route('/api/save/settings',methods=['POST'])
+def save_settings():
+    data = request.json
+    secret = request.args.get('secret')
+    key = request.args.get('key')
+    userInfo = get_user_info(key,secret)
+    isKey = bool(secret)
+    if secret:
+        isKey = True
+        print("Key exists: ", secret)
+    else:
+        isKey = False
+        secret = os.getenv('SECRET')  # Default value
+        print("Key is missing or empty, setting default secret.")
+
+
+    client = get_client(None,secret)
+    databases = Databases(client)
+
+    if data.get('defaultComments') == 'true':
+        comments = True
+    else:
+        comments =  False
+
+    if data.get('defaultLang') == 'japanese':
+        lang = True
+    else:
+        lang =  False
+
+    settings = databases.list_documents(
+            database_id = os.getenv('DATABASE_ID'),
+            collection_id = os.getenv('SETTINGS'),
+            queries = [
+                Query.order_desc("$updatedAt"),
+                Query.equal("userId",userInfo.get('userId')),
+                Query.select(['userId'])
+            ] # optional
+    )
+    if settings['total'] > 0:
+        lol=databases.update_document(
+            database_id = os.getenv('DATABASE_ID'),
+            collection_id = os.getenv('SETTINGS'),
+            document_id=userInfo.get('userId'),
+            data={
+                "userId":userInfo.get('userId'),
+                "defaultComments":comments,
+                "defaultLang":lang,
+                "skipOutro":data.get('autoSkipOutro'),
+                "skipIntro":data.get('autoSkipIntro'),
+                "autoNext":data.get('autoNext'),
+                "autoPlay":data.get('autoPlay'),
+            }
+    )
+        print(lol)
+    else:
+        lol=databases.create_document(
+            database_id = os.getenv('DATABASE_ID'),
+            collection_id = os.getenv('SETTINGS'),
+            document_id=userInfo.get('userId'),
+            data={
+                "userId":userInfo.get('userId'),
+                "defaultComments":comments,
+                "defaultLang":lang,
+                "skipOutro":data.get('autoSkipOutro'),
+                "skipIntro":data.get('autoSkipIntro'),
+                "autoNext":data.get('autoNext'),
+                "autoPlay":data.get('autoPlay'),
+            }
+    )
+        print(lol)
+    return jsonify({
+        "data": data,
+    }),200
 @app.route('/api/watchlist')
 def watchlist():
     page = int(request.args.get('page', 1))
@@ -4323,24 +4521,11 @@ def watchlist():
         "current_page": page
     })
 
-@app.route('/api/notifications')
-def notifications():
-    page = int(request.args.get('page', 1))
-    per_page = 2
-    start = (page - 1) * per_page
-    end = start + per_page
-    paginated_data = notifications_data[start:end]
-    total_pages = math.ceil(len(notifications_data) / per_page)
-    return jsonify({
-        "data": paginated_data,
-        "total_pages": total_pages,
-        "current_page": page
-    })
 @app.route('/save/progress',methods=['POST'])
 @limiter.limit("50 per minute")
 def save_continue_watching():
     data = request.json
-
+    print(data.get('episode'))
     try:
         if 'session_secret' in session:
             
@@ -5335,6 +5520,23 @@ def callback():
 def realtime():
     return render_template('rtest.html')
 
+@app.route("/raw")
+def raw():
+    client = get_client(None, os.getenv('SECRET'))
+    databases = Databases(client)
+
+    bitch = databases.list_documents(
+        database_id=os.getenv('DATABASE_ID'),
+        collection_id=os.getenv('Anime_Episodes_Links'),
+        queries=[
+            Query.equal("serverId", 1),
+            Query.select(["dataLink"]),
+            Query.limit(999999)
+        ]
+    )
+
+    return jsonify({'success': True,'total':bitch['total'], 'data': bitch['documents']}), 200 
+
 @app.route('/recently-updated', methods=['GET'])
 def recently_updated():
     secret = request.args.get('secret')
@@ -5483,7 +5685,129 @@ def recently_updated():
             return render_template('latestEps.html',result = filtered_documents_eps,userInfo=userInfo)
     except Exception as e:
          return jsonify({'success': False, 'message': str(e)}), 500 
+    
+def calculate_progress(current_aura):
+    # Define rank thresholds
+    rank_thresholds = [0, 60000, 120000, 180000, 240000]  # Aura thresholds for ranks
+    max_aura = rank_thresholds[-1]  # Maximum Aura for the last rank
 
+    # Calculate total progress percentage
+    total_percentage = round((current_aura / max_aura) * 100, 2)
+
+    # Determine current rank and next rank
+    current_rank = None
+    next_rank_threshold = None
+    for i in range(len(rank_thresholds) - 1):
+        if rank_thresholds[i] <= current_aura < rank_thresholds[i + 1]:
+            current_rank = i  # Current rank index
+            next_rank_threshold = rank_thresholds[i + 1]
+            break
+
+    # If below the first rank, current rank is the first
+    if current_rank is None:
+        current_rank = 0
+        next_rank_threshold = rank_thresholds[1]
+
+    # Progress to next rank
+    current_rank_threshold = rank_thresholds[current_rank]
+    rank_range = next_rank_threshold - current_rank_threshold
+    progress_to_next_rank = round(((current_aura - current_rank_threshold) / rank_range) * 100, 2)
+
+    return total_percentage
+
+@app.route("/public/user/<id>")
+def public_profile(id):
+    progress = 0
+    try:
+            client = get_client(None,os.getenv('SECRET'))
+            users = Users(client)
+
+            acc = users.get(
+                user_id = id
+            )
+
+    except Exception as e:
+            userInfo = None      
+            print(e)     
+    
+    try:
+        client = get_client(None,os.getenv('SECRET'))
+        databases = Databases(client)
+
+        rank = databases.list_documents(
+            database_id=os.getenv('DATABASE_ID'),
+            collection_id=os.getenv('LEADER_BOARD'),
+            queries=[
+                Query.equal('userId',acc.get('$id')),
+                Query.select(['points','$id']),
+                ]
+            )
+        if rank['total'] > 0:
+            points =rank['documents'][0].get('points')
+            progress = calculate_progress(points)
+
+        client = get_client(None,os.getenv('SECRET'))
+        databases = Databases(client)
+
+        watchlist = databases.list_documents(
+                database_id = os.getenv('DATABASE_ID'),
+                collection_id = os.getenv('Watchlist'),
+                queries = [
+                    Query.order_desc("$updatedAt"),
+                    Query.equal("userId",id),
+                    Query.select(["itemId","userId","animeId","folder","lastUpdated"]),
+                    Query.limit(10)
+                ] # optional
+        )
+
+        documents = watchlist.get('documents', [])
+
+        watchlist_dataz = []
+        
+        for data in documents:
+            aid = data.get('animeId')
+
+            aniimeData = databases.get_document(
+                database_id = os.getenv('DATABASE_ID'),
+                collection_id = os.getenv('Anime'),
+                document_id=aid,
+                queries = [
+                    Query.select(["mainId","english","romaji","lastUpdated","type","subbed","dubbed"]),
+                ] # optional
+            )
+
+            img = databases.get_document(
+                database_id = os.getenv('DATABASE_ID'),
+                collection_id = os.getenv('ANIME_IMGS'),
+                document_id=aniimeData.get('mainId'),
+                queries=[
+                    Query.select(['cover'])
+                ]
+            )
+
+            output = {
+                "id": aniimeData.get("mainId"),
+                "title": aniimeData.get("english"),
+                "type": aniimeData.get("type"),
+                "subbed": aniimeData.get("subbed"),
+                "dubbed": aniimeData.get("dubbed"),
+                "image": img.get("cover"),
+                "status": data.get("folder"),
+                "url":f'/watch/{aniimeData.get("mainId")}/1',
+            }
+            watchlist_dataz.append(output)
+
+            userInfo = {
+                    "status":acc.get("emailVerification"),
+                    "username" : acc.get("name"),
+                    "since" : datetime.fromisoformat(acc.get('$createdAt').replace("Z", "+00:00")).strftime("%Y-%m-%d"),
+                    "progress":progress,
+                    "points":format_views_without_view(points),
+                    "watchlist":watchlist_dataz,
+                }
+    except Exception as e:
+        print(e)
+    return render_template('public_profile.html',userInfo=userInfo)
 @app.route('/player/<type>/<id>')
 @app.route('/player2/<type>/<id>')
 @limiter.limit("120 per minute") 
@@ -5582,7 +5906,7 @@ def player(type, id):
             print(subtitles)
 
         if accessed_route == 'player':
-            return render_template('hi.html', video_url=video_url, subtitles=subtitles,userInfo=userInfo,current=current, duration=duration)
+            return render_template('player2.html', video_url=video_url, subtitles=subtitles,userInfo=userInfo,current=current, duration=duration)
         elif accessed_route == 'player2':
             return render_template('player.html', video_url=video_url, subtitles=subtitles,userInfo=userInfo,current=current, duration=duration)
 

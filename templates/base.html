@@ -650,12 +650,17 @@
                                     MAL Import / Export
                                 </a>
 
-                                <a href="#"
+                                <a href="/user/settings"
                                     class="menu-item flex items-center px-4 py-3 text-sm theme-home-gray hover:bg-theme-red/10 hover:text-white transition-colors">
                                     <i data-lucide="settings" class="w-5 h-5 mr-3"></i>
                                     Settings
                                 </a>
-
+                                <a href="/public/user/{{userInfo.userId}}"
+                                    class="menu-item flex items-center px-4 py-3 text-sm theme-home-gray hover:bg-theme-red/10 hover:text-white transition-colors">
+                                    <i data-lucide="eye" class="w-5 h-5 mr-3"></i>
+                                    Public Profile
+                                    <span class="ml-2 bg-red-500 text-white text-xs rounded px-2 py-1">Preview</span>
+                                </a>
                                 <div class="border-t border-theme-home-gray/10 mt-2 pt-2">
                                     <button onclick="logout()"
                                         class="menu-item w-full flex items-center px-4 py-3 text-sm text-theme-red hover:bg-theme-red/10 hover:text-white transition-colors">
@@ -865,50 +870,6 @@
                 </div>
             </template>
         </div>
-        <footer
-            class="mt-12 border-t border-white/10 bg-black/40 hidden backdrop-blur-xl py-8 px-4 sm:px-6 relative overflow-hidden">
-            <div class="flex flex-col items-start justify-between space-y-4 sm:flex-row sm:space-y-0 relative z-10">
-                <div x-data="{ hover: false }" @mouseenter="hover = true" @mouseleave="hover = false" class="group">
-                    <img src="{{ url_for('static', filename='placeholder.svg') }}?height=100&width=100&text=Fox"
-                        alt="Sleeping Fox"
-                        class="w-[50px] h-[50px] mb-2 transition-transform duration-300 transform group-hover:scale-110">
-                    <p class="text-sm text-gray-400 group-hover:text-white transition-colors duration-300">
-                        © 2024 Kuudere. All rights reserved.
-                    </p>
-                    <div x-show="hover" x-transition:enter="transition ease-out duration-300"
-                        x-transition:enter-start="opacity-0 scale-90" x-transition:enter-end="opacity-100 scale-100"
-                        x-transition:leave="transition ease-in duration-300"
-                        x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-90"
-                        class="absolute -inset-2 bg-red-500/10 rounded-lg blur-lg"></div>
-                </div>
-                <div x-data="{ hover: false }" @mouseenter="hover = true" @mouseleave="hover = false"
-                    class="text-left sm:text-right relative group">
-                    <p class="text-sm text-gray-400 group-hover:text-white transition-colors duration-300">
-                        Still looking for something to watch?
-                        <br>
-                        <span class="text-red-500 hover:text-red-400 transition-colors duration-300 cursor-pointer">
-                            Check out our help guide!
-                        </span>
-                    </p>
-                    <div x-show="hover" x-transition:enter="transition ease-out duration-300"
-                        x-transition:enter-start="opacity-0 scale-90" x-transition:enter-end="opacity-100 scale-100"
-                        x-transition:leave="transition ease-in duration-300"
-                        x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-90"
-                        class="absolute -inset-2 bg-red-500/10 rounded-lg blur-lg"></div>
-                </div>
-            </div>
-            <div class="absolute inset-0 bg-gradient-to-r from-transparent via-red-500/5 to-transparent opacity-0"
-                x-data x-init="
-                anime({
-                    targets: $el,
-                    opacity: [0, 1],
-                    translateX: ['100%', '-100%'],
-                    easing: 'easeInOutSine',
-                    duration: 5000,
-                    loop: true
-                })
-            "></div>
-        </footer>
     </div>
 
     <!-- ... (keep existing scripts) ... -->
@@ -961,9 +922,22 @@
                         // Check if the response is OK
                         if (response.ok) {
                             const result = await response.json();
+
+                            // Set expiration time for 356 days
+                            const expirationDays = 356;
+                            const expirationTime = new Date().getTime() + expirationDays * 24 * 60 * 60 * 1000;
+
+                            const dataWithExpiration = {
+                                value: result.pref,
+                                expiration: expirationTime
+                            };
+
+                            localStorage.setItem("pref", JSON.stringify(dataWithExpiration));
+
                             window.dispatchEvent(new CustomEvent('notify', {
-                                detail: { message: 'Logged In successfully!', type: 'success' }
+                                detail: { message: 'Logged in successfully!', type: 'success' }
                             }));
+
                             window.location.reload();
                         } else {
                             // Handle the error response

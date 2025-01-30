@@ -47,3 +47,22 @@
  - Mark All As read Not working in notifications
  - UI is laggy & Causes High Ram Usage on firefox Based Browsers(Unknown Reason)
 
+## [0.9.3] - 2025-01-30
+### Added
+- Public Profile Page(Preview)
+- Improved Continue Watching
+- Skip Intro & Outro
+- Auto Next
+- Auto Play
+- Footer
+- Settings In Profile
+- Notifications In Profile
+- Reworked backend For Faster Episode Delivery
+
+
+### Known Issues
+ - Comments Not highlighted when come through notification
+ - Imports/Exports & sync Not working(Will Be added after completing library)
+ - Can't change/add profile picture
+ - Mark All As read Not working in notifications
+ - UI is laggy & Causes High Ram Usage on firefox Based Browsers(Unknown Reason)

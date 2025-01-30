@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anime Info Sync</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#FF0000',
+                        secondary: '#000000',
+                        accent: '#FFFFFF',
+                    }
+                }
+            }
+        }
+    </script>
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+</head>
+<body class="bg-secondary text-accent" x-data="animeData()">
+    <div class="container mx-auto p-4">
+        <!-- Banner -->
+        <div class="relative h-[50vh] overflow-hidden mb-4 rounded-lg shadow-lg" id="banner">
+            <img :src="bannerImage" alt="Banner" class="w-full h-full object-cover">
+            <div class="absolute inset-0 bg-gradient-to-t from-secondary to-transparent"></div>
+        </div>
+
+        <div class="flex flex-col md:flex-row gap-4">
+            <!-- Left side - Cover Image and Anime Info -->
+            <div class="md:w-1/3">
+                <img :src="coverImage" alt="Cover Image" class="w-full lg:w-[230px] h-auto rounded-lg shadow-lg mb-4" id="coverImage">
+                <div class="bg-secondary/80 p-4 rounded-lg shadow border border-primary/20">
+                    <h2 class="text-2xl font-bold mb-2 text-primary" x-text="title"></h2>
+                    <p class="text-accent/80 mb-2" x-text="description"></p>
+                    <div class="mb-2">
+                        <strong class="text-primary">Genres:</strong>
+                        <span x-text="genres.join(', ')" class="text-accent/80"></span>
+                    </div>
+                    <div class="mb-2">
+                        <strong class="text-primary">Episodes:</strong>
+                        <span x-text="episodes" class="text-accent/80"></span>
+                    </div>
+                    <div class="mb-2">
+                        <strong class="text-primary">Status:</strong>
+                        <span x-text="status" class="text-accent/80"></span>
+                    </div>
+                    <div class="mb-2">
+                        <strong class="text-primary">Average Score:</strong>
+                        <span x-text="averageScore + '%'" class="text-accent/80"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right side - Input Fields -->
+            <div class="md:w-2/3">
+                <div class="bg-secondary/80 p-4 rounded-lg shadow border border-primary/20">
+                    <div class="mb-4">
+                        <label for="anilistId" class="block text-sm font-medium text-primary">AniList Anime ID</label>
+                        <div class="mt-1 flex rounded-md shadow-sm">
+                            <input type="text" name="anilistId" id="anilistId" x-model="anilistId" 
+                                class="flex-1 min-w-0 block w-full px-3 py-2 rounded-l-md border border-primary/20 bg-secondary text-accent focus:ring-primary focus:border-primary sm:text-sm" 
+                                placeholder="Enter AniList Anime ID">
+                            <button @click="syncAniList" 
+                                class="inline-flex items-center px-3 py-2 border border-l-0 border-primary bg-primary/10 text-primary hover:bg-primary/20 rounded-r-md">
+                                Sync
+                            </button>
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label for="myanimelistId" class="block text-sm font-medium text-primary">MyAnimeList ID</label>
+                        <input type="text" name="myanimelistId" id="myanimelistId" x-model="myanimelistId" 
+                            class="mt-1 block w-full px-3 py-2 rounded-md border border-primary/20 bg-secondary text-accent focus:ring-primary focus:border-primary sm:text-sm" 
+                            placeholder="Enter MyAnimeList ID">
+                    </div>
+
+                    <!-- Insert Section -->
+                    <div class="mt-4">
+                        <button @click="toggleInsertSection" 
+                            class="w-full px-4 py-2 bg-primary text-accent rounded-md hover:bg-primary/80 transition-colors">
+                            Insert Section
+                        </button>
+
+                        <div x-show="showInsertSection" class="mt-4 space-y-4">
+                            <template x-for="(entry, index) in entries" :key="index">
+                                <div class="p-4 border border-primary/20 rounded-md">
+                                    <div class="mb-4">
+                                        <label class="block text-sm font-medium text-primary">Episode Number</label>
+                                        <input type="number" x-model="entry.episode" 
+                                            class="mt-1 block w-full px-3 py-2 rounded-md border border-primary/20 bg-secondary text-accent focus:ring-primary focus:border-primary sm:text-sm">
+                                    </div>
+                                    <div class="mb-4">
+                                        <label class="block text-sm font-medium text-primary">Magnet Link</label>
+                                        <input type="text" x-model="entry.magnetLink" 
+                                            class="mt-1 block w-full px-3 py-2 rounded-md border border-primary/20 bg-secondary text-accent focus:ring-primary focus:border-primary sm:text-sm">
+                                    </div>
+                                    <button @click="removeEntry(index)" 
+                                        class="px-3 py-1 bg-red-500/20 text-red-500 rounded-md hover:bg-red-500/30">
+                                        Remove
+                                    </button>
+                                </div>
+                            </template>
+
+                            <div class="flex justify-between">
+                                <button @click="addEntry" 
+                                    class="px-4 py-2 bg-primary/20 text-primary rounded-md hover:bg-primary/30">
+                                    Add Another Entry
+                                </button>
+                                <button @click="addToSystem" 
+                                    class="px-4 py-2 bg-primary text-accent rounded-md hover:bg-primary/80"
+                                    x-show="entries.length > 0">
+                                    Add to System
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<!-- ... (previous HTML remains the same until the script section) ... -->
+
+<script>
+    function animeData() {
+        return {
+            anilistId: '',
+            myanimelistId: '',
+            title: '',  // Changed to empty string to help with verification
+            description: '',
+            genres: [],
+            episodes: 0,
+            status: 'Unknown',
+            averageScore: 0,
+            coverImage: 'https://via.placeholder.com/400x600',
+            bannerImage: 'https://via.placeholder.com/1200x300',
+            showInsertSection: false,
+            entries: [],
+            isAnimeFetched: false,  // New flag to track if anime data was fetched
+            
+            toggleInsertSection() {
+                if (!this.isAnimeFetched) {
+                    alert('Please fetch anime data using AniList ID first');
+                    return;
+                }
+                this.showInsertSection = !this.showInsertSection;
+                if (this.showInsertSection && this.entries.length === 0) {
+                    this.addEntry();
+                }
+            },
+            
+            addEntry() {
+                this.entries.push({
+                    episode: '',
+                    magnetLink: ''
+                });
+            },
+            
+            removeEntry(index) {
+                this.entries.splice(index, 1);
+            },
+            
+            async addToSystem() {
+                if (!this.isAnimeFetched) {
+                    alert('Please fetch anime data first');
+                    return;
+                }
+
+                // Validate entries
+                const validEntries = this.entries.every(entry => 
+                    entry.episode && entry.magnetLink
+                );
+
+                if (!validEntries) {
+                    alert('Please fill in all fields for each entry');
+                    return;
+                }
+
+                // Prepare data for submission
+                const submissionData = {
+                    anime: {
+                        anilistId: this.anilistId,
+                        myanimelistId: this.myanimelistId,
+                        title: this.title,
+                        description: this.description,
+                        genres: this.genres,
+                        episodes: this.episodes,
+                        status: this.status,
+                        averageScore: this.averageScore,
+                        coverImage: this.coverImage,
+                        bannerImage: this.bannerImage
+                    },
+                    entries: this.entries
+                };
+
+                try {
+                    const response = await fetch('/submit_anime', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(submissionData)
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+
+                    const result = await response.json();
+                    if (result.success) {
+                        // Reset the form
+                        this.entries = [];
+                        this.showInsertSection = false;
+                        alert('Successfully added to system!');
+                    } else {
+                        alert(result.message || 'Failed to add to system');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('Failed to add to system. Please try again.');
+                }
+            },
+            
+            async syncAniList() {
+                if (!this.anilistId) {
+                    alert('Please enter an AniList Anime ID');
+                    return;
+                }
+                try {
+                    const response = await fetch(`/sync_anilist/${this.anilistId}`);
+                    const data = await response.json();
+                    
+                    if (!response.ok) {
+                        throw new Error(data.error || 'Failed to fetch anime data');
+                    }
+
+                    this.title = data.title;
+                    this.description = data.description;
+                    this.genres = data.genres;
+                    this.episodes = data.episodes;
+                    this.status = data.status;
+                    this.averageScore = data.averageScore;
+                    this.coverImage = data.coverImage;
+                    this.bannerImage = data.bannerImage;
+                    this.isAnimeFetched = true;  // Set flag when data is successfully fetched
+                    this.animateUpdate();
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('Failed to sync AniList data');
+                    this.isAnimeFetched = false;
+                }
+            },
+            
+            animateUpdate() {
+                anime({
+                    targets: ['#coverImage', '#banner'],
+                    opacity: [0, 1],
+                    scale: [0.9, 1],
+                    duration: 1000,
+                    easing: 'easeOutElastic(1, .8)'
+                });
+            }
+        }
+    }
+</script>

@@ -1,0 +1,47 @@
+<footer
+            class="mt-12 border-t border-white/10 bg-black/40 backdrop-blur-xl py-8 px-4 sm:px-6 relative overflow-hidden">
+            <div class="flex flex-col items-start justify-between space-y-4 sm:flex-row sm:space-y-0 relative z-10">
+                <div x-data="{ hover: false }" @mouseenter="hover = true" @mouseleave="hover = false" class="group">
+                    <img src="{{ url_for('static', filename='logo.png') }}"
+                        alt="Sleeping Fox"
+                        class="h-6 mb-2">
+                    <p class="text-sm text-gray-400 group-hover:text-white transition-colors duration-300">
+                        © 2025 Kuudere. All rights reserved.
+                    </p>
+                    <p class="text-sm text-gray-400 group-hover:text-white transition-colors duration-300">
+                        We does not store any files on our server, we only linked to the media which is hosted on 3rd party services.
+                    </p>
+                    <div x-show="hover" x-transition:enter="transition ease-out duration-300"
+                        x-transition:enter-start="opacity-0 scale-90" x-transition:enter-end="opacity-100 scale-100"
+                        x-transition:leave="transition ease-in duration-300"
+                        x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-90"
+                        class="absolute -inset-2 bg-red-500/10 rounded-lg blur-lg"></div>
+                </div>
+                <div x-data="{ hover: false }" @mouseenter="hover = true" @mouseleave="hover = false"
+                    class="text-left sm:text-right relative group">
+                    <p class="text-sm text-gray-400 group-hover:text-white transition-colors duration-300">
+                        Still looking for something to watch?
+                        <br>
+                        <span class="text-red-500 hover:text-red-400 transition-colors duration-300 cursor-pointer">
+                            Check out our search page!
+                        </span>
+                    </p>
+                    <div x-show="hover" x-transition:enter="transition ease-out duration-300"
+                        x-transition:enter-start="opacity-0 scale-90" x-transition:enter-end="opacity-100 scale-100"
+                        x-transition:leave="transition ease-in duration-300"
+                        x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-90"
+                        class="absolute -inset-2 bg-red-500/10 rounded-lg blur-lg"></div>
+                </div>
+            </div>
+            <div class="absolute inset-0 bg-gradient-to-r from-transparent via-red-500/5 to-transparent opacity-0"
+                x-data x-init="
+                anime({
+                    targets: $el,
+                    opacity: [0, 1],
+                    translateX: ['100%', '-100%'],
+                    easing: 'easeInOutSine',
+                    duration: 5000,
+                    loop: true
+                })
+            "></div>
+        </footer>

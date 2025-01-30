@@ -4,9 +4,166 @@
     [x-cloak] {
         display: none !important;
     }
+
+    .custom-radio {
+        position: relative;
+        padding-left: 28px;
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .custom-radio input {
+        position: absolute;
+        opacity: 0;
+        cursor: pointer;
+        height: 0;
+        width: 0;
+    }
+
+    .radio-checkmark {
+        position: absolute;
+        top: 0;
+        left: 0;
+        height: 20px;
+        width: 20px;
+        background-color: transparent;
+        border: 2px solid #4a4b5e;
+        border-radius: 50%;
+        transition: all 0.2s ease;
+    }
+
+    .custom-radio:hover input~.radio-checkmark {
+        border-color: #ff3333;
+    }
+
+    .custom-radio input:checked~.radio-checkmark {
+        border-color: #ff3333;
+    }
+
+    .radio-checkmark:after {
+        content: "";
+        position: absolute;
+        display: none;
+        top: 3px;
+        left: 3px;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: #ff3333;
+        transition: all 0.2s ease;
+    }
+
+    .custom-radio input:checked~.radio-checkmark:after {
+        display: block;
+    }
+
+    .custom-checkbox {
+        position: relative;
+        padding-left: 28px;
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .custom-checkbox input {
+        position: absolute;
+        opacity: 0;
+        cursor: pointer;
+        height: 0;
+        width: 0;
+    }
+
+    .checkbox-checkmark {
+        position: absolute;
+        top: 0;
+        left: 0;
+        height: 20px;
+        width: 20px;
+        background-color: transparent;
+        border: 2px solid #4a4b5e;
+        border-radius: 4px;
+        transition: all 0.2s ease;
+    }
+
+    .custom-checkbox:hover input~.checkbox-checkmark {
+        border-color: #ff3333;
+    }
+
+    .custom-checkbox input:checked~.checkbox-checkmark {
+        background-color: #ff3333;
+        border-color: #ff3333;
+    }
+
+    .checkbox-checkmark:after {
+        content: "";
+        position: absolute;
+        display: none;
+        left: 6px;
+        top: 2px;
+        width: 5px;
+        height: 10px;
+        border: solid white;
+        border-width: 0 2px 2px 0;
+        transform: rotate(45deg);
+    }
+
+    .custom-checkbox input:checked~.checkbox-checkmark:after {
+        display: block;
+    }
+
+    /* Updated Switch Styles */
+    .switch {
+        width: 48px;
+        height: 24px;
+        position: relative;
+        cursor: pointer;
+    }
+
+    .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .switch-track {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #4a4b5e;
+        transition: 0.3s;
+        border-radius: 34px;
+    }
+
+    .switch-thumb {
+        position: absolute;
+        content: "";
+        height: 20px;
+        width: 20px;
+        left: 2px;
+        bottom: 2px;
+        background-color: white;
+        transition: transform 0.3s ease-in-out;
+        border-radius: 50%;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    input:checked+.switch-track {
+        background-color: #ff3333;
+    }
+
+    input:checked+.switch-track .switch-thumb {
+        transform: translateX(24px);
+    }
+
+    input:focus+.switch-track {
+        box-shadow: 0 0 1px #ff3333;
+    }
 </style>
 <div class="bg-gradient-to-br from-[#000000] to-gray-900 text-gray-200 min-h-screen">
-    <div x-data="{ ...animeApp(), ...joinRealtime() }" x-init="{ ...initializeApp(), ...initializeSocket() }" x-cloak class="font-sans">
+    <div x-data="{ ...animeApp(), ...joinRealtime() }" x-init="{ ...initializeApp(), ...initializeSocket() }" x-cloak
+        class="font-sans">
         <!-- Header -->
         <header
             class="sticky top-0 w-full z-40 px-4 sm:px-6 py-4 glass bg-white bg-opacity-5 backdrop-filter backdrop-blur-md">
@@ -149,96 +306,101 @@
 
                 <!-- Continue Watching Tab -->
                 <div x-show="activeTab === 'continue-watching'" class="tab-content"
-                :class="{'active': activeTab === 'continue-watching'}">
-                <div x-show="loadingContinueWatching" class="flex justify-center items-center h-64">
-                    <div class="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-[#DC143C]"></div>
-                </div>
-                <div x-show="!loadingContinueWatching" class="space-y-8">
-                    <h2 class="text-3xl font-bold mb-8 text-[#DC143C]">Continue Watching</h2>
-                    
-                    <!-- Empty Continue Watching Message -->
-                    <div x-show="!continueWatching.data || continueWatching.data.length === 0" class="flex flex-col items-center justify-center h-64">
-                        <svg class="w-16 h-16 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                        <p class="text-gray-400 text-xl font-medium">Nothing here</p>
-                        <p class="text-gray-500 mt-2">You haven't started watching any anime yet</p>
+                    :class="{'active': activeTab === 'continue-watching'}">
+                    <div x-show="loadingContinueWatching" class="flex justify-center items-center h-64">
+                        <div class="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-[#DC143C]"></div>
                     </div>
+                    <div x-show="!loadingContinueWatching" class="space-y-8">
+                        <h2 class="text-3xl font-bold mb-8 text-[#DC143C]">Continue Watching</h2>
 
-                    <div x-show="continueWatching.data && continueWatching.data.length > 0" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                        <template x-for="item in continueWatching.data">
-                            <a x-bind:href="item.link" class="swiper-slide">
-                                <div class="relative group cursor-pointer" @mouseenter="item.hover = true"
-                                    @mouseleave="item.hover = false">
-                                    <div class="relative overflow-hidden rounded-md">
-                                        <img :src="item.thumbnail"
-                                            class="w-full aspect-video object-cover rounded-md transform transition-transform duration-300 group-hover:scale-105"
-                                            :alt="item.title">
+                        <!-- Empty Continue Watching Message -->
+                        <div x-show="!continueWatching.data || continueWatching.data.length === 0"
+                            class="flex flex-col items-center justify-center h-64">
+                            <svg class="w-16 h-16 text-gray-400 mb-4" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z">
+                                </path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <p class="text-gray-400 text-xl font-medium">Nothing here</p>
+                            <p class="text-gray-500 mt-2">You haven't started watching any anime yet</p>
+                        </div>
 
-                                        <!-- Play Button -->
-                                        <div
-                                            class="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-                                            <button class="bg-white p-2 rounded-full shadow-md hover:bg-gray-100">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-800"
-                                                    fill="currentColor" viewBox="0 0 24 24">
-                                                    <path d="M8 5v14l11-7z" />
+                        <div x-show="continueWatching.data && continueWatching.data.length > 0"
+                            class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                            <template x-for="item in continueWatching.data">
+                                <a x-bind:href="item.link" class="swiper-slide">
+                                    <div class="relative group cursor-pointer" @mouseenter="item.hover = true"
+                                        @mouseleave="item.hover = false">
+                                        <div class="relative overflow-hidden rounded-md">
+                                            <img :src="item.thumbnail"
+                                                class="w-full aspect-video object-cover rounded-md transform transition-transform duration-300 group-hover:scale-105"
+                                                :alt="item.title">
+
+                                            <!-- Play Button -->
+                                            <div
+                                                class="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                                                <button class="bg-white p-2 rounded-full shadow-md hover:bg-gray-100">
+                                                    <svg xmlns="http://www.w3.org/2000/svg"
+                                                        class="h-6 w-6 text-gray-800" fill="currentColor"
+                                                        viewBox="0 0 24 24">
+                                                        <path d="M8 5v14l11-7z" />
+                                                    </svg>
+                                                </button>
+                                            </div>
+
+                                            <!-- Delete Icon -->
+                                            <button
+                                                class="absolute top-2 right-2 bg-black/70 hover:text-white p-2 rounded-md opacity-0 transition-opacity duration-300 group-hover:opacity-100 hover:bg-black">
+                                                <svg xmlns="http://www.w3.org/2000/svg"
+                                                    class="h-4 w-4 text-black hover:text-white" fill="none"
+                                                    viewBox="0 0 24 24" stroke="white" stroke-width="2">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        d="M6 18L18 6M6 6l12 12" />
                                                 </svg>
                                             </button>
-                                        </div>
 
-                                        <!-- Delete Icon -->
-                                        <button
-                                            class="absolute top-2 right-2 bg-black/70 hover:text-white p-2 rounded-md opacity-0 transition-opacity duration-300 group-hover:opacity-100 hover:bg-black">
-                                            <svg xmlns="http://www.w3.org/2000/svg"
-                                                class="h-4 w-4 text-black hover:text-white" fill="none"
-                                                viewBox="0 0 24 24" stroke="white" stroke-width="2">
-                                                <path stroke-linecap="round" stroke-linejoin="round"
-                                                    d="M6 18L18 6M6 6l12 12" />
-                                            </svg>
-                                        </button>
-
-                                        <div class="absolute top-2 left-2 bg-black/70 px-2 py-1 rounded text-sm">
-                                            EP <span x-text="item.episode"></span>
-                                        </div>
-                                        <div class="absolute bottom-0 left-0 right-0 h-1 bg-gray-600">
-                                            <div class="h-full bg-red-600"
-                                                :style="`width: ${(parseInt(item.progress) / parseInt(item.duration)) * 100}%`">
+                                            <div class="absolute top-2 left-2 bg-black/70 px-2 py-1 rounded text-sm">
+                                                EP <span x-text="item.episode"></span>
+                                            </div>
+                                            <div class="absolute bottom-0 left-0 right-0 h-1 bg-gray-600">
+                                                <div class="h-full bg-red-600"
+                                                    :style="`width: ${(parseInt(item.progress) / parseInt(item.duration)) * 100}%`">
+                                                </div>
+                                            </div>
+                                            <div
+                                                class="absolute bottom-2 right-2 bg-black/70 px-2 py-1 rounded text-sm">
+                                                <span x-text="item.progress"></span>/<span
+                                                    x-text="item.duration"></span>
                                             </div>
                                         </div>
-                                        <div class="absolute bottom-2 right-2 bg-black/70 px-2 py-1 rounded text-sm">
-                                            <span x-text="item.progress"></span>/<span x-text="item.duration"></span>
-                                        </div>
+                                        <h3 class="mt-2 text-sm font-medium truncate" x-text="item.title"></h3>
                                     </div>
-                                    <h3 class="mt-2 text-sm font-medium truncate" x-text="item.title"></h3>
-                                </div>
-                            </a>
-                        </template>
+                                </a>
+                            </template>
+                        </div>
+                        <div x-show="continueWatching.data && continueWatching.data.length > 0"
+                            class="flex justify-center mt-8">
+                            <template x-for="page in continueWatching.total_pages">
+                                <button @click="loadContinueWatching(page)"
+                                    :class="{'bg-[#DC143C]': continueWatching.current_page === page}"
+                                    class="mx-1 px-3 py-1 rounded bg-gray-700 hover:bg-[#DC143C] transition-colors duration-300"
+                                    x-text="page"></button>
+                            </template>
+                        </div>
                     </div>
-                    <div x-show="continueWatching.data && continueWatching.data.length > 0" class="flex justify-center mt-8">
-                        <template x-for="page in continueWatching.total_pages">
-                            <button @click="loadContinueWatching(page)"
-                                :class="{'bg-[#DC143C]': continueWatching.current_page === page}"
-                                class="mx-1 px-3 py-1 rounded bg-gray-700 hover:bg-[#DC143C] transition-colors duration-300"
-                                x-text="page"></button>
-                        </template>
-                    </div>
-                </div>
                 </div>
 
-                <div x-show="activeTab === 'watchlist'" class="tab-content  text-gray-100" :class="{'active': activeTab === 'watchlist'}" x-data="{
+                <div x-show="activeTab === 'watchlist'" class="tab-content text-gray-100"
+                    :class="{'active': activeTab === 'watchlist'}" x-data="{
                     loading: false,
                     async updateStatus(animeId, folder, status) {
                         this.loading = true;
                         try {
                             await fetch(`/add-to-watchlist/${folder}/${animeId}`, {
                                 method: 'GET',
-                            });
-                            anime({
-                                targets: `#status-${animeId}`,
-                                scale: [1, 1.2, 1],
-                                duration: 600,
-                                easing: 'easeInOutQuad'
                             });
                         } catch (error) {
                             console.error('Error updating status:', error);
@@ -254,16 +416,18 @@
                         <div class="flex justify-between items-center mb-8">
                             <div class="flex items-center gap-3">
                                 <svg class="w-8 h-8 text-[#DC143C]" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+                                    <path
+                                        d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
                                 </svg>
                                 <h2 class="text-3xl sm:text-4xl font-bold text-white tracking-tight">Watch List</h2>
                             </div>
                             <div class="flex items-center gap-2">
                                 <span class="text-sm text-gray-400">Public</span>
-                                <button class="bg-[#DC143C] hover:bg-[#B01030] transition-colors duration-300 rounded-full px-4 py-1.5 text-sm font-medium text-white shadow-lg">ON</button>
+                                <button
+                                    class="bg-[#DC143C] hover:bg-[#B01030] transition-colors duration-300 rounded-full px-4 py-1.5 text-sm font-medium text-white shadow-lg">ON</button>
                             </div>
                         </div>
-                
+
                         <!-- Filter Tabs -->
                         <div class="flex flex-wrap gap-2 mb-8">
                             <template x-for="[status, label] in [
@@ -275,36 +439,48 @@
                                 ['Completed', 'Completed']
                             ]">
                                 <button @click="watchlistTab = status; loadWatchlist(1, status)"
-                                    class="px-4 py-2 rounded-md text-sm font-medium transition-all duration-300 shadow-md"
-                                    :class="{'bg-[#DC143C] text-white ring-2 ring-offset-2 ring-offset-gray-900 ring-[#DC143C]': watchlistTab === status, 'bg-gray-800 text-gray-300 hover:bg-[#DC143C] hover:text-white': watchlistTab !== status}">
+                                    class="px-4 py-2 rounded-md text-sm font-medium transition-colors duration-300 shadow-md"
+                                    :class="{'bg-[#DC143C] text-white': watchlistTab === status, 'bg-gray-800 text-gray-300 hover:bg-[#DC143C] hover:text-white': watchlistTab !== status}">
                                     <span x-text="label"></span>
                                 </button>
                             </template>
                         </div>
-                
+
                         <!-- Empty Watchlist Message -->
-                        <div x-show="!loadingWatchlist && (!watchlist.data || watchlist.data.length === 0)" class="flex flex-col items-center justify-center h-64 rounded-lg shadow-xl">
-                            <svg class="w-20 h-20 text-gray-600 mb-4 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        <div x-show="!loadingWatchlist && (!watchlist.data || watchlist.data.length === 0)"
+                            class="flex flex-col items-center justify-center h-64 rounded-lg shadow-xl">
+                            <svg class="w-20 h-20 text-gray-600 mb-4 animate-pulse" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z">
+                                </path>
                             </svg>
                             <p class="text-gray-300 text-2xl font-bold mb-2">Nothing here</p>
                             <p class="text-gray-500 text-lg">Your watchlist is empty</p>
                         </div>
-                
+
                         <!-- Anime Grid -->
-                        <div x-show="watchlist.data && watchlist.data.length > 0" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+                        <div x-show="watchlist.data && watchlist.data.length > 0"
+                            class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
                             <template x-for="(anime, index) in watchlist.data">
                                 <div class="anime-card relative aspect-[3/4] overflow-visible rounded-md"
-                                    @mouseenter="$store.animeData.hoveredCard = index"
-                                    @mouseleave="$store.animeData.hoveredCard = null"
                                     @click="window.location.href=anime.url">
-                                    <div class="relative h-full w-full overflow-hidden rounded-md transition-transform duration-300 ease-in-out hover:scale-105">
+                                    <div
+                                        class="relative h-full w-full overflow-hidden rounded-md transition-transform duration-300 ease-in-out hover:scale-105">
                                         <img :src="anime.image" :alt="anime.title" class="w-full h-full object-cover">
-                                        <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent"></div>
+                                        <div
+                                            class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent">
+                                        </div>
                                         <div class="absolute left-2 top-2 flex flex-wrap gap-1">
-                                            <span class="bg-black/50 backdrop-blur-sm text-white text-[10px] uppercase px-2 py-1 rounded-full" x-text="anime.type"></span>
-                                            <span class="bg-black/50 backdrop-blur-sm text-white text-[10px] uppercase px-2 py-1 rounded-full flex items-center">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1 text-yellow-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <span
+                                                class="bg-black/50 backdrop-blur-sm text-white text-[10px] uppercase px-2 py-1 rounded-full"
+                                                x-text="anime.type"></span>
+                                            <span
+                                                class="bg-black/50 backdrop-blur-sm text-white text-[10px] uppercase px-2 py-1 rounded-full flex items-center">
+                                                <svg xmlns="http://www.w3.org/2000/svg"
+                                                    class="h-3 w-3 mr-1 text-yellow-400" viewBox="0 0 24 24" fill="none"
+                                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                                    stroke-linejoin="round">
                                                     <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect>
                                                     <line x1="7" y1="2" x2="7" y2="22"></line>
                                                     <line x1="17" y1="2" x2="17" y2="22"></line>
@@ -316,9 +492,14 @@
                                                 </svg>
                                                 <span x-text="anime.subbed"></span>
                                             </span>
-                                            <span class="bg-black/50 backdrop-blur-sm text-white text-[10px] uppercase px-2 py-1 rounded-full flex items-center">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1 text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                                            <span
+                                                class="bg-black/50 backdrop-blur-sm text-white text-[10px] uppercase px-2 py-1 rounded-full flex items-center">
+                                                <svg xmlns="http://www.w3.org/2000/svg"
+                                                    class="h-3 w-3 mr-1 text-blue-400" viewBox="0 0 24 24" fill="none"
+                                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                                    stroke-linejoin="round">
+                                                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z">
+                                                    </path>
                                                     <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
                                                     <line x1="12" y1="19" x2="12" y2="23"></line>
                                                     <line x1="8" y1="23" x2="16" y2="23"></line>
@@ -327,30 +508,31 @@
                                             </span>
                                         </div>
                                         <div class="absolute bottom-2 left-2 right-2">
-                                            <h3 class="text-sm font-medium text-white line-clamp-2" x-text="anime.title"></h3>
-                                            <p class="mt-1 text-xs text-gray-300" x-text="'Episodes ' + anime.subbed"></p>
+                                            <h3 class="text-sm font-medium text-white line-clamp-2"
+                                                x-text="anime.title"></h3>
+                                            <p class="mt-1 text-xs text-gray-300" x-text="'Episodes ' + anime.subbed">
+                                            </p>
                                         </div>
                                     </div>
-                                    <!-- Updated Dropdown Menu -->
-                                    <div class="absolute top-2 right-2 z-10" x-data="{ open: false }" @click.outside="open = false">
-                                        <button @click.stop="open = !open" 
-                                                class="p-1 rounded-full bg-black/50 backdrop-blur-sm hover:bg-[#DC143C]/70 transition-colors duration-200">
-                                            <svg xmlns="http://www.w3.org/2000/svg" 
-                                                class="h-5 w-5 text-white" 
-                                                viewBox="0 0 20 20" 
-                                                fill="currentColor">
-                                                <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z" />
+                                    <!-- Updated Professional Dropdown Menu -->
+                                    <div class="absolute top-2 right-2 z-10" x-data="{ open: false }">
+                                        <button @click.stop="open = !open"
+                                            class="p-1.5 rounded-full bg-black/50 backdrop-blur-sm hover:bg-[#DC143C]/70 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-[#DC143C]">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white"
+                                                viewBox="0 0 20 20" fill="currentColor">
+                                                <path
+                                                    d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z" />
                                             </svg>
                                         </button>
-                
-                                        <div x-show="open" 
-                                            x-transition:enter="transition ease-out duration-200" 
-                                            x-transition:enter-start="opacity-0 scale-95" 
-                                            x-transition:enter-end="opacity-100 scale-100" 
-                                            x-transition:leave="transition ease-in duration-150" 
-                                            x-transition:leave-start="opacity-100 scale-100" 
-                                            x-transition:leave-end="opacity-0 scale-95" 
-                                            class="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-gray-800 ring-1 ring-black ring-opacity-5 divide-y divide-gray-700">
+
+                                        <div x-show="open" @click.away="open = false"
+                                            x-transition:enter="transition ease-out duration-200"
+                                            x-transition:enter-start="opacity-0 scale-95"
+                                            x-transition:enter-end="opacity-100 scale-100"
+                                            x-transition:leave="transition ease-in duration-150"
+                                            x-transition:leave-start="opacity-100 scale-100"
+                                            x-transition:leave-end="opacity-0 scale-95"
+                                            class="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-gray-800 ring-1 ring-black ring-opacity-5 divide-y divide-gray-700 focus:outline-none">
                                             <div class="py-1">
                                                 <template x-for="(status, folder) in {
                                                     'Watching': 'watching',
@@ -359,29 +541,19 @@
                                                     'Dropped': 'dropped',
                                                     'Completed': 'completed'
                                                 }">
-                                                    <button 
-                                                        :id="'status-' + anime.id"
-                                                        @click.stop="updateStatus(anime.id, folder, status)"
+                                                    <button
+                                                        @click.stop="updateStatus(anime.id, folder, status); open = false"
                                                         :disabled="loading"
-                                                        class="group flex w-full items-center px-4 py-2 text-sm text-gray-300 hover:bg-[#DC143C] hover:text-white relative"
-                                                    >
-                                                        <!-- Loading spinner -->
-                                                        <div 
-                                                            x-show="loading" 
-                                                            class="absolute left-2 w-4 h-4 border-2 border-t-2 border-gray-600 border-t-[#DC143C] rounded-full animate-spin"
-                                                        ></div>
-                                                        
-                                                        <!-- Status text -->
-                                                        <span 
-                                                            :class="{'pl-7': loading}"
-                                                            x-text="status"
-                                                        ></span>
+                                                        class="group flex w-full items-center px-4 py-2 text-sm text-gray-300 hover:bg-[#DC143C] hover:text-white transition-colors duration-150 focus:bg-[#DC143C] focus:text-white focus:outline-none">
+                                                        <span x-show="loading"
+                                                            class="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-gray-500 border-t-white"></span>
+                                                        <span x-text="status"></span>
                                                     </button>
                                                 </template>
                                             </div>
                                             <div class="py-1">
-                                                <button @click.stop="removeFromWatchlist(anime.id)" 
-                                                    class="group flex w-full items-center px-4 py-2 text-sm text-[#DC143C] hover:bg-[#DC143C] hover:text-white">
+                                                <button @click.stop="removeFromWatchlist(anime.id); open = false"
+                                                    class="flex w-full items-center px-4 py-2 text-sm text-[#DC143C] hover:bg-[#DC143C] hover:text-white transition-colors duration-150 focus:bg-[#DC143C] focus:text-white focus:outline-none">
                                                     Remove
                                                 </button>
                                             </div>
@@ -398,30 +570,46 @@
                                                     <p class="text-xs text-gray-400" x-text="anime.native || ''"></p>
                                                 </div>
                                                 <div class="flex gap-1">
-                                                    <span class="bg-[#DC143C]/20 text-[#DC143C] text-[10px] px-2 py-1 rounded-full">HD</span>
-                                                    <span class="bg-emerald-500/20 text-emerald-500 text-[10px] px-2 py-1 rounded-full" x-text="anime.current"></span>
-                                                    <span class="bg-white/20 text-white text-[10px] px-2 py-1 rounded-full" x-text="anime.type"></span>
+                                                    <span
+                                                        class="bg-[#DC143C]/20 text-[#DC143C] text-[10px] px-2 py-1 rounded-full">HD</span>
+                                                    <span
+                                                        class="bg-emerald-500/20 text-emerald-500 text-[10px] px-2 py-1 rounded-full"
+                                                        x-text="anime.current"></span>
+                                                    <span
+                                                        class="bg-white/20 text-white text-[10px] px-2 py-1 rounded-full"
+                                                        x-text="anime.type"></span>
                                                 </div>
                                             </div>
-                                            <p class="mt-2 text-xs leading-relaxed text-gray-300 line-clamp-2" x-text="anime.description || 'No description available.'"></p>
+                                            <p class="mt-2 text-xs leading-relaxed text-gray-300 line-clamp-2"
+                                                x-text="anime.description || 'No description available.'"></p>
                                             <div class="mt-3 space-y-1 text-xs text-gray-400">
                                                 <p x-text="'Aired: ' + (anime.startDate || 'Unknown')"></p>
                                                 <p x-text="'Status: ' + (anime.folder || 'Unknown')"></p>
-                                                <p x-text="'Genres: ' + (anime.genres ? anime.genres.join(', ') : 'Unknown')"></p>
+                                                <p
+                                                    x-text="'Genres: ' + (anime.genres ? anime.genres.join(', ') : 'Unknown')">
+                                                </p>
                                             </div>
                                             <div class="mt-4 flex items-center gap-2">
                                                 <a :href="'/watch/' + anime.id + '/1'"
                                                     class="flex-1 bg-[#DC143C] hover:bg-[#B01030] px-4 py-2 rounded-md text-sm font-medium flex items-center justify-center text-white transition-colors duration-300">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2"
+                                                        fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2"
+                                                            d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                                     </svg>
                                                     Watch now
                                                 </a>
                                                 <template x-if="anime.total > 0">
-                                                    <button class="bg-gray-700 hover:bg-gray-600 p-2 rounded-md transition-colors duration-300">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                                    <button
+                                                        class="bg-gray-700 hover:bg-gray-600 p-2 rounded-md transition-colors duration-300">
+                                                        <svg xmlns="http://www.w3.org/2000/svg"
+                                                            class="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"
+                                                            stroke="currentColor">
+                                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                                stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                                                         </svg>
                                                     </button>
                                                 </template>
@@ -441,117 +629,271 @@
                         </div>
                     </div>
                 </div>
-                <!-- Notifications Tab -->
+                <!-- Notifications Panel -->
                 <div x-show="activeTab === 'notifications'" class="tab-content"
                     :class="{'active': activeTab === 'notifications'}">
-                    <div x-show="loadingNotifications" class="flex justify-center items-center h-64">
-                        <div class="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-red-600"></div>
+                    <!-- Tab Navigation -->
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-2xl font-bold text-white flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                            </svg>
+                            Notification
+                        </h2>
                     </div>
-                    <div x-show="!loadingNotifications && notifications.data"
-                        class="bg-gray-900/95 rounded-2xl max-w-4xl mx-auto p-6 shadow-lg border border-red-900/30">
-                        <div class="flex justify-between items-center mb-6">
-                            <h2 class="text-2xl font-bold text-white flex items-center gap-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-red-600" fill="none"
-                                    viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                                </svg>
-                                Notifications
-                            </h2>
-                            <div class="flex gap-2">
-                                <button
-                                    class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors duration-300">Mark
-                                    all as read</button>
-                                <button
-                                    class="px-4 py-2 bg-gray-800 text-white rounded hover:bg-gray-700 transition-colors duration-300">Clear
-                                    All</button>
-                            </div>
+
+                    <!-- Notification Type Tabs -->
+                    <div class="flex gap-2 mb-6">
+                        <button @click="notificationType = 'anime'; loadNotifications(1)"
+                            :class="{'bg-red-500': notificationType === 'anime', 'bg-gray-700': notificationType !== 'anime'}"
+                            class="px-4 py-2 rounded-lg text-white transition-colors duration-300">
+                            Anime <span x-show="notifications.unreadCount" class="ml-1">(9+)</span>
+                        </button>
+                        <button @click="notificationType = 'community'; loadNotifications(1)"
+                            :class="{'bg-red-500': notificationType === 'community', 'bg-gray-700': notificationType !== 'community'}"
+                            class="px-4 py-2 rounded-lg text-white transition-colors duration-300">
+                            Community
+                        </button>
+                    </div>
+
+                    <!-- Loading State -->
+                    <div x-show="loadingNotifications" class="flex justify-center items-center h-64">
+                        <div class="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-pink-500"></div>
+                    </div>
+
+                    <!-- Notifications List -->
+                    <div x-show="!loadingNotifications && notifications.notifications" class="space-y-4">
+                        <div class="flex justify-end gap-2 mb-4">
+                            <button @click="markAllAsRead"
+                                class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors duration-300">
+                                ✓ Mark all as read
+                            </button>
+                            <button @click="clearAll"
+                                class="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors duration-300">
+                                🗑 Clear All
+                            </button>
                         </div>
-                        <div class="space-y-4">
-                            <template x-for="notification in notifications.data">
-                                <div
-                                    class="bg-black/40 rounded-lg p-4 hover:bg-black/60 transition-all duration-300 cursor-pointer flex gap-4 border border-red-900/20">
-                                    <img :src="notification.image" alt=""
-                                        class="w-[120px] h-[80px] rounded object-cover">
-                                    <div class="flex flex-col justify-between">
-                                        <h3 x-text="notification.title" class="font-bold text-white/90 text-lg"></h3>
-                                        <div class="flex items-center gap-2">
-                                            <p x-text="notification.time" class="text-sm text-gray-400"></p>
-                                            <a href="#" class="text-sm text-red-500 hover:text-red-400">Click here to
-                                                watch it now</a>
-                                        </div>
+
+                        <template x-for="notification in notifications.notifications" :key="notification.id">
+                            <div
+                                class="bg-gray-800/80 rounded-lg p-4 hover:bg-gray-700/80 transition-all duration-300 flex gap-4 border border-gray-700">
+                                <img :src="notification.image" :alt="notification.message"
+                                    class="w-[80px] h-[120px] rounded-lg object-cover">
+                                <div class="flex flex-col justify-between flex-grow">
+                                    <div>
+                                        <h3 x-text="notification.message" class="text-lg mb-2 font-semibold" :class="{'text-gray-500': notification.isRead, 'text-white font-bold': !notification.isRead}" ></h3>
+                                        <p x-text="notification.time" class="text-sm" :class="{'text-gray-500': notification.isRead, 'text-white font-bold': !notification.isRead}"></p>
                                     </div>
+                                    <a :href="notification.link" class="hover:text-red-400 text-sm font-semibold" :class="{'text-red-800': notification.isRead, 'text-red-500 font-bold': !notification.isRead}">
+                                        <span
+                                            x-text="notificationType === 'anime' ? 'Click here to watch it now.' : 'Click here to view'"></span>
+                                    </a>
                                 </div>
+                            </div>
+                        </template>
+
+                        <!-- Pagination -->
+                        <div class="flex justify-center items-center gap-2 mt-8 px-4 w-full overflow-x-auto">
+                            <!-- First Page -->
+                            <button @click="loadNotifications(1)" 
+                                    :disabled="notifications.page === 1"
+                                    class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-800 text-white hover:bg-pink-500 transition-colors duration-300 disabled:opacity-50 disabled:hover:bg-gray-800">
+                                <span class="sr-only">First Page</span>
+                                «
+                            </button>
+                            
+                            <!-- Previous Page -->
+                            <button @click="loadNotifications(notifications.page - 1)" 
+                                    :disabled="notifications.page === 1"
+                                    class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-800 text-white hover:bg-pink-500 transition-colors duration-300 disabled:opacity-50 disabled:hover:bg-gray-800">
+                                <span class="sr-only">Previous Page</span>
+                                ‹
+                            </button>
+                    
+                            <!-- Page Numbers -->
+                            <template x-for="pageNum in [notifications.page - 1, notifications.page, notifications.page + 1]">
+                                <button x-show="pageNum > 0" 
+                                        @click="loadNotifications(pageNum)"
+                                        :class="{
+                                            'bg-red-500': pageNum === notifications.page,
+                                            'bg-gray-800 hover:bg-red-500': pageNum !== notifications.page
+                                        }"
+                                        class="w-10 h-10 flex items-center justify-center rounded-full text-white transition-colors duration-300">
+                                    <span x-text="pageNum"></span>
+                                </button>
                             </template>
+                    
+                            <!-- Next Page -->
+                            <button @click="loadNotifications(notifications.page + 1)"
+                                    :disabled="!notifications.has_more"
+                                    class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-800 text-white hover:bg-pink-500 transition-colors duration-300 disabled:opacity-50 disabled:hover:bg-gray-800">
+                                <span class="sr-only">Next Page</span>
+                                ›
+                            </button>
+                    
+                            <!-- Last Page -->
+                            <button @click="loadNotifications(Math.ceil(notifications.total / 6))"
+                                    :disabled="!notifications.has_more"
+                                    class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-800 text-white hover:bg-pink-500 transition-colors duration-300 disabled:opacity-50 disabled:hover:bg-gray-800">
+                                <span class="sr-only">Last Page</span>
+                                »
+                            </button>
                         </div>
-                        <div class="flex justify-center mt-8">
-                            <template x-for="page in notifications.total_pages">
-                                <button @click="loadNotifications(page)"
-                                    :class="{'bg-red-600': notifications.current_page === page, 'bg-gray-800': notifications.current_page !== page}"
-                                    class="mx-1 px-3 py-1 rounded hover:bg-red-700 transition-colors duration-300 text-white"
-                                    x-text="page"></button>
-                            </template>
-                        </div>
+                    </div>
+
+                    <!-- Empty State -->
+                    <div x-show="!loadingNotifications && (!notifications.notifications || notifications.notifications.length === 0)"
+                        class="flex flex-col items-center justify-center h-64 text-gray-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mb-4" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                        </svg>
+                        <p class="text-xl">No notifications found</p>
                     </div>
                 </div>
 
                 <!-- Settings Tab -->
                 <div x-show="activeTab === 'settings'" class="tab-content"
                     :class="{'active': activeTab === 'settings'}">
-                    <div
-                        class="glass rounded-2xl max-w-4xl mx-auto p-4 sm:p-8 shadow-lg glass-hover bg-white bg-opacity-5">
-                        <h2 class="text-2xl sm:text-3xl font-bold text-[#DC143C] mb-6">Settings</h2>
-                        <div class="space-y-4">
-                            <template x-for="(value, key) in settings" :key="key">
-                                <div x-show="['autoNext', 'autoPlay', 'autoSkipIntro', 'enableDub', 'playOriginalAudio', 'publicWatchList'].includes(key)"
-                                    class="flex items-center justify-between">
-                                    <label :for="key" class="text-white" x-text="formatSettingName(key)"></label>
-                                    <div
-                                        class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
-                                        <input type="checkbox" :id="key" :name="key" :checked="value"
-                                            @change="updateSetting(key, $event.target.checked)"
-                                            class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer" />
-                                        <label :for="key"
-                                            class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label>
+                    <div class="bg-navy text-white min-h-screen p-8" x-data="{
+                        hasUnsavedChanges: false,
+                        originalSettings: null,
+                        animateSwitch(event) {
+                            const thumb = event.target.nextElementSibling.querySelector('.switch-thumb');
+                            const isChecked = event.target.checked;
+                            
+                            anime({
+                                targets: thumb,
+                                scale: [1, 1.2, 1],
+                                duration: 300,
+                                easing: 'easeInOutQuad',
+                                complete: function() {
+                                    if (isChecked) {
+                                        thumb.style.transform = 'translateX(24px)';
+                                    } else {
+                                        thumb.style.transform = 'translateX(0)';
+                                    }
+                                }
+                            });
+                        }
+                    }">
+                        <div class="max-w-2xl mx-auto space-y-6">
+                            <div class="flex items-center gap-3 mb-8">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z">
+                                    </path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                </svg>
+                                <h1 class="text-2xl font-bold">Settings</h1>
+                            </div>
+
+                            <!-- Toggle Switches -->
+                            <div class="space-y-4">
+                                <div class="flex justify-between items-center">
+                                    <span>Auto Next</span>
+                                    <label class="switch">
+                                        <input type="checkbox" x-model="settingsData.data.autoNext"
+                                            @change="animateSwitch($event)">
+                                        <div class="switch-track">
+                                            <span class="switch-thumb"></span>
+                                        </div>
+                                    </label>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span>Auto Play</span>
+                                    <label class="switch">
+                                        <input type="checkbox" x-model="settingsData.data.autoPlay"
+                                            @change="animateSwitch($event)">
+                                        <div class="switch-track">
+                                            <span class="switch-thumb"></span>
+                                        </div>
+                                    </label>
+                                </div>
+
+                                <div class="flex justify-between items-center">
+                                    <span>Auto Skip Intro</span>
+                                    <label class="switch">
+                                        <input type="checkbox" x-model="settingsData.data.autoSkipIntro"
+                                            @change="animateSwitch($event)">
+                                        <div class="switch-track">
+                                            <span class="switch-thumb"></span>
+                                        </div>
+                                    </label>
+                                </div>
+
+                                <div class="flex justify-between items-center">
+                                    <span>Auto Skip Outro</span>
+                                    <label class="switch">
+                                        <input type="checkbox" x-model="settingsData.data.autoSkipOutro"
+                                            @change="animateSwitch($event)">
+                                        <div class="switch-track">
+                                            <span class="switch-thumb"></span>
+                                        </div>
+                                    </label>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span>Public Watchlist</span>
+                                    <label class="switch">
+                                        <input type="checkbox" x-model="settingsData.data.watchlist"
+                                            @change="animateSwitch($event)">
+                                        <div class="switch-track">
+                                            <span class="switch-thumb"></span>
+                                        </div>
+                                    </label>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span>Default comment for anime</span>
+                                    <div>
+                                        <div class="flex gap-6">
+                                            <label class="custom-radio">
+                                                System
+                                                <input type="radio" name="comment" value="true"
+                                                    x-model="settingsData.data.defaultComments">
+                                                <span class="radio-checkmark"></span>
+                                            </label>
+                                            <label class="custom-radio">
+                                                Diqus
+                                                <input type="radio" name="comment" value="false"
+                                                    x-model="settingsData.data.defaultComments">
+                                                <span class="radio-checkmark"></span>
+                                            </label>
+                                        </div>
                                     </div>
                                 </div>
-                            </template>
-                            <div class="space-y-2">
-                                <label for="animeNameLanguage" class="text-sm font-medium text-gray-400">Anime Name
-                                    Language</label>
-                                <select id="animeNameLanguage" x-model="settings.animeNameLanguage"
-                                    class="w-full bg-white bg-opacity-5 rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-[#DC143C] focus:outline-none">
-                                    <option class="text-[#DC143C]" value="english">English</option>
-                                    <option class="text-[#DC143C]" value="japanese">Japanese</option>
-                                </select>
-                            </div>
-                            <div class="space-y-2">
-                                <label class="text-sm font-medium text-gray-400">Notification Ignore Folders</label>
-                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                    <template x-for="folder in notificationFolders" :key="folder.id">
-                                        <div class="flex items-center space-x-2">
-                                            <input type="checkbox" :id="folder.id" :value="folder.id"
-                                                x-model="settings.notificationIgnoreFolders"
-                                                class="rounded bg-white bg-opacity-5 border-zinc-700 text-[#DC143C] focus:ring-[#DC143C]">
-                                            <label :for="folder.id" class="text-white" x-text="folder.label"></label>
+
+                                <div class="flex justify-between items-center">
+                                    <span>Default language for anime name</span>
+                                    <div>
+                                        <div class="flex gap-6">
+                                            <label class="custom-radio">
+                                                Dub
+                                                <input type="radio" name="language" value="english"
+                                                    x-model="settingsData.data.defaultLang">
+                                                <span class="radio-checkmark"></span>
+                                            </label>
+                                            <label class="custom-radio">
+                                                Sub
+                                                <input type="radio" name="language" value="japanese"
+                                                    x-model="settingsData.data.defaultLang">
+                                                <span class="radio-checkmark"></span>
+                                            </label>
                                         </div>
-                                    </template>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="space-y-2">
-                                <label for="notificationIgnoreLanguage"
-                                    class="text-sm font-medium text-gray-400">Notification Ignore
-                                    Language</label>
-                                <select id="notificationIgnoreLanguage" x-model="settings.notificationIgnoreLanguage"
-                                    class="w-full bg-white bg-opacity-5 rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-[#DC143C] focus:outline-none">
-                                    <option class="text-[#DC143C]" value="none">None</option>
-                                    <option class="text-[#DC143C]" value="sub">SUB</option>
-                                    <option class="text-[#DC143C]" value="dub">DUB</option>
-                                </select>
-                            </div>
-                            <button @click="saveSettings"
-                                class="w-full bg-[#DC143C] bg-opacity-50 hover:bg-opacity-100 text-pink-200 hover:text-white rounded-lg py-3 transition-all duration-300">
-                                Save Settings
+
+                            <!-- Save Button -->
+                            <button id="saveButton" @click="saveSettings()"
+                                :class="{'bg-yellow-600': hasUnsavedChanges && !$savingSettings}"
+                                class="w-full text-white py-3 rounded-lg mt-8 hover:bg-opacity-90 transition-colors"
+                                x-bind:class="{'bg-red-600': !hasUnsavedChanges || savingSettings}">
+                                <span
+                                    x-text="savingSettings ? 'Saving...' : (hasUnsavedChanges ? 'Save Changes' : 'Save Settings')"></span>
                             </button>
                         </div>
                     </div>
@@ -663,16 +1005,28 @@
                 activeTab: 'profile',
                 user: null,
                 watchlistTab: 'All',
-                notificationTab: 'anime',
+                notificationType: 'anime',
                 watchlist: { data: null, total_pages: 1, current_page: 1 },
-                notifications: { data: null, total_pages: 1, current_page: 1 },
+                notifications: { notifications: [], has_more: false, page: 1 },
                 continueWatching: { data: null, total_pages: 1, current_page: 1 },
+                settingsData: {
+                    data: {
+                        autoNext: false,
+                        autoPlay: false,
+                        autoSkipIntro: false,
+                        autoSkipOutro: false,
+                        defaultComments: 'true',
+                        defaultLang: 'english'
+                    }
+                },
                 malStats: null,
                 loadingProfile: false,
                 loadingWatchlist: false,
                 loadingNotifications: false,
                 loadingContinueWatching: false,
+                loadingSettings: false,
                 loadingMAL: false,
+                savingSettings: false,
                 oldPassword: '',
                 newPassword: '',
                 confirmNewPassword: '',
@@ -682,8 +1036,10 @@
                     'continue-watching': 'Continue Watching',
                     'watchlist': 'Watch List',
                     'notifications': 'Notifications',
-                    'mal': 'MAL'
+                    'mal': 'Sync',
+                    'settings': 'Settings'
                 },
+
                 async initializeApp() {
                     const path = window.location.pathname.split('/');
                     if (path[1] === 'user' && path[2]) {
@@ -692,6 +1048,7 @@
                     await this.loadProfile();
                     this.loadTabData(this.activeTab);
                 },
+
                 async loadProfile() {
                     this.loadingProfile = true;
                     try {
@@ -702,6 +1059,7 @@
                     }
                     this.loadingProfile = false;
                 },
+
                 async loadWatchlist(page = 1, status = 'all') {
                     this.loadingWatchlist = true;
                     try {
@@ -712,16 +1070,34 @@
                     }
                     this.loadingWatchlist = false;
                 },
+
                 async loadNotifications(page = 1) {
                     this.loadingNotifications = true;
                     try {
-                        const response = await fetch(`/api/notifications?page=${page}`);
-                        this.notifications = await response.json();
+                        const response = await fetch(`/api/notifications/${this.notificationType}?page=${page}`);
+                        const data = await response.json();
+                        this.notifications = {
+                            ...data,
+                            notifications: data.notifications || []
+                        };
                     } catch (error) {
                         console.error('Error loading notifications:', error);
+                        this.notifications = { notifications: [], has_more: false, page: 1 };
                     }
                     this.loadingNotifications = false;
                 },
+
+                async getNotificationCount() {
+                    try {
+                        const response = await fetch('/api/notifications/count');
+                        const data = await response.json();
+                        return data.total;
+                    } catch (error) {
+                        console.error('Error getting notification count:', error);
+                        return 0;
+                    }
+                },
+
                 async loadContinueWatching(page = 1) {
                     this.loadingContinueWatching = true;
                     try {
@@ -732,6 +1108,22 @@
                     }
                     this.loadingContinueWatching = false;
                 },
+
+                async loadSettings() {
+                    this.loadingSettings = true;
+                    try {
+                        const response = await fetch('/api/settings');
+                        const data = await response.json();
+                        this.settingsData = data;
+                        this.originalSettings = JSON.stringify(data);
+                    } catch (error) {
+                        console.error('Error loading settings:', error);
+                        // Keep default values if loading fails
+                    } finally {
+                        this.loadingSettings = false;
+                    }
+                },
+
                 async loadMALStats() {
                     this.loadingMAL = true;
                     try {
@@ -742,11 +1134,59 @@
                     }
                     this.loadingMAL = false;
                 },
+
+                async saveSettings() {
+                    if (this.savingSettings) return;
+
+                    this.savingSettings = true;
+
+                    try {
+                        const response = await fetch('/api/save/settings', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify(this.settingsData.data)
+                        });
+
+                        if (!response.ok) {
+                            throw new Error('Failed to save settings');
+                        }
+
+                        const data = await response.json();
+                        this.originalSettings = JSON.stringify(this.settingsData.data);
+                        this.hasUnsavedChanges = false;
+
+                        // Set expiration time for 356 days
+                        const expirationDays = 356;
+                        const expirationTime = new Date().getTime() + expirationDays * 24 * 60 * 60 * 1000;
+
+                        const dataWithExpiration = {
+                            value: this.settingsData.data,
+                            expiration: expirationTime
+                        };
+
+                        localStorage.setItem("pref", JSON.stringify(dataWithExpiration));
+
+                        window.dispatchEvent(new CustomEvent('notify', {
+                            detail: { message: 'Settings saved successfully!', type: 'success' }
+                        }));
+                    } catch (error) {
+                        console.error('Error saving settings:', error);
+                        window.dispatchEvent(new CustomEvent('notify', {
+                            detail: { message: 'Failed to save settings!', type: 'error' }
+                        }));
+                    } finally {
+                        this.savingSettings = false;
+                    }
+                },
+
                 switchTab(tab) {
                     this.activeTab = tab;
                     this.loadTabData(tab);
                     history.pushState(null, '', `/user/${tab}`);
                 },
+
                 loadTabData(tab) {
                     switch (tab) {
                         case 'profile':
@@ -759,21 +1199,62 @@
                             this.loadWatchlist(1, this.watchlistTab);
                             break;
                         case 'notifications':
-                            this.loadNotifications();
+                            this.loadNotifications(1);
                             break;
                         case 'mal':
                             this.loadMALStats();
                             break;
+                        case 'settings':
+                            this.loadSettings();
+                            break;
                     }
                 },
+
                 async markAllAsRead() {
-                    // Implement mark all as read functionality
-                    console.log('Marking all as read');
+                    try {
+                        const response = await fetch('/api/notifications/mark-all-read', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ type: this.notificationType })
+                        });
+                        if (response.ok) {
+                            await this.loadNotifications(1);
+                            console.log('Marked all as read');
+                        } else {
+                            throw new Error('Failed to mark all as read');
+                        }
+                    } catch (error) {
+                        console.error('Error marking all as read:', error);
+                    }
                 },
+
                 async clearAll() {
-                    // Implement clear all functionality
-                    console.log('Clearing all notifications');
+                    try {
+                        const response = await fetch('/api/notifications/clear-all', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ type: this.notificationType })
+                        });
+                        if (response.ok) {
+                            this.notifications = { notifications: [], has_more: false, page: 1 };
+                            console.log('Cleared all notifications');
+                        } else {
+                            throw new Error('Failed to clear all notifications');
+                        }
+                    } catch (error) {
+                        console.error('Error clearing all notifications:', error);
+                    }
                 },
+
+                changeNotificationType(type) {
+                    this.notificationType = type;
+                    this.loadNotifications(1);
+                },
+
                 async updateProfile() {
                     const data = {
                         username: this.user.username,
@@ -792,7 +1273,6 @@
                         });
 
                         if (response.ok) {
-                            // Reload the profile data on successful update
                             await this.loadProfile();
                             this.showPasswordChange = false;
                             this.oldPassword = '';
@@ -824,20 +1304,20 @@
                 }
             }));
         });
-        function joinRealtime(){
+        function joinRealtime() {
             console.log("lol")
-            return{
-            socket: null,
-            currentRoom: null,
-            initializeSocket() {
-                        this.socket = io({ transports: ['websocket'] });
+            return {
+                socket: null,
+                currentRoom: null,
+                initializeSocket() {
+                    this.socket = io({ transports: ['websocket'] });
 
-                        this.socket.on('connect', () => {
-                            console.log('Connected to server');
-                            this.joinRoom();
-                        });
-                    },
-                    joinRoom() {
+                    this.socket.on('connect', () => {
+                        console.log('Connected to server');
+                        this.joinRoom();
+                    });
+                },
+                joinRoom() {
                     const part = 'profile'
                     console.log(part);
                     if (this.currentRoom) {
@@ -847,8 +1327,9 @@
                     this.socket.emit('join', { other_id: this.currentRoom });
                     this.socket.emit('get_current_room_count', { room: this.currentRoom }); // Request count for the current room
                 }
-                }
             }
-            window.dispatchEvent(new Event('join-room'));
+        }
+        window.dispatchEvent(new Event('join-room'));
     </script>
+    {% include "footer.html" %}
     {% endblock %}

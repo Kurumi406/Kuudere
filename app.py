@@ -2118,7 +2118,6 @@ def fetch_episode_info(anime_id,ep_number):
     intro_end = 0
     outro_start = 0
     outro_end = 0
-    cwatching = False
     client_ip = request.headers.get('X-Forwarded-For', request.remote_addr).split(',')[0]
     idz = anime_id
     epASs = int(ep_number)
@@ -2281,6 +2280,7 @@ def fetch_episode_info(anime_id,ep_number):
     likass = bitch.get("documents", [])
 
     for links in likass:
+        cwatching = False
         if links.get("serverName") == "Hianime":
             # Get base components
             original_link = links.get("dataLink")

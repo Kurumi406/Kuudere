@@ -2256,9 +2256,15 @@ def fetch_episode_info(anime_id,ep_number):
     ep_links = []
 
     for episode in episodes:
+        titles = episode.get("titles", [])
+
+        # Check if the list is empty OR if all values inside are None
+        if not titles or all(t is None for t in titles):
+            titles = [f"Episode {episode.get("number")}"]
+
         episode_info = {
             "id": episode.get("$id"),
-            "titles": episode.get("titles", []),
+            "titles": titles,  # Default title as a list
             "filler": episode.get("filler"),
             "number": episode.get("number"),
             "recap": episode.get("recap"),

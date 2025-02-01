@@ -879,8 +879,7 @@
             likes: {{ animeInfo.likes | default(0) }},
             dislikes: {{ animeInfo.dislikes | default(0) }},
             userLiked: {{ animeInfo.userLiked | default(false) | tojson }},
-            userUnliked: {{ animeInfo.userUnliked | default(false) | tojson }},
-            animeMalScore: {{ animeInfo.malScore | default(0) }}
+            userUnliked: {{ animeInfo.userUnliked | default(false) | tojson }}
         };
     </script>
     

@@ -87,7 +87,7 @@ ext = Sitemap(app)
 cache = Cache(app, config={'CACHE_TYPE': 'SimpleCache'})
 def get_client(session_id=None, secret=None):
     client = Client()
-    client.set_endpoint(os.getenv('PROJECT_ENDPOINT') )
+    client.set_endpoint(os.getenv('PROJECT_ENDPOINT'))
     client.set_project(os.getenv('PROJECT_ID') )
     
     if session_id:
@@ -1039,8 +1039,6 @@ def filter_results():
         # Search strategies for keyword
         def get_keyword_search_queries(keyword):
             return [
-                Query.equal("english", keyword),
-                Query.equal("romaji", keyword),
                 Query.search("english", keyword),
                 Query.search("romaji", keyword),
                 Query.search("native", keyword),

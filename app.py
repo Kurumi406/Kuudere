@@ -5524,23 +5524,6 @@ def callback():
 def realtime():
     return render_template('rtest.html')
 
-@app.route("/raw")
-def raw():
-    client = get_client(None, os.getenv('SECRET'))
-    databases = Databases(client)
-
-    bitch = databases.list_documents(
-        database_id=os.getenv('DATABASE_ID'),
-        collection_id=os.getenv('Anime_Episodes_Links'),
-        queries=[
-            Query.equal("serverId", 1),
-            Query.select(["dataLink"]),
-            Query.limit(999999)
-        ]
-    )
-
-    return jsonify({'success': True,'total':bitch['total'], 'data': bitch['documents']}), 200 
-
 @app.route('/recently-updated', methods=['GET'])
 def recently_updated():
     secret = request.args.get('secret')

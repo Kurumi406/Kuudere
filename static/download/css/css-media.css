@@ -1,0 +1,122 @@
+.top-sl .ts-button .btn-pre{margin-bottom: 20px;}
+@media screen and (max-width:1600px){
+}
+@media screen and (max-width: 1400px){
+	.container{width: 100%; padding: 0 20px;}
+	.section-article .container .sidebar-content{ width: 320px; margin-left: 3rem;}
+}
+@media screen and (max-width: 1199px){
+	#header{ height: 80px;}
+	#header #m-menu{ display: block; font-size: 24px; width: 40px; line-height: 40px; z-index: 9; position: absolute; text-align: center; color: #fff; cursor: pointer; position: absolute; top: 50%; transform: translateY(-50%); right: 0px;}
+	#header #m-menu.active{ color: #DCFC35;}
+	#header #menu{display: none;}
+	#header #menu.active{display: block !important; position: absolute; top: 50px; left: auto; right: 0px; width: 250px; background: rgba(0,0,0,.95); padding: 1rem; border-radius: 1rem;}
+	#header #menu .top-menu{margin: 0; flex-direction: column;}
+	#header #menu .top-menu li{display: block; text-align: right; width: 100%; padding: .75rem 1rem;}
+	#header #menu .top-menu li + li{ margin-left: 0;}
+	#header #menu .top-menu li a{display: block; font-size: 1.2em;}
+	.section-about .sac-text{ padding-right: 3rem;}
+	.section-about .sac-photo .os-phone img, .section-about .sac-photo{ width: 280px;}
+	.top-sl-content{padding: 100px 0px 120px; max-width: 500px;}
+	.top-sl .ts-heading{ font-size: 2.4em;}
+	.dl-ul{ flex-direction: column;}
+	.dlu-item{ width: 100%; margin: 1rem 0; display: flex; align-items: center; justify-content: center;}
+	.dlu-item .dlu-icon{ margin: 0 3rem 0 0; width: 100px; text-align: center;}
+	.dlu-item .dlu-detail{ width: 300px;}
+	.section-about .container .sa-content{ flex-direction: column;}
+	.section-about .sac-photo{ width: 100%; margin-top: 1.5rem; text-align: center; height: 400px; overflow: hidden;}
+	.section-about .sac-photo:before{ content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 300px; z-index: 4; background: rgb(18,19,24); background: linear-gradient(0deg, rgba(18,19,24,1) 16%, rgba(6,45,87,0) 82%); }
+	.section-about .sac-photo .os-phone{ position: relative; top: auto; right: auto;}
+	.section-about .sac-photo .os-phone img{ width: 250px;}
+	.section-about .sac-text{ padding-right: 0;}
+	.section-about .sac-text .heading-2x{ text-align: center;}
+	.section-article .container{ flex-direction: column;}
+	.section-article .container .sidebar-content{ width: 100%; margin: 0; padding-bottom: 0;}
+}
+@media screen and (max-width: 640px){
+	.top-sl-content{margin: 0 auto;}
+	.heading-2x{font-size: 1.8em; line-height: 1.3em;}
+	.section{padding: 40px 0;}
+	.section-contentpage{padding: 20px 0;}
+	.section-about .container{padding-bottom: 0;}
+	.features-list .fl-item{margin: 10px 0; padding-right: 15px; min-height: 100px;}
+	.section-02{padding: 0;}
+	.top-sl .ts-heading{font-size: 1.6em; line-height: 1.4em; margin-bottom: 1rem;}
+	.top-sl-content{padding: 60px 0 80px;}
+	.top-sl .ts-body{font-size: 1.1em; line-height: 1.4em;}
+	.section-02 .kmau-text-4col .count-stats .aa-number{font-size: 3em; line-height: 1.2em;}
+	.section-02 .kmau-text-4col .count-stats{font-size: 12px;}
+	.section-02 .kmau-text-4col .count-stats p{ margin-bottom: 0;}
+	.block-iframe{margin-bottom: 30px;}
+	.section-02 .kmau-text-4col .count-stats .aa-number:before{top: -3px;}
+	.top-sl-content{text-align: center; padding-top: 40px;}
+	.top-sl{padding-top: 15px;}
+	#logo{margin: 9px 0;}
+	#logo img{ height: 32px;}
+	.mhc-item .mhcu-thumb{position: relative; top: auto; left: auto; margin: 0 auto 10px; width: 100px; height: 100px;}
+	.mhc-item .mhcu-infor{ padding-left: 0;}
+	.mhc-item{padding-left: 0; font-size: 12px; font-weight: 500; text-align: center; width: 160px; padding-right: 0; margin-right: 20px; margin-bottom: 20px; padding-bottom: 0 !important; border-bottom: none;}
+	.mhc-item .mh-title{font-weight: 600;}
+	.mhc-ul{width: 1100px;}
+	.mhc-item span.picksort{left: 30px; top: 0;}
+	.mh-content{overflow: auto; margin-left: -20px; margin-right: -20px;}
+	.mhc-item:first-of-type{margin-left: 20px;}
+	.mhc-item:last-of-type{margin-right: 0px;}
+	.modal-how{padding: 20px 20px 10px;}
+	.modal-how .mh-title-big{font-size: 1.2em; line-height: 1.3em; margin-bottom: 20px; text-align: center;}
+	.mhc-item .mhcu-infor{min-height: 0;}
+	.modal-download .modal-dialog .modal-content .modal-body{padding: 20px 20px 30px;}
+	.news-list-ul li{width: 98%; margin-bottom: 30px;}
+	.news-list-ul li .time{font-size: .9em; font-weight: 300;}
+	.news-list-ul li .news-detail{ min-height: 0}
+	.news-list-ul li .news-title{max-height: none;}
+	.prebreadcrumb .breadcrumb-item.active{display: none;}
+	.section-about .sac-text .app-icon{ text-align: center; margin-bottom: 2rem;}
+	.app-icon img{ width: 80px; height: 80px;}
+	.features-list{ flex-direction: column;}
+	.features-list .fl-item{ width: 100%; padding: 0; margin: 0 0 2rem; display: flex; align-items: flex-start;}
+	.features-list .fl-item .fl-icon img{ height: 40px;}
+	.features-list .fl-item .fl-content{ padding-left: 1rem;}
+	.features-list .fl-item .fl-content .fl-title{ margin-bottom: .5rem;}
+}
+@media screen and (max-width: 520px){
+	#copyright .float-right{display: none;}
+	#copyright .float-left{ float: none; display: block; text-align: center; width: 100%;}
+	.top-sl .ts-button .btn-pre{font-size: 20px; padding: 15px 20px; margin-bottom: 20px;}
+	#page-bar .pbc-heading{font-size: 1.1em; line-height: 1.3em;}
+	.sic-item{font-size: 14px; padding-left: 70px;}
+	.sic-item .sici-step{font-size: 40px;}
+	.sic-item:before{left: 70px;}
+	.sic-item .sici-text img{max-width: 100%;}
+	.section-02 .kmau-text-4col:before, .section-02 .kmau-text-4col:after{display: none;}
+	.section-02 .kmau-text-4col .count-stats .aa-number{font-size: 2em; line-height: 1.2em}
+	.section-02 .kmau-text-4col .count-stats .aa-number:before{position: relative; top: auto; font-size: 24px;}
+	.modal-medium .heading-2x{font-size: 1.6em; font-weight: 600; line-height: 1.3em;}
+	.dlu-item{ padding: 1.5rem; border-radius: 1rem; flex-direction: column;}
+	.dlu-item .dlu-icon img{ height: 60px;}
+	.dlu-item .dlu-icon{ width: 60px; margin-right: 0; margin-bottom: 2rem;}
+}
+@media screen and (max-width: 480px){
+}
+@media screen and (max-width: 479px){
+	#page-bar .pbc-heading{font-size: 1em; line-height: 1.3em;}
+	.sic-item .sici-step{position: relative; top: auto; left: auto; margin-bottom: 5px;}
+	.sic-item{padding-left: 0;}
+	.sic-item:before{left: 0;}
+	.section-about .sac-left .app-icon{width: 60px; border-radius: 5px; top: 5px; display: none;}
+	.section-about .sac-left{padding-left: 0px;}
+	body{font-size: 14px; line-height: 1.3em;}
+	.top-sl .ts-button .btn-pre{font-size: 16px;}
+	.top-sl .ts-heading{font-size: 22px; line-height: 1.3em; margin-bottom: 20px;}
+	#section-about{padding: 20px 0}
+	.install-demo{width: 100%; padding-bottom: 100%;}
+	.install-content .small{font-size: 14px; line-height: 1.3em;}
+	.if-load .btn-play{width: 60px; height: 60px; margin-top: -30px; margin-left: -30px;}
+	.if-load .btn-play i{line-height: 60px; font-size: 24px;}
+	.sc-article .ul-list{ padding-left: 1.5rem; border-left-width: 2px;}
+}
+@media screen and (max-width: 360px){
+	.pbc-heading .dropdown-item{font-size: 14px;}
+}
+@media screen and (max-width: 320px){
+}

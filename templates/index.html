@@ -128,7 +128,7 @@
                                 <i data-lucide="info" class="w-5 h-5"></i>
                                 DETAILS
                             </a>
-                            <a href="/watch/{{ top.id }}/1"
+                            <a href="/watch/{{ top.id }}"
                                 class="px-5 py-1.5 bg-primary-red hover:bg-primary-red/90 rounded-full text-white font-medium transition-colors flex items-center gap-2">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -390,7 +390,7 @@
                                     <p>Genres: {{ anime.genres | join(', ') }}</p>
                                 </div>
                                 <div class="mt-4 flex items-center gap-2">
-                                    <a href="/watch/{{ anime.id }}/1"
+                                    <a href="/watch/{{ anime.id }}"
                                         class="flex-1 bg-pink-600 hover:bg-pink-700 px-4 py-2 rounded-md text-sm font-medium flex items-center justify-center">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none"
                                             viewBox="0 0 24 24" stroke="currentColor">
@@ -502,7 +502,7 @@
                                 </div>
                                 {% if  anime.epCount > 0 %}
                                 <div class="mt-4 flex items-center gap-2">
-                                    <a href="/watch/{{ anime.id }}/1"
+                                    <a href="/watch/{{ anime.id }}"
                                         class="flex-1 bg-pink-600 hover:bg-pink-700 px-4 py-2 rounded-md text-sm font-medium flex items-center justify-center">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none"
                                             viewBox="0 0 24 24" stroke="currentColor">
@@ -1023,7 +1023,7 @@
 </main>
 {% include "Changelog.html" %}
 <div x-data="counter()" x-init="setupSocket()" @join-room.window="joinRoom()"
-    class="float-counter fixed bottom-8 right-8 rounded-full p-4 text-white flex items-center gap-2 z-50 cursor-pointer hover:scale-105 transition-transform duration-300"
+    class="float-counter hidden fixed bottom-8 right-8 rounded-full p-4 text-white flex items-center gap-2 z-50 cursor-pointer hover:scale-105 transition-transform duration-300"
     @mouseover="pulse()">
     
     <!-- Loading Animation (visible when isLoading is true) -->
@@ -1253,7 +1253,7 @@
         });
     });
     function watch(id) {
-        window.location.href = `/watch/${id}/1`;
+        window.location.href = `/watch/${id}`;
     }
 
     function counter() {

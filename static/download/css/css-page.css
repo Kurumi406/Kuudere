@@ -1,0 +1,30 @@
+#page-header{background: #000}
+#page-header #header{text-align: center; height: 80px; justify-content: flex-start;}
+#page-header #header .btn-header{border-radius: 30px;}
+#page-header #logo{ margin-left: 20px;}
+#page-bar{background: #22242d; text-align: center; padding: 20px 0;}
+#page-bar .pbc-heading{font-size: 1.3em; color: #DCFC35; margin: 0; line-height: 1.4em; cursor: pointer}
+#page-bar .pbc-heading .dropdown-item i{width: 30px; text-align: center}
+.section-install{padding-bottom: 0;}
+.sic-item{display: block; margin-bottom: 30px; position: relative; padding-left: 100px; padding-bottom: 20px;}
+.sic-item a{color: #DCFC35; font-weight: 500;}
+.sic-item strong{font-weight: 600;}
+.sic-item:before{content: ""; position: absolute; bottom: 0; left: 100px; right: 0; height: 4px; background: #22242d;}
+.sic-item .sici-step{position: absolute; top: 0px; left: 0; font-size: 60px; font-weight: 600; line-height: 1em; color: #DCFC35}
+.sic-item .sici-heading{margin-bottom: 10px; font-weight: 600; font-size: 1.2em; line-height: 1.4em;}
+.sic-item .sici-text img{max-width: 100%; margin: 20px auto; display: inline-block;}
+.sic-item ul li{margin-bottom: 10px;}
+.siol-item-box{display: inline-block; width: 100%; padding: 30px; margin-bottom: 20px; background: #e8e8e8; text-align: left; font-size: 1.2em; line-height: 1.2em; font-weight: 600; overflow: hidden; min-height: 140px; position: relative; color: #111 !important;}
+.siol-item-box .icon{display: block; font-size: 120px; line-height: 1em; margin-bottom: 20px; text-align: center; position: absolute; bottom: -50px; right: -15px; opacity: .1}
+.siol-item-box .link{color: #000}
+.siol-item-box p, .siol-item-box .link{position: relative; z-index: 2;}
+.siol-item-box:hover, .siol-item-box.active{background: #DCFC35; color: #000 !important; box-shadow: 10px 20px 20px rgba(0,0,0,0.15);}
+.siol-item-box:hover .icon, .siol-item-box.active .icon{color: #000; opacity: .2;}
+.siol-item-box:hover .link, .siol-item-box.active .link{color: #000;}
+.windows-version{margin-bottom: 50px;}
+.windows-version .btn.active{background: #DCFC35 !important; color: #000 !important;}
+.troubleshooting-btn{margin: 50px 0 0;}
+.troubleshooting-btn .alert{border: none !important;}
+.troubleshooting-btn .alert-danger{background: #E54D42 !important; color: #fff !important;}
+.troubleshooting-btn .alert-danger a{color: #fff; text-decoration: underline !important;}
+.section{ padding: 3rem 0;}

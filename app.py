@@ -1,3 +1,7 @@
+import uuid
+import eventlet
+eventlet.monkey_patch()
+
 from datetime import datetime, timezone
 import hashlib
 from flask import Flask, request, jsonify, session, render_template,make_response,redirect,send_from_directory,url_for,abort
@@ -43,6 +47,12 @@ import base64
 import os
 import re
 from urllib.parse import urlparse, urljoin
+import redis
+import logging
+from nacl.public import PrivateKey, PublicKey, Box
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 def is_valid_url(url):
     try:
@@ -50,7 +60,7 @@ def is_valid_url(url):
         return all([result.scheme, result.netloc])
     except ValueError:
         return False
-
+ALLOWED_DOMAINS = {"http://127.0.0.1:5000","https://kuudere.to"}
 os.environ['no_proxy'] = 'localhost,127.0.0.1'
 POINTS_LIKES = 25
 
@@ -74,11 +84,13 @@ app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=365)
 limiter = Limiter(
     get_real_ip,
     app=app,
-    default_limits=["2500 per day", "100 per hour"],
+    default_limits=["500 per hour"],
     storage_uri="memory://",
 )
 
-socketio = SocketIO(app,cors_allowed_origins="*",ping_interval=10,ping_timeout=20)
+socketio = SocketIO(app,cors_allowed_origins="*",ping_interval=10,ping_timeout=20, async_mode='eventlet')
+redis_client = redis.Redis(host='localhost', port=os.getenv('REDIS_PORT'),password=os.getenv('REDIS_PASS'), decode_responses=True)
+connected_users = {}
 room_counts = defaultdict(int)
 lock = threading.Lock()
 CORS(app)
@@ -162,6 +174,112 @@ def get_user_info(key=None,secret=None):
         userInfo = None   
 
     return userInfo
+
+def verify_api_request(request):
+    base_url = request.referrer or ""  # Ensure base_url is always a string
+
+    # Extract only the scheme + netloc (ignoring path & query parameters)
+    parsed_referrer = urlparse(base_url)
+    referrer_domain = f"{parsed_referrer.scheme}://{parsed_referrer.netloc}"
+
+    # Check if JSON request but missing referrer (possible direct request)
+    if request.is_json and not base_url:
+        data = request.get_json(silent=True) or {}
+
+        key = data.get('key')
+        secret = data.get('secret')
+
+        if not key or not secret:
+            print("Missing key or secret in JSON request")
+            return True, None, None, None, None
+        
+        secret = decrypt(secret)
+        key = decrypt(key)
+
+        try:
+            client = get_client(key, None)
+            account = Account(client)
+
+            acc = account.get()
+            if not acc:
+                print("Invalid account")
+                return True, None, secret, None, None
+
+            userInfo = {
+                "userId": acc.get("$id"),
+                "username": acc.get("name"),
+                "email": acc.get("email"),
+            }
+            print("Authenticated successfully")
+            client = get_client(None, secret)
+            users = Users(client)
+
+            result = users.get(user_id=acc.get("$id"))
+            return True, key, secret, userInfo, acc  # Authentication successful
+        
+        except Exception as e:
+            print(f"Authentication error: {e}")
+            return True, None, None, None, None
+
+    # Check if request referrer (only domain) is allowed
+    elif referrer_domain not in ALLOWED_DOMAINS and any(sub in request.path for sub in ['/api', '/save','/watch-api','/anime/comment/']):
+        print(f"Unauthorized referrer '{referrer_domain}' trying to access API")
+        return True, None, None, None, None
+
+    return False, None, None, None, None  # Valid request, proceed
+
+def encrypt(data):
+    # Get keys from the environment variables
+        private_key_hex = os.getenv('PRIVATE_KEY')
+        public_key_hex = os.getenv('PUBLIC_KEY')
+
+        # Convert the hex strings back to bytes
+        private_key_bytes = bytes.fromhex(private_key_hex)
+        public_key_bytes = bytes.fromhex(public_key_hex)
+
+        # Deserialize the keys using PyNaCl
+        private_key = PrivateKey(private_key_bytes)
+        public_key = PublicKey(public_key_bytes)
+
+        # Create a Box (this is what you use for encryption and decryption)
+        box = Box(private_key, public_key)
+
+        message = data.encode('utf-8')
+
+        # Encrypt the message
+        encrypted = box.encrypt(message)
+
+        # Base64 encode the encrypted message for easy storage
+        encrypted_base64 = base64.b64encode(encrypted).decode()
+
+        return encrypted_base64
+
+def decrypt(data):
+
+    # Get keys from the environment variables
+    private_key_hex = os.getenv('PRIVATE_KEY')
+    public_key_hex = os.getenv('PUBLIC_KEY')
+
+    # Convert the hex strings back to bytes
+    private_key_bytes = bytes.fromhex(private_key_hex)
+    public_key_bytes = bytes.fromhex(public_key_hex)
+
+    # Deserialize the keys using PyNaCl
+    private_key = PrivateKey(private_key_bytes)
+    public_key = PublicKey(public_key_bytes)
+
+    # Create a Box (this is what you use for encryption and decryption)
+    box = Box(private_key, public_key)
+
+    encrypted_base64 = data
+
+    # Base64 decode the encrypted message
+    encrypted_bytes = base64.b64decode(encrypted_base64)
+
+    # Decrypt the message using the private key
+    decrypted = box.decrypt(encrypted_bytes)
+
+    return decrypted.decode()
 
 def login_required(f):
     @wraps(f)
@@ -362,6 +480,59 @@ def on_join(data):
         join_room(room)
         update_room_count(room)
         print(f"User joined room: {room}")
+    
+@socketio.on('connect')
+def handle_connect():
+    user_id = request.args.get("user_id")
+    if user_id:
+        connected_users[user_id] = request.sid
+        logger.info(f"✅ User {user_id} connected with session ID {request.sid}")
+        # Send any pending notifications
+        pending_notifications = redis_client.lrange(f"pending_notifications:{user_id}", 0, -1)
+        for notification in pending_notifications:
+            socketio.emit("new_notification", {"message": notification}, room=request.sid)
+        redis_client.delete(f"pending_notifications:{user_id}")
+def redis_listener():
+    pubsub = redis_client.pubsub()
+    pubsub.subscribe("notifications")
+    logger.info("🎧 Started Redis listener")
+
+    for message in pubsub.listen():
+        try:
+            if message["type"] == "message":
+                data = json.loads(message["data"])
+                user_ids = data.get("user_ids", [])
+                notification = data.get("message")
+                title = data.get("title")
+                image = data.get("image_url")
+                
+                if not notification:
+                    continue
+
+                logger.info(f"📨 Received notification: {notification} for users: {user_ids}")
+
+                # Send to connected users or store for later
+                for user_id in user_ids:
+                    if user_id in connected_users:
+                        socketio.emit(
+                            "new_notification",
+                            {
+                                "message": notification,
+                                "title":title,
+                                "image_url":image,
+                             },
+                            room=connected_users[user_id]
+                        )
+                        logger.info(f"✉️ Sent notification to user {user_id}")
+                    else:
+                        # Store notification for later delivery
+                        redis_client.rpush(f"pending_notifications:{user_id}", notification)
+                        logger.info(f"📝 Stored pending notification for user {user_id}")
+
+        except Exception as e:
+            logger.error(f"❌ Error processing message: {e}")
+# Start the background task
+socketio.start_background_task(redis_listener)
 
 @socketio.on('disconnect')
 def on_disconnect():
@@ -467,7 +638,32 @@ def register():
         session.permanent = True
         session['session_id'] = session_data['$id']  # Store the session ID for logout
         session['session_secret'] = session_data['secret']  # Store the secret for authentication
-        return jsonify({'success': True, 'message': 'User registered successfully'})
+        session_info = {
+                "userId":session_data['userId'],
+                "session":session_data['secret'],
+                "expire":session_data['expire']
+            }
+        data = {
+            "defaultComments": 'false',
+            "defaultLang": 'japanese',
+            "autoNext": True,
+            "autoPlay": False,
+            "autoSkipIntro": False,
+            "autoSkipOutro": False,
+        }
+        session_info = {
+            "userId":session_data['userId'],
+            "session":encrypt(session_data['secret']),
+            "expire":session_data['expire'],
+            "sessionId":session_data['$id'],
+        }
+        
+        return jsonify({
+            'success': True, 
+            'message': 'Registerd in successfully',
+            'pref': data,
+            "session":session_info
+        }),200
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}),400
 
@@ -544,32 +740,61 @@ def login():
                     "autoSkipIntro": False,
                     "autoSkipOutro": False,
                 }
+            session_info = {
+                "userId":session_data['userId'],
+                "session":encrypt(session_data['secret']),
+                "expire":session_data['expire'],
+                "sessionId":session_data['$id'],
+            }
         except AppwriteException as e:
             print(e)
         
         return jsonify({
             'success': True, 
             'message': 'Logged in successfully',
-            'pref': data
+            'pref': data,
+            "session":session_info
         })
     except Exception as e:
         return jsonify({'success': False, 'message': 'Invalid email or password'}),401
     
 @app.route('/logout', methods=['POST'])
 def logout():
+    sessionId = None
+    
+    isApi, key, secret, userInfo, acc = verify_api_request(request)
 
-    isKey = False
-    secret = os.getenv('SECRET')  # Default value
-    print(session['session_id'])
+    if isApi:
+            if not key or not secret:  # Ensures both key and secret are valid
+                return jsonify({'success': False, 'message': "Unauthorized"}), 401
+            else:
+                sessionId = request.json.get('sessionId')
+                if not sessionId:
+                    return jsonify({'success': False, 'message': "Unauthorized"}), 401
+            
+    isKey = bool(secret)
+    if isKey:
+        secret = secret
+    else:
+        secret = os.getenv('SECRET')  # Default value
+
+    if bool(key):
+        key = key
+    else:
+        key = session['session_secret']
+    
+    if not bool(sessionId):
+        sessionId = session['session_id']
     
     try:
-        client = get_client(session['session_secret'],secret)
+        client = get_client(key,secret)
         account = Account(client)
         session_data = account.delete_session(
-           session_id= session['session_id']
+           session_id= sessionId
         )
 
-        session.clear()
+        if not  isApi:
+            session.clear()
         
         return jsonify({
             'success': True, 
@@ -580,12 +805,20 @@ def logout():
     
 @app.route('/user', methods=['POST'])
 def get_user():
+    referer = request.headers.get('Referer')  # Referer header
+    origin = request.headers.get('Origin')    # Origin header
+    
+    # Prioritize Origin if Referer is not available
+    domain = referer or origin
+    if domain:
+        domain = domain.split('/')[2]
+    print(f"fuucl{domain}")
     data = request.json
     email = data.get('email')
     password = data.get('password')
     secret = data.get('secret')
-    key = data.get('key')
-    print(secret)
+    key = decrypt(data.get('key'))
+    print(data)
     
     try:
         client = get_client(key,None)
@@ -599,20 +832,31 @@ def get_user():
             database_id = os.getenv('DATABASE_ID'),
             collection_id = os.getenv('Users'),
             document_id = dat,
+            queries=[
+                Query.select(['username'])
+            ]
         )
+        print(result)
         return jsonify({'success': True, 'userId': result})
     except Exception as e:
-        return jsonify({'success': False, 'message': str(e)}), 500
+        return jsonify({'success': False, 'message': "str(e)"}), 500
     
 def recreate_url(base_url, url_code):
     """Recreate the full shortened URL from the base URL and code."""
     return f"{base_url.rstrip('/')}/{url_code.lstrip('/')}"   
 
-@app.route('/home', methods=['GET'])
+@app.route('/home', methods=['GET','POST'])
 def load_home():
+    secret = None
+    key = None
+
+    isApi, key, secret, userInfo, acc = verify_api_request(request)
+
+    if isApi:
+        if not key or not secret:  # Ensures both key and secret are valid
+            return jsonify({'success': False, 'message': "Unauthorized"}), 401
+
     encoded = request.args.get('spc')
-    secret = request.args.get('secret')
-    key = request.args.get('key')
     isKey = bool(secret)
     ctotal = None
     Surl = None
@@ -670,6 +914,7 @@ def load_home():
             collection_id=os.getenv('Notices'),
             queries=[
                 Query.order_desc('$createdAt'),
+                Query.equal("Type","web"),
                 Query.limit(1)
             ]
         )
@@ -708,7 +953,7 @@ def load_home():
             collection_id = os.getenv('Anime'),
             queries = [
                 Query.equal("public",True),
-                Query.equal("year",2025),
+                Query.equal("year",[2025,2024]),
                 Query.select(["mainId", "english", "romaji", "native", "ageRating", "malScore", "averageScore", "duration", "genres", "season", "startDate", "status", "synonyms", "type", "year", "description","subbed","dubbed"]),
                 Query.equal("status","RELEASING"),
                 Query.order_desc("lastUpdated"),
@@ -867,8 +1112,8 @@ def load_home():
                 ]
             )
 
-            if not img.get("banner"):
-                new_url = img.get('cover').replace("medium", "large")
+
+            new_url = img.get('cover').replace("medium", "large")
 
             filtered_documents_top.append({
                 "id": air.get("mainId"),
@@ -880,7 +1125,7 @@ def load_home():
                 "averageScore": air.get("averageScore"),
                 "duration": air.get("duration"),
                 "genres": air.get("genres"),
-                "cover":img.get("cover"),
+                "cover":new_url,
                 "banner": img.get("banner") or new_url,
                 "season": air.get("season"),
                 "startDate": datetime.fromisoformat(doc.get("startDate").replace("Z", "+00:00")).strftime("%b %d, %Y") if doc.get("startDate") else None,
@@ -906,6 +1151,8 @@ def load_home():
                 ]
             )
 
+            new_url = img.get('cover').replace("medium", "large")
+
             filtered_documents_top_upcoming.append({
                 "id": upcoming.get("mainId"),
                 "english": upcoming.get("english") if upcoming.get('english') is not None else upcoming.get("romaji"),
@@ -916,7 +1163,7 @@ def load_home():
                 "averageScore": upcoming.get("averageScore"),
                 "duration": upcoming.get("duration"),
                 "genres": upcoming.get("genres"),
-                "cover":img.get("cover"),
+                "cover":new_url,
                 "banner": img.get("banner"),
                 "season": upcoming.get("season"),
                 "startDate": datetime.fromisoformat(upcoming.get("startDate").replace("Z", "+00:00")).strftime("%b %d, %Y") if upcoming.get("startDate") else None,
@@ -936,6 +1183,7 @@ def load_home():
             "topAired": filtered_documents_top,
             "topUpcoming":filtered_documents_top_upcoming,
             "userInfo": userInfo,
+            "ctotal": ctotal,
         }    
         
         response = make_response(json.dumps(data, indent=4, sort_keys=False))
@@ -948,7 +1196,7 @@ def load_home():
     except Exception as e:
          return jsonify({'success': False, 'message': str(e)}), 500 
         
-@app.route('/search')
+@app.route('/search',methods=['POST','GET'])
 def filter_results():
     print(request)
     # Get query parameters
@@ -959,14 +1207,20 @@ def filter_results():
     year = request.args.get('year', type=int)
     type = request.args.get('type')
     score = request.args.get('score')
-    secret = request.args.get('secret')
     keyword = request.args.get('keyword')
     page = request.args.get('page', default=1, type=int)
     isPage = bool(page)
     results_per_page = 18
 
-    secret = request.args.get('secret')
-    key = request.args.get('key')
+    secret = None
+    key = None
+
+    isApi, key, secret, userInfo, acc = verify_api_request(request)
+
+    if isApi:
+        if not key or not secret:  # Ensures both key and secret are valid
+            return jsonify({'success': False, 'message': "Unauthorized"}), 401
+        
     isKey = bool(secret)
     if secret:
         isKey = True
@@ -1193,20 +1447,26 @@ def filter_results():
     else:
         return render_template("search.html",result=filtered_documents,total=result['total'],userInfo=userInfo,page=page,results_per_page=results_per_page)
 
-@app.route('/anime/<id>', methods=['GET'])
+@app.route('/anime/<id>', methods=['GET','POST'])
 def anime_info(id):
 
-    secret = request.args.get('secret')
+    secret = None
+    key = None
+
+    isApi, key, secret, userInfo, acc = verify_api_request(request)
+
+    if isApi:
+        if not key or not secret:  # Ensures both key and secret are valid
+            return jsonify({'success': False, 'message': "Unauthorized"}), 401
+        
     isKey = bool(secret)
     idz = id
-    key = request.args.get('key')
     inWatchlist = False
+    folder = None
 
     # Add error handling for missing parameters
     if not idz:
         return jsonify({"error": "Missing required(id) parameters", "success":False}), 400
-    if not secret and key:
-        return jsonify({"error": "Missing Session And Secret parameters", "success":False}), 400
     
     if secret:
         isKey = True
@@ -1222,6 +1482,7 @@ def anime_info(id):
             account = Account(client)
 
             acc = account.get()
+            print(0)
             
             userInfo = {
                 "userId":acc.get("$id"),
@@ -1233,6 +1494,7 @@ def anime_info(id):
             account = Account(client)
 
             acc = account.get()
+            print(1)
             
             userInfo = {
                 "userId":acc.get("$id"),
@@ -1240,9 +1502,11 @@ def anime_info(id):
                 "email" : acc.get("email")
             }
         else:
+            print(3)
             userInfo = None
 
     except Exception as e:
+        print(4)
         userInfo = None
      
     try:
@@ -1298,12 +1562,14 @@ def anime_info(id):
                 database_id=os.getenv('DATABASE_ID'),
                 collection_id=os.getenv('Watchlist'),
                 queries=[
-                    Query.equal("itemId", wid)
+                    Query.equal("itemId", wid),
+                    Query.select("folder"),
                 ]
             )
 
             if wr['total'] > 0:
                 inWatchlist = True
+                folder = wr['documents'][0].get('folder')
 
         title = doc.get('english') if doc.get('english') is not None else doc.get('romaji')
         description = doc.get("description")
@@ -1334,6 +1600,7 @@ def anime_info(id):
                 "dubbedCount": doc.get("dubbed"),
                 "description": doc.get("description"),
                 "in_watchlist": inWatchlist,
+                "folder":folder,
                 "views":format_views(views['total']),
                 "likes":format_likes(Likes['total']),
             }
@@ -1356,15 +1623,28 @@ def anime_info(id):
         # Add error handling
         return jsonify({"error": str(e),"success": False}), 500
 
-@app.route('/watch/<anime_id>/<ep_number>', methods=['GET'])
-def watch_page(anime_id, ep_number):
+@app.route('/watch/<anime_id>/<ep_number>', methods=['GET','POST'])
+@app.route('/watch/<anime_id>', methods=['GET','POST'])
+def watch_page(anime_id, ep_number=None):
     ep = ep_number
     print(ep)
-    secret = request.args.get('secret')
+    secret = None
+    key = None
+    inWatchlist = False
+    folder = None
+    epASs =  None
+    search = None
+
+    isApi, key, secret, userInfo, acc = verify_api_request(request)
+
+    if isApi:
+        if not key or not secret:  # Ensures both key and secret are valid
+            return jsonify({'success': False, 'message': "Unauthorized"}), 401
+        
     nid = request.args.get('nid')
-    key = request.args.get('key')
     idz =anime_id
-    epASs = int(ep)
+    if ep_number:
+        epASs = int(ep)
     isKey = bool(secret)
     isLiked = False
     isUnliked =  False
@@ -1416,7 +1696,7 @@ def watch_page(anime_id, ep_number):
         collection_id=os.getenv('Anime'),
         document_id=idz,
         queries=[
-            Query.select(["mainId","animeId", "english", "romaji", "native", "ageRating", "malScore", "averageScore", "duration", "genres", "season", "startDate", "status", "synonyms","studios", "type", "year", "description","subbed","dubbed"]),
+            Query.select(["mainId","animeId", "english", "romaji", "native", "ageRating", "malScore", "averageScore", "duration", "genres", "season", "startDate", "status", "synonyms","studios", "type", "year", "description","subbed","dubbed","anilistId"]),
         ]
     )
 
@@ -1491,24 +1771,79 @@ def watch_page(anime_id, ep_number):
                                 "isRead":True,
                             }
                         )
-                
+                    
+                search = databases.list_documents(
+                        database_id=os.getenv('DATABASE_ID'),
+                        collection_id=os.getenv('CONTINUE_WATCHING'),
+                        queries=[
+                            Query.equal("userId",acc.get("$id")),
+                            Query.equal("animeId",anime_id),
+                            Query.select(['episodeId']),
+                        ]
+                    )
 
                 if IsUserLiked['total'] > 0:
                     isLiked = True
                 elif IsUserunLiked['total'] > 0:
                     isUnliked = True
 
-    eps = databases.list_documents(
-        database_id=os.getenv('DATABASE_ID'),
-        collection_id=os.getenv('Anime_Episodes'),
-        queries=[
-            Query.equal("animeId", result.get("animeId")),
-            Query.equal("number", epASs),
-            Query.select(["animeId"]),
-            Query.limit(1)
-        ]
-    )
+                wid = generate_unique_id(acc.get("$id"),anime_id)
+                wr = databases.list_documents(
+                    database_id=os.getenv('DATABASE_ID'),
+                    collection_id=os.getenv('Watchlist'),
+                    queries=[
+                        Query.equal("itemId", wid),
+                        Query.select("folder"),
+                    ]
+                )
 
+                if wr['total'] > 0:
+                    inWatchlist = True
+                    folder = wr['documents'][0].get('folder')
+
+    if not epASs:
+        if userInfo and  search['total'] > 0:
+            eps = databases.list_documents(
+                database_id=os.getenv('DATABASE_ID'),
+                collection_id=os.getenv('Anime_Episodes'),
+                queries=[
+                    Query.equal("animeId", result.get("animeId")),
+                    Query.equal("$id", search['documents'][0].get('episodeId')),
+                    Query.select(["number"]),
+                    Query.limit(1)
+                ]
+            )
+
+            epASs = eps['documents'][0].get('number')
+            ep = eps['documents'][0].get('number')
+            ep_number = eps['documents'][0].get('number')
+        else:
+            ep_number = 1
+            eps = databases.list_documents(
+                database_id=os.getenv('DATABASE_ID'),
+                collection_id=os.getenv('Anime_Episodes'),
+                queries=[
+                    Query.equal("animeId", result.get("animeId")),
+                    Query.equal("number", ep_number),
+                    Query.select(["animeId"]),
+                    Query.limit(1)
+                ]
+            )
+    else:
+        epASs = epASs or 1
+        ep_number = epASs or 1
+        eps = databases.list_documents(
+                database_id=os.getenv('DATABASE_ID'),
+                collection_id=os.getenv('Anime_Episodes'),
+                queries=[
+                    Query.equal("animeId", result.get("animeId")),
+                    Query.equal("number", epASs),
+                    Query.select(["animeId"]),
+                    Query.limit(1)
+                ]
+            )
+
+    epASs = epASs or 1
     bitch = databases.list_documents(
         database_id=os.getenv('DATABASE_ID'),
         collection_id=os.getenv('Anime_Episodes_Links'),
@@ -1524,7 +1859,6 @@ def watch_page(anime_id, ep_number):
         return render_template('404.html'),404
 
     likass = bitch.get("documents", [])
-    print("Documents retrieved:", likass)
 
 
     filtered_document = {
@@ -1550,11 +1884,14 @@ def watch_page(anime_id, ep_number):
                 "subbedCount": result.get("subbed"),
                 "dubbedCount": result.get("dubbed"),
                 "description": result.get("description"),
-                "ep":ep,
+                "ep":epASs,
                 "userLiked": isLiked,
                 "userUnliked": isUnliked,
                 "likes":likes['total'],
                 "dislikes":dislikes['total'],
+                "inWatchlist": inWatchlist,
+                "folder":folder,
+                "anilist":result.get('anilistId'),
                 "url":f"/anime/{result.get('mainId')}",
             }
             
@@ -1576,10 +1913,15 @@ def watch_page(anime_id, ep_number):
 @app.route("/api/anime/respond/<id>", methods=['POST'])
 def like_anime(id):
     # Get the JSON data from the request body
-    data = request.get_json()
+    data = request.json
+    secret = None
+    key = None
 
-    secret = request.args.get('secret')
-    key = request.args.get('key')
+    isApi, key, secret, userInfo, acc = verify_api_request(request)
+
+    if isApi:
+        if not key or not secret:  # Ensures both key and secret are valid
+            return jsonify({'success': False, 'message': "Unauthorized"}), 401
     isKey = bool(secret)
     
     if secret:
@@ -1742,10 +2084,15 @@ def like_anime(id):
 @app.route("/api/anime/comment/respond/<id>", methods=['POST'])
 def like_anime_comment(id):
     # Get the JSON data from the request body
-    data = request.get_json()
+    data = request.json
+    secret = None
+    key = None
 
-    secret = request.args.get('secret')
-    key = request.args.get('key')
+    isApi, key, secret, userInfo, acc = verify_api_request(request)
+
+    if isApi:
+        if not key or not secret:  # Ensures both key and secret are valid
+            return jsonify({'success': False, 'message': "Unauthorized"}), 401
     isKey = bool(secret)
     
     if secret:
@@ -1901,11 +2248,17 @@ def like_anime_comment(id):
     else:
         return jsonify({"message": "Post Not Found!"}), 404        
     
-@app.route('/add-to-watchlist/<folder>/<animeid>', methods=['GET'])
+@app.route('/add-to-watchlist/<folder>/<animeid>', methods=['GET','POST'])
 def add_to_watchlist(folder, animeid):
     try:
-        key = request.args.get('key')
-        user_id = request.args.get('userid')
+        secret = None
+        key = None
+
+        isApi, key, secret, userInfo, acc = verify_api_request(request)
+
+        if isApi:
+            if not key or not secret:  # Ensures both key and secret are valid
+                return jsonify({'success': False, 'message': "Unauthorized"}), 401
 
         if not key:
             key = session.get("session_secret")
@@ -2108,7 +2461,7 @@ def search_api():
     # Return JSON response
     return jsonify(filtered_documents)
 
-@app.route('/watch-api/<anime_id>/<int:ep_number>')
+@app.route('/watch-api/<anime_id>/<int:ep_number>',methods=['GET','POST'])
 def fetch_episode_info(anime_id,ep_number):
     duration = 0
     current = 0
@@ -2119,9 +2472,14 @@ def fetch_episode_info(anime_id,ep_number):
     client_ip = request.headers.get('X-Forwarded-For', request.remote_addr).split(',')[0]
     idz = anime_id
     epASs = int(ep_number)
-    secret = os.getenv('SECRET')  # Default value
-    secret = request.args.get('secret')
-    key = request.args.get('key')
+    secret = None
+    key = None
+
+    isApi, key, secret, userInfo, acc = verify_api_request(request)
+
+    if isApi:
+            if not key or not secret:  # Ensures both key and secret are valid
+                return jsonify({'success': False, 'message': "Unauthorized"}), 401
     if secret:
         isKey = True
         print("Key exists: ", secret)
@@ -2197,7 +2555,7 @@ def fetch_episode_info(anime_id,ep_number):
         collection_id=os.getenv('Anime_Episodes'),
         queries=[
             Query.equal("animeId",result.get("animeId")),
-            Query.select(["titles", "number", "aired", "score", "recap", "filler","$id"]),
+            Query.select(["titles", "number", "aired", "score", "recap", "filler","$id","$updatedAt"]),
             Query.limit(99999)
         ]
     )
@@ -2224,7 +2582,7 @@ def fetch_episode_info(anime_id,ep_number):
 
     if skip['total'] <= 0:
 
-        skipd=get_skip_data(ep_number,result.get("anilistId"),result.get("malId"))
+        skipd=None
     else:
         skipdd = skip['documents'][0]
         skipd = {'anilist_id': f'{result.get("anilistId")}','mal_id': f'{result.get("mal_id")}','intro_start': f'{skipdd.get('intro_start')}', 'intro_end': f'{skipdd.get('intro_end')}', 'outro_start': f'{skipdd.get('outro_start')}', 'outro_end': f'{skipdd.get('outro_end')}'}
@@ -2266,7 +2624,8 @@ def fetch_episode_info(anime_id,ep_number):
             "filler": episode.get("filler"),
             "number": episode.get("number"),
             "recap": episode.get("recap"),
-            "aired": datetime.fromisoformat(episode.get("aired").replace("Z", "+00:00")).strftime("%b %d, %Y") if episode.get("aired") else None
+            "aired": datetime.fromisoformat(episode.get("aired").replace("Z", "+00:00")).strftime("%b %d, %Y") if episode.get("aired") else None,
+            "ago":format_relative_time(episode.get("$updatedAt")),
         }
         episode_details.append(episode_info)
 
@@ -2373,7 +2732,7 @@ def fetch_episode_info(anime_id,ep_number):
                 Query.equal("animeId", anime_id),
                 Query.equal("epNumber", ep_number),  # Ensure episode.get("$id") returns the correct value
                 Query.not_equal("removed", True),
-                Query.select(["commentId","userId","added_date","comment"]),
+                Query.select(["commentId","userId","added_date","comment","spoiller"]),
             ]
         )
     comz = comm.get("documents", [])
@@ -2389,8 +2748,11 @@ def fetch_episode_info(anime_id,ep_number):
             queries=[
                 Query.equal("replyEpisodeCommentId", comment.get("commentId")),
                 Query.not_equal("removed", True),
+                Query.select(['userId',"episodeCommentReplyId","content","added_date"])
             ]
         )
+
+        print(reply)
 
         userifo = databases.get_document(
             database_id=os.getenv('DATABASE_ID'),
@@ -2470,6 +2832,7 @@ def fetch_episode_info(anime_id,ep_number):
         detail_info = {
             "id": comment.get("commentId"),
             "author": userifo.get('username'),
+            "isSpoiller": True,
             "time": format_relative_time(comment.get("added_date")),
             "content": comment.get("comment"),
             "showReplyForm": False,
@@ -2520,11 +2883,18 @@ def fetch_episode_info(anime_id,ep_number):
 
     return response
 
-@app.route('/community')
+@app.route('/community',methods=['GET','POST'])
 def community():
         posts = []
-        secret = request.args.get('secret')
-        key = request.args.get('key')
+        secret = None
+        key = None
+
+        isApi, key, secret, userInfo, acc = verify_api_request(request)
+
+        if isApi:
+            if not key or not secret:  # Ensures both key and secret are valid
+                return jsonify({'success': False, 'message': "Unauthorized"}), 401
+            
         isMod = False
         isKey = bool(secret)
         if secret:
@@ -2712,8 +3082,15 @@ def community():
                 "isMod": isMod,
             })   
 
+        if isKey:
+            return jsonify({
+                "categories": categories,
+                "total": total, # Use total_for_category to determine hasMore
+                "userInfo":userInfo
+            }),200
+        else:
 
-        return render_template('posts.html',categories=categories,userInfo=userInfo,total=total)
+            return render_template('posts.html',categories=categories,userInfo=userInfo,total=total)
 
 
 def format_relative_time(iso_timestamp):
@@ -2748,7 +3125,7 @@ def format_relative_time(iso_timestamp):
     else:
         return "just now"
 
-@app.route('/api/posts', methods=['GET'])
+@app.route('/api/posts', methods=['GET','POST'])
 def get_posts():
     category = request.args.get('category', 'All')
     page = int(request.args.get('page', 1))
@@ -2761,8 +3138,15 @@ def get_posts():
     if category not in valid_folders:
         return jsonify({"error": "Invalid Category", "success": False}), 404
 
-    secret = request.args.get('secret')
-    key = request.args.get('key')
+    secret = None
+    key = None
+
+    isApi, key, secret, userInfo, acc = verify_api_request(request)
+
+    if isApi:
+        if not key or not secret:  # Ensures both key and secret are valid
+            return jsonify({'success': False, 'message': "Unauthorized"}), 401
+        
     posts = []
     isKey = bool(secret)
 
@@ -3236,11 +3620,15 @@ def reply_post_comment(comment_id):
 @app.route("/api/post/respond/<id>", methods=['POST'])
 def like_post(id):
     # Get the JSON data from the request body
-    data = request.get_json()
+    data = request.json
+    secret = None
+    key = None
 
-    secret = request.args.get('secret')
-    key = request.args.get('key')
-    isKey = bool(secret)
+    isApi, key, secret, userInfo, acc = verify_api_request(request)
+
+    if isApi:
+        if not key or not secret:  # Ensures both key and secret are valid
+            return jsonify({'success': False, 'message': "Unauthorized"}), 401
     
     if secret:
         isKey = True
@@ -3403,10 +3791,14 @@ def like_post(id):
 @app.route("/api/post/comment/respond/<id>", methods=['POST'])
 def like_post_comment(id):
     # Get the JSON data from the request body
-    data = request.get_json()
+    secret = None
+    key = None
 
-    secret = request.args.get('secret')
-    key = request.args.get('key')
+    isApi, key, secret, userInfo, acc = verify_api_request(request)
+
+    if isApi:
+        if not key or not secret:  # Ensures both key and secret are valid
+            return jsonify({'success': False, 'message': "Unauthorized"}), 401
     isKey = bool(secret)
     
     if secret:
@@ -3565,12 +3957,19 @@ def like_post_comment(id):
     else:
         return jsonify({"message": "Post Not Found!"}), 404        
 
-@app.route('/post/<post_id>', methods=['GET'])
+@app.route('/post/<post_id>', methods=['GET','POST'])
 def view_post(post_id):
     try:
         # Get query parameters
-        secret = request.args.get('secret')
-        key = request.args.get('key')
+        secret = None
+        key = None
+
+        isApi, key, secret, userInfo, acc = verify_api_request(request)
+
+        if isApi:
+            if not key or not secret:  # Ensures both key and secret are valid
+                return jsonify({'success': False, 'message': "Unauthorized"}), 401
+        
         nid = request.args.get('nid')
         
         # Handle secret key logic
@@ -3829,7 +4228,14 @@ def view_post(post_id):
             'time': format_relative_time(result.get("added", ""))
         }
 
-        return render_template('post.html', 
+        if isKey:
+            return jsonify({
+                "post": post,
+                "comments": comments, # Use total_for_category to determine hasMore
+                "userInfo":userInfo
+            }),200
+        else:
+            return render_template('post.html', 
                              post=post,
                              comments=comments,
                              userInfo=userInfo)
@@ -3967,8 +4373,15 @@ def comment():
     data = request.json
     print(data)
     
-    secret = request.args.get('secret')
-    key = request.args.get('key')
+    secret = None
+    key = None
+
+    isApi, key, secret, userInfo, acc = verify_api_request(request)
+    print(f"ll{isApi}")  
+    if isApi:
+            if not key or not secret:  # Ensures both key and secret are valid
+                return jsonify({'success': False, 'message': "Unauthorized"}), 401
+      
     isKey = bool(secret)
     if secret:
         isKey = True
@@ -3979,6 +4392,7 @@ def comment():
         print("Key is missing or empty, setting default secret.")
 
     if 'session_secret' in session:
+         key  = session["session_secret"]
          
 
          client = get_client(session["session_secret"],None)
@@ -4036,7 +4450,7 @@ def comment():
         iso_timestamp = datetime.now(timezone.utc).isoformat()
         
 
-        client = get_client(session["session_secret"],None)
+        client = get_client(key,None)
         databases = Databases(client)
 
         if comment_filter(data.get('content')):
@@ -4112,7 +4526,7 @@ def comment():
             "comment" : data.get('content'),
         }
 
-        return jsonify({'success': False, 'message': "Added","data":data}), 200
+        return jsonify({'success': True, 'message': "Added","data":data}), 200
 
         
     except Exception as e:
@@ -4123,8 +4537,14 @@ def post_reply():
     data = request.get_json()  # Get JSON data from the request
     comment_id = data.get('commentId')
     reply_content = data.get('content')
-    secret = request.args.get('secret')
-    key = request.args.get('key')
+    secret = None
+    key = None
+
+    isApi, key, secret, userInfo, acc = verify_api_request(request)
+
+    if isApi:
+        if not key or not secret:  # Ensures both key and secret are valid
+            return jsonify({'success': False, 'message': "Unauthorized"}), 401
     isKey = bool(secret)
     if secret:
         isKey = True
@@ -4283,26 +4703,48 @@ def post_reply():
           return jsonify({"error": f"Error:{e}"}), 500
 # Simulated data (replace with database queries in a real application
    
-@app.route('/profile')
-@app.route('/user/<path:subpath>')
+@app.route('/profile',methods=['POST','GET'])
+@app.route('/user/<path:subpath>',methods=['GET','POST'])
 @login_required
 def user(subpath=None):
-    secret = request.args.get('secret')
-    key = request.args.get('key')
+    secret = None
+    key = None
+
+    isApi, key, secret, userInfo, acc = verify_api_request(request)
+
+    if isApi:
+            if not key or not secret:  # Ensures both key and secret are valid
+                return jsonify({'success': False, 'message': "Unauthorized"}), 401
     userInfo = get_user_info(key,secret)
-    return render_template('profile.html',userInfo=userInfo)
-@app.route('/api/profile')
+
+    if bool(secret):
+        return jsonify(userInfo)
+    else:
+        return render_template('profile.html',userInfo=userInfo)
+@app.route('/api/profile',methods=['POST','GET'])
 def profile():
-    secret = request.args.get('secret')
-    key = request.args.get('key')
+    secret = None
+    key = None
+
+    isApi, key, secret, userInfo, acc = verify_api_request(request)
+
+    if isApi:
+            if not key or not secret:  # Ensures both key and secret are valid
+                return jsonify({'success': False, 'message': "Unauthorized"}), 401
 
     userInfo = get_user_info(key,secret)
  
     return jsonify(userInfo)
-@app.route('/api/settings')
+@app.route('/api/settings',methods=['POST','GET'])
 def settings():
-    secret = request.args.get('secret')
-    key = request.args.get('key')
+    secret = None
+    key = None
+
+    isApi, key, secret, userInfo, acc = verify_api_request(request)
+
+    if isApi:
+            if not key or not secret:  # Ensures both key and secret are valid
+                return jsonify({'success': False, 'message': "Unauthorized"}), 401
     userInfo = get_user_info(key, secret)
     isKey = bool(secret)
 
@@ -4371,8 +4813,14 @@ def settings():
 @app.route('/api/save/settings',methods=['POST'])
 def save_settings():
     data = request.json
-    secret = request.args.get('secret')
-    key = request.args.get('key')
+    secret = None
+    key = None
+
+    isApi, key, secret, userInfo, acc = verify_api_request(request)
+
+    if isApi:
+            if not key or not secret:  # Ensures both key and secret are valid
+                return jsonify({'success': False, 'message': "Unauthorized"}), 401
     userInfo = get_user_info(key,secret)
     isKey = bool(secret)
     if secret:
@@ -4441,12 +4889,18 @@ def save_settings():
     return jsonify({
         "data": data,
     }),200
-@app.route('/api/watchlist')
+@app.route('/api/watchlist',methods=['POST','GET'])
 def watchlist():
     page = int(request.args.get('page', 1))
     status = request.args.get('status', 'All')
-    secret = request.args.get('secret')
-    key = request.args.get('key')
+    secret = None
+    key = None
+
+    isApi, key, secret, userInfo, acc = verify_api_request(request)
+
+    if isApi:
+            if not key or not secret:  # Ensures both key and secret are valid
+                return jsonify({'success': False, 'message': "Unauthorized"}), 401
     per_page = 12
     userInfo = get_user_info(key,secret)
     isKey = bool(secret)
@@ -4505,7 +4959,7 @@ def watchlist():
             "dubbed": aniimeData.get("dubbed"),
             "image": img.get("cover"),
             "status": data.get("folder"),
-            "url":f'/watch/{aniimeData.get("mainId")}/1',
+            "url":f'/watch/{aniimeData.get("mainId")}',
             "duration": "45m", "current": 0, "total": 3,
         }
         watchlist_dataz.append(output)
@@ -4530,6 +4984,17 @@ def watchlist():
 def save_continue_watching():
     data = request.json
     print(data.get('episode'))
+    secret = None
+    key = None
+
+    isApi, key, secret, userInfo, acc = verify_api_request(request)
+
+    if isApi:
+            if not key or not secret:  # Ensures both key and secret are valid
+                return jsonify({'success': False, 'message': "Unauthorized"}), 401
+            
+    if not bool(secret):
+        secret = os.getenv('SECRET')
     try:
         if 'session_secret' in session:
             
@@ -4561,7 +5026,7 @@ def save_continue_watching():
         userInfo = None
 
 
-    client = get_client(None,os.getenv('SECRET'))
+    client = get_client(None,secret)
     databases = Databases(client)
     cid = ID.unique()
 
@@ -4629,8 +5094,20 @@ def save_continue_watching():
 
     return request.json
 
-@app.route('/api/continue-watching-home')
+@app.route('/api/continue-watching-home',methods=['GET','POST'])
 def continue_watching_home():
+
+    secret = None
+    key = None
+
+    isApi, key, secret, userInfo, acc = verify_api_request(request)
+
+    if isApi:
+            if not key or not secret:  # Ensures both key and secret are valid
+                return jsonify({'success': False, 'message': "Unauthorized"}), 401
+    
+    if not bool(secret):
+        secret = os.getenv('SECRET')
 
     try:
         if 'session_secret' in session:
@@ -4662,7 +5139,7 @@ def continue_watching_home():
     except Exception:
         userInfo = None
 
-    client = get_client(None,os.getenv('SECRET'))
+    client = get_client(None,secret)
     databases = Databases(client)
 
     search = databases.list_documents(
@@ -4706,6 +5183,7 @@ def continue_watching_home():
                 Query.select("number"),
             ] # optional
         )
+        cv = new_url = img.get('cover').replace("medium", "large")
 
         
         ff=  {
@@ -4714,19 +5192,29 @@ def continue_watching_home():
                 "episode": ep.get('number'),
                 "progress": f"{int(data['currentTime'] // 60)}:{int(data['currentTime'] % 60):02}",
                 "duration": f"{int(data['duration'] // 60)}:{int(data['duration'] % 60):02}",
-                "thumbnail": img.get('cover')
+                "thumbnail": cv
             }
         animes.append(ff)
     return jsonify(animes)
 
-@app.route('/api/continue-watching')
+@app.route('/api/continue-watching',methods=['GET','POST'])
 def continue_watching():
     
     page = int(request.args.get('page', 1))
     per_page = 8
     start = (page - 1) * per_page
     end = start + per_page
+    secret = None
+    key = None
+
+    isApi, key, secret, userInfo, acc = verify_api_request(request)
+
+    if isApi:
+            if not key or not secret:  # Ensures both key and secret are valid
+                return jsonify({'success': False, 'message': "Unauthorized"}), 401
     
+    if not bool(secret):
+        secret = os.getenv('SECRET')
     userInfo = None
     try:
         if 'session_secret' in session:
@@ -4754,7 +5242,7 @@ def continue_watching():
     if userInfo is None:
         return jsonify({"error": "User not authenticated"}), 401
 
-    client = get_client(None, os.getenv('SECRET'))
+    client = get_client(None, secret)
     databases = Databases(client)
 
     search = databases.list_documents(
@@ -4819,10 +5307,20 @@ def continue_watching():
         "current_page": page
     })
 
-@app.route('/api/realtime/anime/<id>')
+@app.route('/api/realtime/anime/<id>',methods=['GET','POST'])
 @limiter.limit("5000 per minute")
 def realtime_anime_info(id):
-    secret = os.getenv('SECRET')  
+    secret = None
+    key = None
+
+    isApi, key, secret, userInfo, acc = verify_api_request(request)
+
+    if isApi:
+            if not key or not secret:  # Ensures both key and secret are valid
+                return jsonify({'success': False, 'message': "Unauthorized"}), 401
+    
+    if not bool(secret):
+        secret = os.getenv('SECRET')
     client = get_client(None,secret)
     databases = Databases(client)
 
@@ -4854,11 +5352,17 @@ def realtime_anime_info(id):
 
     return animeDetails
 
-@app.route('/api/notifications/<notification_type>', methods=['GET'])
+@app.route('/api/notifications/<notification_type>', methods=['GET','POST'])
 @limiter.limit("30 per minute")
 def get_notifications(notification_type):
-    secret = request.args.get('secret')
-    key = request.args.get('key')
+    secret = None
+    key = None
+
+    isApi, key, secret, userInfo, acc = verify_api_request(request)
+
+    if isApi:
+        if not key or not secret:  # Ensures both key and secret are valid
+            return jsonify({'success': False, 'message': "Unauthorized"}), 401
     
     if secret:
         isKey = True
@@ -4870,7 +5374,10 @@ def get_notifications(notification_type):
     
     try:
         page = int(request.args.get('page', 1))
-        per_page = 6  # Number of notifications per page
+        if isApi:
+            per_page = 10  # Number of notifications per page
+        else:
+            per_page = 6
         offset = (page - 1) * per_page
 
         if 'session_secret' in session:
@@ -5024,11 +5531,17 @@ def get_notifications(notification_type):
         print(f"Error: {e}")
         return (f"Error: {e}")
     
-@app.route('/api/notifications/count', methods=['GET'])
+@app.route('/api/notifications/count', methods=['GET','POST'])
 @limiter.limit("30 per minute")
 def get_notifications_count():
-    secret = request.args.get('secret')
-    key = request.args.get('key')
+    secret = None
+    key = None
+
+    isApi, key, secret, userInfo, acc = verify_api_request(request)
+
+    if isApi:
+        if not key or not secret:  # Ensures both key and secret are valid
+            return jsonify({'success': False, 'message': "Unauthorized"}), 401
     
     if secret:
         isKey = True
@@ -5097,9 +5610,19 @@ def get_notifications_count():
         print(f"Error: {e}")
         return (f"Error: {e}")
     
-@app.route('/api/top/anime/', methods=['GET'])
+@app.route('/api/top/anime/',methods=['POST','GET'])
 def get_anime_data():
-    secret = os.getenv('SECRET')
+    secret = None
+    key = None
+
+    isApi, key, secret, userInfo, acc = verify_api_request(request)
+
+    if isApi:
+            if not key or not secret:  # Ensures both key and secret are valid
+                return jsonify({'success': False, 'message': "Unauthorized"}), 401
+    
+    if not bool(secret):
+        secret = os.getenv('SECRET')
     client = get_client(None, secret)
     databases = Databases(client)
 
@@ -5174,8 +5697,17 @@ def get_anime_data():
 
     return jsonify(anime_data)
 
-@app.route('/api/top/posts', methods=['GET'])
+@app.route('/api/top/posts',methods=['POST','GET'])
 def get_top_posts():
+    secret = None
+    key = None
+
+    isApi, key, secret, userInfo, acc = verify_api_request(request)
+
+    if isApi:
+        if not key or not secret:  # Ensures both key and secret are valid
+            return jsonify({'success': False, 'message': "Unauthorized"}), 401
+            
     client = get_client(None,os.getenv('SECRET'))
     databases = Databases(client)
 
@@ -5225,11 +5757,20 @@ def get_top_posts():
 
 from time import time
 
-@app.route('/countdowns')
+@app.route('/countdowns',methods=['POST','GET'])
 def countdowns():
     animes = []
-    secret = request.args.get('secret')
-    key = request.args.get('key')
+    secret = None
+    key = None
+
+    isApi, key, secret, userInfo, acc = verify_api_request(request)
+
+    if isApi:
+            if not key or not secret:  # Ensures both key and secret are valid
+                return jsonify({'success': False, 'message': "Unauthorized"}), 401
+    
+    if not bool(secret):
+        secret = os.getenv('SECRET')
     isKey = bool(secret)
     if secret:
         isKey = True
@@ -5317,13 +5858,25 @@ def countdowns():
 
     return render_template('countdowns.html', animes=animes, userInfo=userInfo)
 
-@app.route('/api/schedule', methods=['GET'])
+@app.route('/api/schedule', methods=['GET','POST'])
 def get_schedule():
     date = request.args.get('date')  # Expected format: YYYY-MM-DD
     user_timezone = request.args.get('timezone', 'UTC')
 
+    secret = None
+    key = None
+
+    isApi, key, secret, userInfo, acc = verify_api_request(request)
+
+    if isApi:
+            if not key or not secret:  # Ensures both key and secret are valid
+                return jsonify({'success': False, 'message': "Unauthorized"}), 401
+    
+    if not bool(secret):
+        secret = os.getenv('SECRET')
+
     # Initialize Appwrite client and databases service
-    client = get_client(None, os.getenv('SECRET'))
+    client = get_client(None, secret)
     databases = Databases(client)
 
     # Query data from Appwrite database
@@ -5500,13 +6053,27 @@ def update_profile():
     data = request.json
     print(data)
 
+    secret = None
+    key = None
+
+    isApi, key, secret, userInfo, acc = verify_api_request(request)
+
+    if isApi:
+            if not key or not secret:  # Ensures both key and secret are valid
+                return jsonify({'success': False, 'message': "Unauthorized"}), 401
+    
+    if not bool(secret):
+        secret = os.getenv('SECRET')
+    if not bool(key):
+        key=session["session_secret"]
+
     if data.get('newPassword') and data.get('confirmNewPassword'):
 
         if not data.get('newPassword') == data.get('confirmNewPassword'):
             return jsonify({'success': False, 'message': 'Passwords Doesn\'t match'}), 404
 
         
-        client = get_client(session['session_secret'],None)
+        client = get_client(key,None)
         account = Account(client)
 
         result = account.update_password(
@@ -5516,6 +6083,91 @@ def update_profile():
 
     return jsonify({'success': True, 'message': 'Done'}), 200
 
+@app.route('/version')
+def check_version():
+        secret = os.getenv('SECRET')
+        client = get_client(None,secret)
+        databases = Databases(client)
+
+        Notice = databases.list_documents(
+            database_id=os.getenv('DATABASE_ID'),
+            collection_id=os.getenv('Notices'),
+            queries=[
+                Query.order_desc('$createdAt'),
+                Query.equal("Type","android"),
+                Query.select(["version","Message","discord","telegram","discord","time","Title","reddit","build"]),
+                Query.limit(1)
+            ]
+        )
+
+        nData = Notice['documents'][0]
+
+        print(nData)
+
+        return nData
+@app.route('/download')
+def download():
+
+    secret = os.getenv('SECRET')
+    client = get_client(None, secret)
+    databases = Databases(client)
+
+    Notice = databases.list_documents(
+        database_id=os.getenv('DATABASE_ID'),
+        collection_id=os.getenv('Notices'),
+        queries=[
+            Query.order_desc('$createdAt'),
+            Query.equal("Type", "android"),
+            Query.select(["version","$updatedAt","build"]),
+            Query.limit(1)
+        ]
+    )
+
+    nData = Notice['documents'][0]
+
+    android = {
+       "version":nData['version'],
+       "build":nData['build'],
+       "latest":format_relative_time(nData['$updatedAt'])
+    }
+
+    return render_template("download.html",android=android)
+@app.route('/download/apk')
+def download_apk():
+    secret = os.getenv('SECRET')
+    client = get_client(None, secret)
+    databases = Databases(client)
+
+    Notice = databases.list_documents(
+        database_id=os.getenv('DATABASE_ID'),
+        collection_id=os.getenv('Notices'),
+        queries=[
+            Query.order_desc('$createdAt'),
+            Query.equal("Type", "android"),
+            Query.select(["downloadUrl","version","build"]),
+            Query.limit(1)
+        ]
+    )
+
+    nData = Notice['documents'][0]
+    download_url = nData['downloadUrl']
+
+    # Fetch APK from internal/local server
+    headers = {"User-Agent": "ProxyServer"}
+    response = requests.get(download_url, headers=headers, stream=True)
+
+    if response.status_code != 200:
+        return "Error fetching the file", 500
+
+    return Response(
+        response.iter_content(chunk_size=8192),
+        content_type="application/vnd.android.package-archive",
+        headers={
+            "Content-Disposition": f"attachment; filename=\"kuudere-v{nData['version']}-build-{nData['build']}.apk\""
+        }
+    )
+
+
 @app.route('/auth/callback')
 def callback():
     print(request)
@@ -5524,10 +6176,19 @@ def callback():
 def realtime():
     return render_template('rtest.html')
 
-@app.route('/recently-updated', methods=['GET'])
+@app.route('/recently-updated', methods=['GET','POST'])
 def recently_updated():
-    secret = request.args.get('secret')
-    key = request.args.get('key')
+    secret = None
+    key = None
+
+    isApi, key, secret, userInfo, acc = verify_api_request(request)
+
+    if isApi:
+            if not key or not secret:  # Ensures both key and secret are valid
+                return jsonify({'success': False, 'message': "Unauthorized"}), 401
+    
+    if not bool(secret):
+        secret = os.getenv('SECRET')
     isKey = bool(secret)
     ctotal = None
     if secret:
@@ -5702,11 +6363,24 @@ def calculate_progress(current_aura):
 
     return total_percentage
 
-@app.route("/public/user/<id>")
+@app.route("/public/user/<id>",methods=['GET','POST'])
 def public_profile(id):
     progress = 0
+
+    secret = None
+    key = None
+
+    isApi, key, secret, userInfo, acc = verify_api_request(request)
+
+    if isApi:
+            if not key or not secret:  # Ensures both key and secret are valid
+                return jsonify({'success': False, 'message': "Unauthorized"}), 401
+    
+    if not bool(secret):
+        secret = os.getenv('SECRET')
+
     try:
-            client = get_client(None,os.getenv('SECRET'))
+            client = get_client(None,secret)
             users = Users(client)
 
             acc = users.get(
@@ -5718,7 +6392,7 @@ def public_profile(id):
             print(e)     
     
     try:
-        client = get_client(None,os.getenv('SECRET'))
+        client = get_client(None,secret)
         databases = Databases(client)
 
         rank = databases.list_documents(
@@ -5733,7 +6407,7 @@ def public_profile(id):
             points =rank['documents'][0].get('points')
             progress = calculate_progress(points)
 
-        client = get_client(None,os.getenv('SECRET'))
+        client = get_client(None,secret)
         databases = Databases(client)
 
         watchlist = databases.list_documents(
@@ -5780,7 +6454,7 @@ def public_profile(id):
                 "dubbed": aniimeData.get("dubbed"),
                 "image": img.get("cover"),
                 "status": data.get("folder"),
-                "url":f'/watch/{aniimeData.get("mainId")}/1',
+                "url":f'/watch/{aniimeData.get("mainId")}',
             }
             watchlist_dataz.append(output)
 
@@ -5971,6 +6645,134 @@ def rank_points(client,acc,type,nd=None):
                 'user':acc.get('$id'),
             }
         )
+@app.route("/add-anime")
+def add_anime():
+    return render_template('add.html')
+
+
+@app.route("/report/anime/episode",methods=['POST'])
+def report_episode():
+    # Get the JSON data from the request body
+    data = request.json
+    secret = None
+    key = None
+
+    isApi, key, secret, userInfo, acc = verify_api_request(request)
+
+    if isApi:
+        if not key or not secret:  # Ensures both key and secret are valid
+            return jsonify({'success': False, 'message': "Unauthorized"}), 401
+    isKey = bool(secret)
+    
+    if secret:
+        isKey = True
+        print("Key exists: ", secret)
+    else:
+        isKey = False
+        secret = os.getenv('SECRET')  # Default value
+        print("Key is missing or empty, setting default secret.")
+
+    if 'session_secret' in session:
+        
+        key = session["session_secret"]
+
+        client = get_client(session["session_secret"], None)
+        account = Account(client)
+
+        acc = account.get()
+
+        userInfo = {
+            "userId": acc.get("$id"),
+            "username": acc.get("name"),
+            "email": acc.get("email")
+        }
+        
+    elif bool(key):
+        client = get_client(key, None)
+        account = Account(client)
+
+        acc = account.get()
+
+        userInfo = {
+            "userId": acc.get("$id"),
+            "username": acc.get("name"),
+            "email": acc.get("email")
+        }
+    else:
+        return jsonify({'success': False, 'message': "Unauthorized"}), 401
+    
+    client = get_client(None,secret)
+    databases = Databases(client)
+    rid = ID.unique()
+
+    try:
+        databases.create_document(
+                database_id=os.getenv('DATABASE_ID'),
+                collection_id=os.getenv('REPORTS'),
+                document_id=rid,
+                data={
+                    "rid":rid,
+                    "animeId":data.get('anime'),
+                    "epId":f"{data.get('episode')}",
+                    "userId":acc.get("$id"),
+                    "type":data.get('category'),
+                    "explain":data.get('feedback'),
+                }
+        )
+    
+        return jsonify({'success': True, 'message': 'Reported'}), 200
+    except Exception as e:
+        print(e)
+        return jsonify({'success': False, 'message': 'Something Went Wrong'}), 500
+
+@app.route('/sync_anilist/<int:anilist_id>')
+def sync_anilist(anilist_id):
+    # GraphQL query to fetch anime data from AniList
+    query = '''
+    query ($id: Int) {
+        Media (id: $id, type: ANIME) {
+            title {
+                romaji
+                english
+                native
+            }
+            description
+            genres
+            episodes
+            status
+            averageScore
+            coverImage {
+                large
+            }
+            bannerImage
+        }
+    }
+    '''
+    
+    variables = {
+        'id': anilist_id
+    }
+    
+    url = 'https://graphql.anilist.co'
+    
+    response = requests.post(url, json={'query': query, 'variables': variables})
+    data = response.json()
+    
+    if 'errors' in data:
+        return jsonify({'error': 'Failed to fetch AniList data'}), 400
+    
+    anime_data = data['data']['Media']
+    
+    return jsonify({
+        'title': anime_data['title']['english'] or anime_data['title']['romaji'],
+        'description': anime_data['description'],
+        'genres': anime_data['genres'],
+        'episodes': anime_data['episodes'],
+        'status': anime_data['status'],
+        'averageScore': anime_data['averageScore'],
+        'coverImage': anime_data['coverImage']['large'],
+        'bannerImage': anime_data['bannerImage']
+    })
 
 @app.route('/proxy/subtitle/<path:url>')
 def proxy_subtitle(url):
@@ -5991,10 +6793,22 @@ def faq():
 def timeline():
     return render_template('timeline.html')          
 
-@app.route('/')
+@app.route('/',methods=['GET','POST'])
 @cache.cached(timeout=60)
 def home():
-    secret = os.getenv('SECRET')
+    secret = None
+    key = None
+    isKey = False
+
+    isApi, key, secret, userInfo, acc = verify_api_request(request)
+
+    if isApi:
+            if not key or not secret:  # Ensures both key and secret are valid
+                return jsonify({'success': False, 'message': "Unauthorized"}), 401
+    
+    if not bool(secret):
+        secret = os.getenv('SECRET')
+        isKey = True
     client = get_client(None, secret)
     databases = Databases(client)
 
@@ -6029,7 +6843,10 @@ def home():
         }
         words.append(word)
     print(words)
-    return render_template("home.html",keywords=words)
+    if not isKey:
+        return jsonify(keywords)
+    else:
+        return render_template("home.html",keywords=words)
 
 # Custom error handler for 404 errors
 @app.errorhandler(404)
@@ -6066,4 +6883,4 @@ def handle_http_exception(e):
     
 if __name__ == '__main__':
     threading.Thread(target=lambda: asyncio.run(websocket_listener()), daemon=True).start()
-    socketio.run(app, debug=True,host='0.0.0.0')
+    socketio.run(app, debug=True, host='0.0.0.0')

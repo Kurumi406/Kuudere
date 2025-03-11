@@ -64,7 +64,7 @@ def is_valid_url(url):
         return all([result.scheme, result.netloc])
     except ValueError:
         return False
-ALLOWED_DOMAINS = {"https://kuudere.to"}
+ALLOWED_DOMAINS = {"https://kuudere.to","http://127.0.0.1:5000"}
 os.environ['no_proxy'] = 'localhost,127.0.0.1'
 POINTS_LIKES = 25
 
@@ -4945,7 +4945,6 @@ def like_post_comment(id):
                                 "postCommentLikesId": isliked['documents'][0]['postCommentLikesId'],
                                 "userId": acc.get("$id"),
                                 "postCommentId": id,
-                                "post_comment": id,
                                 "liked": True,
                             }
                         )
@@ -4960,7 +4959,6 @@ def like_post_comment(id):
                                 "userId": acc.get("$id"),
                                 "postId":isAnime.get('postId'),
                                 "postCommentId": id,
-                                "post_comment": id,
                                 "liked": True,
                             }
                         )

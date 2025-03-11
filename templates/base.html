@@ -611,7 +611,13 @@
                         <button @click="isOpen = !isOpen; if(isOpen) setTimeout(() => animate(), 50)"
                             class="theme-home-gray hover:text-theme-red transition-colors focus:outline-none"
                             aria-label="Open menu">
+                            {% if userInfo.pfp %}
+                                <img src="{{userInfo.pfp}}"
+                                    alt="Avatar"
+                                    class="w-9 h-9 rounded-full border-2 border-[#DC143C] animate-pulse-slow">
+                            {% else %}
                             <i data-lucide="user-circle-2" class="w-6 h-6"></i>
+                            {% endif %}
                         </button>
 
                         <!-- Popup Menu -->

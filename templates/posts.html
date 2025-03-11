@@ -138,7 +138,11 @@ x-init="initIntersectionObserver(); initializeSocket()"
                                 <h2 x-text="post.title" class="text-xl font-bold mb-2"></h2>
                                 <p x-text="post.content" class="text-gray-300 mb-4"></p>
                                 <div class="flex items-center gap-3">
-                                    <div class="w-8 h-8 bg-gray-500 rounded-full"></div>
+                                    <div class="w-8 h-8 bg-gray-500 rounded-full">
+                                        <img :src="post.authorAvatar"
+                                        alt="Avatar"
+                                        class="w-8 h-8 rounded-full border-0 border-[#DC143C] animate-pulse-slow">
+                                    </div>
                                     <span x-text="post.author" class="font-medium"></span>
                                     <template x-if="post.isMod">
                                         <span class="bg-gray-600 px-2 py-0.5 rounded text-xs">MOD</span>

@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Auth Callback</title>
+  <link rel="icon" href="{{ url_for('static', filename='favicon.png') }}" type="image/x-icon">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#FF0000',
+            secondary: '#1A1A1A',
+            accent: '#FF3333',
+            dark: '#000000',
+            light: '#FFFFFF',
+          }
+        }
+      }
+    }
+  </script>
+  <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+  <style>
+    body {
+      background-color: #000000;
+      font-family: 'Arial', sans-serif;
+    }
+    .callback-card {
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+      overflow: hidden;
+      transition: all 0.3s ease;
+      border: 1px solid #333333;
+    }
+    .btn-hover:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 7px 14px rgba(255, 0, 0, 0.2);
+    }
+    .animated-bg {
+      background: linear-gradient(135deg, #000000 0%, #FF0000 100%);
+      background-size: 400% 400%;
+      animation: gradientBG 15s ease infinite;
+    }
+    @keyframes gradientBG {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    .button-shine {
+      position: relative;
+      overflow: hidden;
+    }
+    .button-shine::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0) 100%);
+      transform: rotate(30deg);
+      transition: all 0.5s;
+      opacity: 0;
+    }
+    .button-shine:hover::after {
+      opacity: 1;
+      transition: all 0.5s;
+    }
+    .glow {
+      box-shadow: 0 0 15px rgba(255, 0, 0, 0.5);
+    }
+    .logo-container {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      overflow: hidden;
+      box-shadow: 0 0 20px rgba(255, 0, 0, 0.3);
+    }
+  </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4 bg-dark">
+  <div 
+    x-data="{ 
+      showModal: true,
+      choice: null,
+      isLoading: false,
+      redirectCountdown: 5,
+      animate() {
+        anime({
+          targets: '.callback-card',
+          scale: [0.9, 1],
+          opacity: [0, 1],
+          easing: 'easeOutElastic(1, .8)',
+          duration: 800
+        });
+        anime({
+          targets: '.button-container',
+          translateY: [20, 0],
+          opacity: [0, 1],
+          delay: anime.stagger(100, {start: 300}),
+          easing: 'easeOutQuad'
+        });
+        anime({
+          targets: '.logo-container',
+          scale: [0, 1],
+          rotate: '1turn',
+          easing: 'easeOutBack',
+          duration: 1000,
+          delay: 300
+        });
+      },
+      openApp() {
+        this.isLoading = true;
+        this.choice = 'app';
+        window.location.href = 'kuu://callback?token=12345';
+        setTimeout(() => {
+          if (document.hidden) {
+            // App opened successfully
+            this.isLoading = false;
+          } else {
+            // App failed to open, start redirect countdown
+            this.startRedirectCountdown();
+          }
+        }, 1000);
+      },
+      openWeb() {
+        this.choice = 'web';
+        this.showModal = false;
+        
+        // Show the transition animation
+        setTimeout(() => {
+          // Start the progress bar animation
+          const progressAnimation = anime({
+            targets: '.progress-bar',
+            width: ['0%', '100%'],
+            easing: 'easeInOutQuad',
+            duration: 2000,
+            complete: () => {
+              // After animation completes, show loading state
+              this.isLoading = true;
+              
+              // Add a small delay before redirecting
+              setTimeout(() => {
+                window.location.href = '/user/mal';
+              }, 800);
+            }
+          });
+        }, 300);
+      },
+      startRedirectCountdown() {
+        const countdownInterval = setInterval(() => {
+          this.redirectCountdown--;
+          if (this.redirectCountdown <= 0) {
+            clearInterval(countdownInterval);
+            window.location.href = '/download';
+          }
+        }, 1000);
+      }
+    }"
+    x-init="animate()"
+    class="relative"
+  >
+    <!-- Modal Backdrop -->
+    <div 
+      x-show="showModal" 
+      class="fixed inset-0 bg-black bg-opacity-80 z-10 flex items-center justify-center"
+      x-transition:enter="transition ease-out duration-300"
+      x-transition:enter-start="opacity-0"
+      x-transition:enter-end="opacity-100"
+      x-transition:leave="transition ease-in duration-200"
+      x-transition:leave-start="opacity-100"
+      x-transition:leave-end="opacity-0"
+    >
+      <!-- Modal Card -->
+      <div 
+        class="callback-card bg-dark rounded-xl w-full max-w-md overflow-hidden"
+        @click.outside="showModal = false"
+      >
+        <!-- Header with gradient background -->
+        <div class="animated-bg h-48 relative flex flex-col items-center justify-center">
+          <h2 class="text-2xl font-bold text-light mb-4">Authentication Successful</h2>
+          <!-- Logo Container -->
+          <div class="logo-container">
+            <img src="{{ url_for('static', filename='favicon.png') }}" alt="App Logo" class="w-full h-full object-cover" />
+          </div>
+        </div>
+        
+        <!-- Content -->
+        <div class="p-6 bg-dark">
+          <p class="text-gray-400 text-center mb-6">Choose how you'd like to continue</p>
+          
+          <!-- Buttons Container -->
+          <div class="button-container space-y-4">
+            <!-- Web Button -->
+            <button 
+              @click="openWeb()"
+              class="button-shine btn-hover w-full py-3 px-4 bg-secondary text-light rounded-lg flex items-center justify-center space-x-3 transition-all duration-300 border border-gray-800"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+              </svg>
+              <span>Continue in Browser</span>
+            </button>
+            
+            <!-- App Button -->
+            <button 
+              @click="openApp()"
+              class="button-shine btn-hover w-full py-3 px-4 bg-primary text-light rounded-lg flex items-center justify-center space-x-3 transition-all duration-300 glow red-pulse"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+              </svg>
+              <span>Open App</span>
+            </button>
+          </div>
+          
+          <!-- Footer -->
+          <div class="mt-6 text-center">
+            <a href="#" class="text-xs text-accent hover:underline">Remember my preference</a>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Result Display (after selection) -->
+    <div 
+      x-show="!showModal" 
+      x-transition:enter="transition ease-out duration-300"
+      x-transition:enter-start="opacity-0 scale-90"
+      x-transition:enter-end="opacity-100 scale-100"
+      class="bg-dark p-6 rounded-xl shadow-lg text-center border border-gray-800"
+    >
+      <div x-show="!isLoading">
+        <div class="text-2xl font-bold mb-4 text-light" x-text="choice === 'web' ? 'Continuing in Browser' : 'Opening App'"></div>
+        <p class="text-gray-400 mb-4">Please wait while we redirect you</p>
+        <div class="w-full h-2 bg-secondary rounded-full overflow-hidden">
+          <div 
+            class="h-full bg-primary rounded-full progress-bar" 
+            style="width: 0%"
+          ></div>
+        </div>
+        <button 
+          @click="showModal = true; choice = null;" 
+          class="mt-6 text-accent hover:underline"
+        >
+          Change selection
+        </button>
+      </div>
+      <div x-show="isLoading">
+        <div class="text-2xl font-bold mb-4 text-light" x-text="choice === 'web' ? 'Redirecting to Web App' : 'Opening App...'"></div>
+        <p class="text-gray-400 mb-4" x-show="choice === 'app'">If the app doesn't open, you'll be redirected to the download page in <span x-text="redirectCountdown"></span> seconds.</p>
+        <p class="text-gray-400 mb-4" x-show="choice === 'web'">Taking you to your profile...</p>
+        <div class="w-8 h-8 border-t-2 border-primary border-solid rounded-full animate-spin mx-auto"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Animate the background gradient
+      document.querySelector('.animated-bg').style.animation = 'gradientBG 15s ease infinite';
+      
+      // Red glow effect for primary button
+      anime({
+        targets: '.glow',
+        boxShadow: [
+          '0 0 5px rgba(255, 0, 0, 0.3)',
+          '0 0 15px rgba(255, 0, 0, 0.5)',
+          '0 0 5px rgba(255, 0, 0, 0.3)'
+        ],
+        easing: 'easeInOutSine',
+        duration: 2000,
+        loop: true
+      });
+    });
+  </script>
+</body>
+</html>
+

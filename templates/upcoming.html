@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+    [x-cloak] {
+        display: none !important;
+    }
+
+    .glass {
+        background: rgba(17, 25, 40, 0.75);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.125);
+    }
+
+    .dropdown-content scrollbar-thin {
+        opacity: 0;
+        transform: translateY(-10px);
+        transition: opacity 300ms ease-out, transform 300ms ease-out;
+    }
+
+    .dropdown-content scrollbar-thin.show {
+        opacity: 1;
+        transform: translateY(0);
+    }
+</style>
+<div class="bg-black min-h-screen p-8" x-data="joinRealtime()" x-init="initializeSocket()">
+    <div class="max-w-7xl mx-auto" x-data=">
+
+        <section class="mt-12">
+            <div class="mb-6 flex items-center justify-between">
+                <h2 class="text-xl sm:text-2xl text-white font-semibold">Results: {{ total }}</h2>
+                <a href="#" class="text-sm text-gray-400 hover:text-white"></a>
+            </div>
+            <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+                {% for anime in result %}
+                <a href="/anime/{{ anime.id }}" class="anime-card relative aspect-[3/4] overflow-visible rounded-md">
+                    <div
+                        class="relative h-full w-full overflow-hidden rounded-md transition-transform duration-300 ease-in-out hover:scale-105">
+                        <img src="{{ anime.cover }}" alt="{{ anime.english }}" class="w-full h-full object-cover">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent">
+                        </div>
+                        <div class="absolute left-2 top-2 flex flex-wrap gap-1">
+                            <span
+                                class="bg-black/50 backdrop-blur-sm text-white text-[10px] uppercase px-2 py-1 rounded-full">{{
+                                anime.type }}</span>
+                            <span
+                                class="bg-black/50 backdrop-blur-sm text-white text-[10px] uppercase px-2 py-1 rounded-full flex items-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1 text-yellow-400"
+                                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                    stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect>
+                                    <line x1="7" y1="2" x2="7" y2="22"></line>
+                                    <line x1="17" y1="2" x2="17" y2="22"></line>
+                                    <line x1="2" y1="12" x2="22" y2="12"></line>
+                                    <line x1="2" y1="7" x2="7" y2="7"></line>
+                                    <line x1="2" y1="17" x2="7" y2="17"></line>
+                                    <line x1="17" y1="17" x2="22" y2="17"></line>
+                                    <line x1="17" y1="7" x2="22" y2="7"></line>
+                                </svg>
+                                {{ anime.epCount }}
+                            </span>
+                            <span
+                                class="bg-black/50 backdrop-blur-sm text-white text-[10px] uppercase px-2 py-1 rounded-full flex items-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1 text-blue-400"
+                                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                    stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                                    <line x1="12" y1="19" x2="12" y2="23"></line>
+                                    <line x1="8" y1="23" x2="16" y2="23"></line>
+                                </svg>
+                                {{ anime.dubbedCount }}
+                            </span>
+                        </div>
+                        <div class="absolute bottom-2 left-2 right-2">
+                            <h3 class="text-sm font-medium text-white line-clamp-2">{{ anime.english }}</h3>
+                            <p class="mt-1 text-xs text-gray-300">Episodes {{ anime.epCount }}</p>
+                        </div>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+            {% if total %}
+            <div class="mt-8 flex justify-center gap-2" 
+                x-data="{ 
+                    currentPage: {{ page }}, 
+                    totalPages: {{ (total / results_per_page) | round(0, 'ceil') | int }},
+                    getPageNumbers() {
+                        let pages = [];
+                        let start = Math.max(1, this.currentPage - 2);
+                        let end = Math.min(this.totalPages, start + 2);
+                        
+                        if (end - start < 4) {
+                            start = Math.max(1, end - 2);
+                        }
+                        
+                        for (let i = start; i <= end; i++) {
+                            pages.push(i);
+                        }
+                        return pages;
+                    }
+                }">
+                <nav class="flex items-center gap-2">
+                    <!-- First page button -->
+                    <button 
+                        @click="window.location.href = updateURLParameter(window.location.href, 'page', 1)"
+                        :disabled="currentPage === 1"
+                        class="w-10 h-10 rounded-full glass text-gray-300 hover:text-white flex items-center justify-center text-sm font-medium transition-all duration-200"
+                        :class="{ 'opacity-50 cursor-not-allowed': currentPage === 1 }"
+                    >
+                        «
+                    </button>
+
+                    <!-- Previous page button -->
+                    <button 
+                        @click="if(currentPage > 1) window.location.href = updateURLParameter(window.location.href, 'page', currentPage - 1)"
+                        :disabled="currentPage === 1"
+                        class="w-10 h-10 rounded-full glass text-gray-300 hover:text-white flex items-center justify-center text-sm font-medium transition-all duration-200"
+                        :class="{ 'opacity-50 cursor-not-allowed': currentPage === 1 }"
+                    >
+                        ‹
+                    </button>
+
+                    <!-- Page numbers -->
+                    <template x-for="pageNum in getPageNumbers()">
+                        <button 
+                            @click="window.location.href = updateURLParameter(window.location.href, 'page', pageNum)"
+                            :class="{
+                                'bg-red-500 text-white': currentPage === pageNum,
+                                'glass text-gray-300 hover:text-white': currentPage !== pageNum
+                            }"
+                            class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium transition-all duration-200"
+                            x-text="pageNum">
+                        </button>
+                    </template>
+
+                    <!-- Next page button -->
+                    <button 
+                        @click="if(currentPage < totalPages) window.location.href = updateURLParameter(window.location.href, 'page', currentPage + 1)"
+                        :disabled="currentPage === totalPages"
+                        class="w-10 h-10 rounded-full glass text-gray-300 hover:text-white flex items-center justify-center text-sm font-medium transition-all duration-200"
+                        :class="{ 'opacity-50 cursor-not-allowed': currentPage === totalPages }"
+                    >
+                        ›
+                    </button>
+
+                    <!-- Last page button -->
+                    <button 
+                        @click="window.location.href = updateURLParameter(window.location.href, 'page', totalPages)"
+                        :disabled="currentPage === totalPages"
+                        class="w-10 h-10 rounded-full glass text-gray-300 hover:text-white flex items-center justify-center text-sm font-medium transition-all duration-200"
+                        :class="{ 'opacity-50 cursor-not-allowed': currentPage === totalPages }"
+                    >
+                        »
+                    </button>
+                </nav>
+            </div>
+            {% endif %}
+        </section>
+    </div>
+
+    <script>
+        // Initialize anime.js animations
+        document.addEventListener('alpine:initialized', () => {
+            anime({
+                targets: '.anime-card',
+                scale: [0.9, 1],
+                opacity: [0, 1],
+                delay: anime.stagger(100),
+                duration: 800,
+                easing: 'easeOutElastic(1, .6)'
+            });
+        });
+        function updateURLParameter(url, param, value) {
+            var regex = new RegExp("([?&])" + param + "=.*?(&|$)", "i");
+            var separator = url.indexOf('?') !== -1 ? "&" : "?";
+            if (url.match(regex)) {
+                return url.replace(regex, '$1' + param + "=" + value + '$2');
+            }
+            else {
+                return url + separator + param + "=" + value;
+            }
+        }
+        function joinRealtime(){
+            console.log("lol")
+            return{
+            socket: null,
+            currentRoom: null,
+            initializeSocket() {
+                        this.socket = io({ transports: ['websocket'] });
+
+                        this.socket.on('connect', () => {
+                            console.log('Connected to server');
+                            this.joinRoom();
+                        });
+                    },
+                    joinRoom() {
+                    const part = 'search'
+                    console.log(part);
+                    if (this.currentRoom) {
+                        this.socket.emit('leave', { room: this.currentRoom });
+                    }
+                    this.currentRoom = part;
+                    this.socket.emit('join', { other_id: this.currentRoom });
+                    this.socket.emit('get_current_room_count', { room: this.currentRoom }); // Request count for the current room
+                }
+                }
+            }
+            window.dispatchEvent(new Event('join-room'));
+    </script>
+</div>
+{% include "footer.html" %}
+{% endblock %}

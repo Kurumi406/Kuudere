@@ -93,9 +93,37 @@
             <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-red-600"></div>
         </div>
 
-        <div class="flex flex-col lg:flex-row h-full">
+        <div class="flex flex-col lg:flex-row h-full" x-data="{ mainContentHeight: 0 }" x-init="() => { 
+            // Function to calculate and set heights
+            function updateHeights() {
+              // Get the main content element
+              const mainContent = document.querySelector('.main-content');
+              if (!mainContent) return;
+              
+              // Calculate its height
+              mainContentHeight = mainContent.offsetHeight;
+              
+              // Log for debugging
+              console.log('Main content height updated:', mainContentHeight);
+            }
+            
+            // Initial calculation after DOM is loaded
+            $nextTick(() => {
+              // Wait a bit for everything to render properly
+              setTimeout(updateHeights, 100);
+            });
+            
+            // Update when window is resized
+            window.addEventListener('resize', updateHeights);
+            
+            // Update when video is loaded (which might change the height)
+            document.addEventListener('videoLoaded', updateHeights);
+          }">
             <!-- Main Content Area -->
-            <div class="lg:w-3/4 space-y-6 p-4">
+            <aside class="hidden xl:inline-block lg:w-3/12 space-y-6 p-4 scrollbar-ass scrollbar-thumb-[#FF0000] scrollbar-track-[#2a2a2a]" x-bind:style="'max-height: ' + mainContentHeight + 'px; overflow-y: auto;'">
+                {% include "infoCard.html" %}
+            </aside>
+            <div class="lg:w-9/12 space-y-6 p-4 main-content">
                 <div x-show="currentVideoLink" class="relative aspect-video rounded-lg overflow-hidden shadow-2xl">
                     <!-- Video Loading Overlay -->
                     <div x-show="isVideoLoading"
@@ -129,91 +157,414 @@
                 </div>
 
                 <!-- Watching Status Bar -->
-                <div class="bg-gray-900/50 p-4 rounded-lg flex items-center justify-between">
-                    <div class="flex items-center gap-4">
-                        <div x-data="counter()" x-init="initializeSocket()" @join-room.window="joinRoom()"
-                            class="flex items-center gap-2">
-                            <span x-text="formatCount(count)" class="number-animation inline-block"
-                                :class="{'number-up': increasing, 'number-down': decreasing}">
-                            </span>
-                            <span class="text-red-500">●</span>
-                            watching
+                <style>
+                    /* YouTube-style colors */
+                    .bg-youtube-dark {
+                      background-color: #0f0f0f;
+                    }
+                    .bg-youtube-button {
+                      background-color: #272727;
+                    }
+                    .hover-youtube-button:hover {
+                      background-color: #3f3f3f;
+                    }
+                    
+                    /* Particle animation for like/dislike buttons */
+                    @keyframes particle-animation {
+                      0% {
+                        transform: translate(0, 0) scale(0);
+                        opacity: 1;
+                      }
+                      100% {
+                        transform: translate(var(--tx), var(--ty)) scale(1);
+                        opacity: 0;
+                      }
+                    }
+                    .particle {
+                      position: absolute;
+                      border-radius: 50%;
+                      pointer-events: none;
+                      animation: particle-animation 0.6s ease-out forwards;
+                    }
+                    .particle-like {
+                      background-color: rgb(239, 68, 68); /* Red */
+                    }
+                    .particle-dislike {
+                      background-color: rgb(59, 130, 246); /* Blue */
+                    }
+                    .particle-watchlist {
+                      background-color: rgb(16, 185, 129); /* Green */
+                    }
+                    
+                    /* Count animation */
+                    @keyframes count-up {
+                      0% { transform: translateY(-10px); opacity: 0; }
+                      100% { transform: translateY(0); opacity: 1; }
+                    }
+                    @keyframes count-down {
+                      0% { transform: translateY(10px); opacity: 0; }
+                      100% { transform: translateY(0); opacity: 1; }
+                    }
+                    .count-animate-up {
+                      animation: count-up 0.3s ease-out forwards;
+                    }
+                    .count-animate-down {
+                      animation: count-down 0.3s ease-out forwards;
+                    }
+                    
+                    /* Button animation */
+                    @keyframes button-pop {
+                      0% { transform: scale(1); }
+                      50% { transform: scale(1.2); }
+                      100% { transform: scale(1); }
+                    }
+                    .button-pop {
+                      animation: button-pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+                    }
+                  </style>
+                  
+                  <!-- YouTube-style video controls -->
+                  <div class="flex flex-col px-2 sm:px-4 py-2 gap-3 sm:gap-4 bg-youtube-dark text-white rounded-md">
+                    <!-- Video Controls -->
+                    <div class="flex items-center justify-between gap-2">
+                      <!-- Left side: Watching Count and Like/Dislike -->
+                      <div class="flex items-center gap-2 sm:gap-4">
+                        <!-- Watching Counter - First for psychological reasons -->
+                        <div 
+                          x-data="counter()" 
+                          x-init="initializeSocket()" 
+                          @join-room.window="joinRoom()"
+                          class="flex items-center gap-2 px-2 sm:px-4 py-1.5 sm:py-2 rounded-full bg-youtube-button"
+                        >
+                          <span x-text="formatCount(count)" class="number-animation inline-block text-xs sm:text-sm font-medium"
+                            :class="{'number-up': increasing, 'number-down': decreasing}">
+                          </span>
+                          <span class="text-red-500 text-xs">●</span>
+                          <span class="text-xs sm:text-sm">watching</span>
                         </div>
-                        <div x-data="likeSystem()" class="flex items-center gap-2">
-                            <button 
-                                @click="like()" 
-                                :disabled="isLoading"
-                                :class="{
-                                    'text-red-500': liked,
-                                    'text-gray-500': !liked,
-                                    'opacity-50 cursor-not-allowed': isLoading
-                                }"
-                                class="like-button hover:text-gray-300 transition-colors p-1 relative"
-                                x-bind:style="liked ? 'color: rgb(239, 68, 68);' : ''">
-                                <!-- Loading spinner -->
-                                <div 
-                                    x-show="isLoading" 
-                                    class="absolute inset-0 flex items-center justify-center">
-                                    <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                    </svg>
-                                </div>
-                                <!-- Like icon -->
-                                <svg 
-                                    :class="{ 'opacity-0': isLoading }"
-                                    xmlns="http://www.w3.org/2000/svg" 
-                                    class="h-5 w-5" 
-                                    fill="none" 
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
-                                </svg>
-                            </button>
-                            <span x-text="likes" class="likes text-sm font-medium text-gray-500"></span>
+                        
+                        <!-- Like/Dislike - After watching count for better engagement flow -->
+                        <div 
+                          x-data="likeSystem()" 
+                          x-init="
+                            $watch('liked', value => {
+                              if (value && !isLoading) createParticles('like-button', 'particle-like');
+                            });
+                            $watch('disliked', value => {
+                              if (value && !isLoading) createParticles('dislike-button', 'particle-dislike');
+                            })
+                          "
+                          class="flex items-center rounded-full overflow-hidden bg-youtube-button"
+                        >
+                          <!-- Like Button -->
+                          <button 
+                            id="like-button"
+                            @click="like()" 
+                            :disabled="isLoading"
+                            class="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 hover-youtube-button transition-colors duration-200 relative"
+                            :class="{ 'text-red-500': liked, 'text-white': !liked }"
+                          >
+                            <!-- Loading spinner -->
+                            <div 
+                              x-show="isLoading" 
+                              class="absolute inset-0 flex items-center justify-center bg-youtube-button bg-opacity-80"
+                            >
+                              <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                            </div>
                             
-                            <button 
-                                @click="dislike()" 
-                                :disabled="isLoading"
-                                :class="{
-                                    'text-blue-500': disliked,
-                                    'text-gray-500': !disliked,
-                                    'opacity-50 cursor-not-allowed': isLoading
-                                }"
-                                class="dislike-button hover:text-gray-300 transition-colors p-1 relative"
-                                x-bind:style="disliked ? 'color: rgb(59, 130, 246);' : ''">
-                                <!-- Loading spinner -->
-                                <div 
-                                    x-show="isLoading" 
-                                    class="absolute inset-0 flex items-center justify-center">
-                                    <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                    </svg>
-                                </div>
-                                <!-- Dislike icon -->
-                                <svg 
-                                    :class="{ 'opacity-0': isLoading }"
+                            <!-- Like icon - Outline version (when not liked) -->
+                            <svg 
+                              x-show="!liked"
+                              xmlns="http://www.w3.org/2000/svg" 
+                              width="18" 
+                              height="18" 
+                              viewBox="0 0 24 24" 
+                              fill="none" 
+                              stroke="currentColor" 
+                              stroke-width="2" 
+                              stroke-linecap="round" 
+                              stroke-linejoin="round"
+                            >
+                              <path d="M7 10v12"/>
+                              <path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2h0a3.13 3.13 0 0 1 3 3.88Z"/>
+                            </svg>
+                            
+                            <!-- Like icon - Filled version (when liked) -->
+                            <svg 
+                              x-show="liked"
+                              xmlns="http://www.w3.org/2000/svg" 
+                              width="18" 
+                              height="18" 
+                              viewBox="0 0 24 24" 
+                              fill="currentColor" 
+                              stroke="none"
+                            >
+                              <path d="M7 10v12M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2h0a3.13 3.13 0 0 1 3 3.88Z"/>
+                            </svg>
+                            
+                            <span 
+                              x-text="likes" 
+                              class="text-xs sm:text-sm font-medium transition-colors duration-200"
+                              :class="liked ? 'text-red-500' : 'text-white'"
+                              x-effect="
+                                if (!isLoading) {
+                                  $el.classList.remove('count-animate-up', 'count-animate-down');
+                                  void $el.offsetWidth;
+                                  $el.classList.add(liked ? 'count-animate-up' : 'count-animate-down');
+                                }
+                              "
+                            ></span>
+                          </button>
+                          
+                          <div class="w-px h-6 bg-zinc-700"></div>
+                          
+                          <!-- Dislike Button -->
+                          <button 
+                            id="dislike-button"
+                            @click="dislike()" 
+                            :disabled="isLoading"
+                            class="px-2 sm:px-4 py-1.5 sm:py-2 hover-youtube-button transition-colors duration-200 relative"
+                            :class="{ 'text-blue-500': disliked, 'text-white': !disliked }"
+                          >
+                            <!-- Loading spinner -->
+                            <div 
+                              x-show="isLoading" 
+                              class="absolute inset-0 flex items-center justify-center bg-youtube-button bg-opacity-80"
+                            >
+                              <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                            </div>
+                            
+                            <!-- Dislike icon - Outline version (when not disliked) -->
+                            <svg 
+                              x-show="!disliked"
+                              xmlns="http://www.w3.org/2000/svg" 
+                              width="18" 
+                              height="18" 
+                              viewBox="0 0 24 24" 
+                              fill="none" 
+                              stroke="currentColor" 
+                              stroke-width="2" 
+                              stroke-linecap="round" 
+                              stroke-linejoin="round"
+                            >
+                              <path d="M17 14V2"/>
+                              <path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22h0a3.13 3.13 0 0 1-3-3.88Z"/>
+                            </svg>
+                            
+                            <!-- Dislike icon - Filled version (when disliked) -->
+                            <svg 
+                              x-show="disliked"
+                              xmlns="http://www.w3.org/2000/svg" 
+                              width="18" 
+                              height="18" 
+                              viewBox="0 0 24 24" 
+                              fill="currentColor" 
+                              stroke="none"
+                            >
+                              <path d="M17 14V2M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22h0a3.13 3.13 0 0 1-3-3.88Z"/>
+                            </svg>
+                          </button>
+                        </div>
+                        
+                        <!-- Watchlist Button - Added next to Like/Dislike -->
+                        <div 
+                          x-data="watchlist()" 
+                          x-init="
+                            $watch('inWatchlist', value => {
+                              if (value && !isLoading) createParticles('watchlist-button', 'particle-watchlist');
+                            })
+                          "
+                          class="rounded-full bg-youtube-button relative"
+                        >
+                          <!-- Watchlist Button Trigger -->
+                           {% if userInfo %}
+                          <button 
+                          id="watchlist-button"
+                          @click="toggleDropdown()" 
+                          :disabled="isLoading"
+                          class="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 hover-youtube-button transition-colors duration-200 relative rounded-full"
+                          :class="{ 'text-green-500': inWatchlist, 'text-white': !inWatchlist }"
+                        >
+                          <!-- Loading spinner -->
+                          <div 
+                            x-show="isLoading" 
+                            class="absolute inset-0 flex items-center justify-center bg-youtube-button bg-opacity-80 rounded-full"
+                          >
+                            <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                          </div>
+                          
+                          <!-- Bookmark icon - Outline (not in watchlist) -->
+                          <svg 
+                            x-show="!inWatchlist"
+                            xmlns="http://www.w3.org/2000/svg" 
+                            width="18" 
+                            height="18" 
+                            viewBox="0 0 24 24" 
+                            fill="none" 
+                            stroke="currentColor" 
+                            stroke-width="2" 
+                            stroke-linecap="round" 
+                            stroke-linejoin="round"
+                          >
+                            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                          </svg>
+                          
+                          <!-- Bookmark icon - Filled (in watchlist) -->
+                          <svg 
+                            x-show="inWatchlist"
+                            xmlns="http://www.w3.org/2000/svg" 
+                            width="18" 
+                            height="18" 
+                            viewBox="0 0 24 24" 
+                            fill="currentColor" 
+                            stroke="none"
+                          >
+                            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                          </svg>
+                          
+                          <span 
+                            x-text="inWatchlist ? 'Added' : 'Add'" 
+                            class="text-xs sm:text-sm font-medium"
+                            :class="inWatchlist ? 'text-green-500' : 'text-white'"
+                          ></span>
+                        </button>
+                        {% else %}
+                          <button 
+                            id="watchlist-button"
+                            @click="isAuthOpen = true" 
+                            :disabled="isLoading"
+                            class="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 hover-youtube-button transition-colors duration-200 relative rounded-full"
+                            :class="{ 'text-green-500': inWatchlist, 'text-white': !inWatchlist }"
+                          >
+                            <!-- Loading spinner -->
+                            <div 
+                              x-show="isLoading" 
+                              class="absolute inset-0 flex items-center justify-center bg-youtube-button bg-opacity-80 rounded-full"
+                            >
+                              <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                            </div>
+                            
+                            <!-- Bookmark icon - Outline (not in watchlist) -->
+                            <svg 
+                              x-show="!inWatchlist"
+                              xmlns="http://www.w3.org/2000/svg" 
+                              width="18" 
+                              height="18" 
+                              viewBox="0 0 24 24" 
+                              fill="none" 
+                              stroke="currentColor" 
+                              stroke-width="2" 
+                              stroke-linecap="round" 
+                              stroke-linejoin="round"
+                            >
+                              <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                            </svg>
+                            
+                            <!-- Bookmark icon - Filled (in watchlist) -->
+                            <svg 
+                              x-show="inWatchlist"
+                              xmlns="http://www.w3.org/2000/svg" 
+                              width="18" 
+                              height="18" 
+                              viewBox="0 0 24 24" 
+                              fill="currentColor" 
+                              stroke="none"
+                            >
+                              <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                            </svg>
+                            
+                            <span 
+                              x-text="inWatchlist ? 'Added' : 'Add'" 
+                              class="text-xs sm:text-sm font-medium"
+                              :class="inWatchlist ? 'text-green-500' : 'text-white'"
+                            ></span>
+                          </button>
+                        {% endif %}
+                        <!-- Watchlist Dropdown Menu -->
+                        <div 
+                        x-show="dropdownOpen" 
+                        @click.away="dropdownOpen = false" 
+                        class="absolute left-0 top-full z-50 w-[240px] sm:w-[280px] mt-3 bg-youtube-dark border border-zinc-600 rounded-lg shadow-lg overflow-hidden"
+                        style="display: none;">
+                        <div class="py-2">
+                            <template x-for="folder in folders" :key="folder">
+                            <div class="relative px-2">
+                                <a 
+                                href="#" 
+                                @click.prevent="addToWatchlist(folder)" 
+                                class="block px-4 py-3 my-1 text-sm text-white hover:bg-youtube-button transition-colors flex items-center justify-between rounded-md"
+                                :class="{'bg-youtube-button': currentFolder === folder}"
+                                >
+                                <span x-text="folder" class="font-medium truncate mr-4"></span>
+                                <span class="relative flex-shrink-0 flex items-center">
+                                    <!-- Loading Circle -->
+                                    <svg 
+                                    x-show="loading === folder" 
+                                    class="animate-spin h-5 w-5 text-white" 
                                     xmlns="http://www.w3.org/2000/svg" 
-                                    class="h-5 w-5" 
                                     fill="none" 
                                     viewBox="0 0 24 24"
-                                    stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018a2 2 0 01.485.06l3.76.94m-7 10v5a2 2 0 002 2h.096c.5 0 .905-.405.905-.904 0-.715.211-1.413.608-2.008L17 13V4m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5" />
-                                </svg>
-                            </button>
-                            <span x-text="dislikes" class="dislikes text-sm font-medium text-gray-500"></span>
+                                    >
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    <!-- Green Tick -->
+                                    <svg 
+                                    x-show="success === folder || (inWatchlist && currentFolder === folder)" 
+                                    class="h-5 w-5 text-green-500" 
+                                    xmlns="http://www.w3.org/2000/svg" 
+                                    viewBox="0 0 20 20" 
+                                    fill="currentColor"
+                                    >
+                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                    </svg>
+                                    <!-- Red Cross -->
+                                    <svg 
+                                    x-show="error === folder" 
+                                    class="h-5 w-5 text-red-500" 
+                                    xmlns="http://www.w3.org/2000/svg" 
+                                    viewBox="0 0 20 20" 
+                                    fill="currentColor"
+                                    >
+                                    <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                    </svg>
+                                </span>
+                                </a>
+                            </div>
+                            </template>
                         </div>
-                    </div>
-                    <button @click="isShareOpen = true" class="hover:bg-gray-800 p-2 rounded-full">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                            <path
-                                d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" />
+                        </div>
+                        </div>
+                      </div>
+                      
+                      <!-- Right side: Share Button -->
+                      <button 
+                        @click="isShareOpen = true" 
+                        class="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 rounded-full bg-youtube-button hover-youtube-button transition-colors duration-200"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <circle cx="18" cy="5" r="3"/>
+                          <circle cx="6" cy="12" r="3"/>
+                          <circle cx="18" cy="19" r="3"/>
+                          <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+                          <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
                         </svg>
-                    </button>
-                </div>
+                        <span class="text-xs sm:text-sm font-medium">Share</span>
+                      </button>
+                    </div>
+                  </div>
 
                 <div class="flex flex-col xl:flex-row">
                     <div class="bg-pink-200 p-4 rounded-lg w-full xl:w-64 mb-4 xl:mb-0">
@@ -353,242 +704,18 @@
                         </div>
                     </div>
                 </div>
-                <div class="mt-8 bg-[#1a1a1a] rounded-lg p-6">
-                    <div class="flex items-center justify-between mb-4">
-                        <h2 class="text-2xl font-semibold text-white" x-text="'Comments: ' + total_comments"></h2>
-                        <div class="flex items-center space-x-2">
-                            <button @click="switchToBuiltIn" 
-                                    class="p-2 rounded-full bg-gray-700 hover:bg-gray-600 transition-colors duration-200"
-                                    :class="{ 'bg-red-500 hover:bg-red-600': !useDisqus }">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16l-4-4m0 0l4-4m-4 4h18" />
-                                </svg>
-                            </button>
-                            <span class="text-white font-medium" x-text="useDisqus ? 'Disqus' : 'Built-in'"></span>
-                            <button @click="switchToDisqus" 
-                                    class="p-2 rounded-full bg-gray-700 hover:bg-gray-600 transition-colors duration-200"
-                                    :class="{ 'bg-red-500 hover:bg-red-600': useDisqus }">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-                
-                    <!-- Built-in comment system -->
-                    <div x-show="!useDisqus" x-transition:enter="transition ease-out duration-300"
-                         x-transition:enter-start="opacity-0 transform scale-95"
-                         x-transition:enter-end="opacity-100 transform scale-100"
-                         x-transition:leave="transition ease-in duration-200"
-                         x-transition:leave-start="opacity-100 transform scale-100"
-                         x-transition:leave-end="opacity-0 transform scale-95">
-                    <div class="mb-6">
-                        <div class="flex items-center gap-2 mb-2">
-                            <div class="w-8 h-8 rounded-full bg-[#2a2a2a] flex items-center justify-center">
-                                <img src="{{ url_for('static', filename='placeholder.svg') }}" alt="User" class="w-6 h-6 rounded-full" />
-                            </div>
-                            {% if userInfo %}
-                            <span class="text-sm text-white">Comment as {{ userInfo.username }}</span>
-                            {% else %}
-                            <span class="text-sm text-gray-400">Login To comment</span>
-                            {% endif %}
-                        </div>
-                        <div class="relative">
-                            <textarea x-model="newComment"
-                                class="w-full bg-[#2a2a2a] text-white rounded-lg p-3 focus:outline-none focus:ring-1 focus:ring-[#3a3a3a]"
-                                rows="3" placeholder="Leave a comment"></textarea>
-                            <div class="absolute right-2 bottom-2">
-                                <button @click="toggleEmojiPicker" type="button"
-                                    class="text-[#808080] hover:text-white transition-colors duration-200">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none"
-                                        viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                </button>
-                                <div x-show="showEmojiPicker" @click.away="showEmojiPicker = false"
-                                    class="absolute bottom-full right-0 mb-2 bg-[#2a2a2a] bg-opacity-70 backdrop-filter backdrop-blur-lg rounded-lg shadow-lg p-4 z-10"
-                                    x-transition:enter="transition ease-out duration-300"
-                                    x-transition:enter-start="opacity-0 transform scale-95"
-                                    x-transition:enter-end="opacity-100 transform scale-100"
-                                    x-transition:leave="transition ease-in duration-200"
-                                    x-transition:leave-start="opacity-100 transform scale-100"
-                                    x-transition:leave-end="opacity-0 transform scale-95">
-                                    <div id="emoji-picker"></div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="flex items-center justify-between mt-2 px-2">
-                            <label class="flex items-center gap-2">
-                                <input type="checkbox" x-model="isSpoiler" class="rounded bg-[#2a2a2a] border-none text-[#FF0000] focus:ring-0"/>
-                                <span class="text-xs text-[#808080]">Spoil?</span>
-                            </label>
-                            <div class="flex items-center gap-2">
-                                <button @click="closeComment" type="button"
-                                    class="px-3 py-1.5 text-xs text-[#808080] hover:text-white transition-colors">
-                                    Close
-                                </button>
-                                {% if userInfo %}
-                                <button @click="postComment" type="button"
-                                    class="px-4 py-1.5 bg-[#FF0000] hover:bg-opacity-90 text-white rounded text-xs font-medium transition-colors">
-                                    Comment
-                                </button>
-                                {% else %}
-                                <button @click="isAuthOpen = true" type="button"
-                                    class="px-4 py-1.5 bg-[#FF0000] hover:bg-opacity-90 text-white rounded text-xs font-medium transition-colors">
-                                    Login To Comment
-                                </button>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                    <div class="max-h-[400px] overflow-y-auto pr-2 space-y-4 scrollbar-thin">
-                        <template x-for="(comment, index) in comments" :key="comment.id">
-                            <div class="py-4 border-b border-[#2a2a2a] last:border-b-0">
-                                <div class="flex items-start gap-4">
-                                    <!-- Vote buttons column -->
-                                    <div class="flex flex-col items-center gap-1" :data-comment-id="comment.id">
-                                        <button @click="vote(comment.id,'like')" 
-                                            :data-comment-id="comment.id+'like'"
-                                            class="like-button p-1 rounded hover:bg-[#2a2a2a] transition-colors"
-                                            :class="{
-                                                'text-red-500': comment.isLiked,
-                                                'text-gray-500': !comment.isLiked,
-                                                'opacity-50 cursor-not-allowed': isLoading
-                                            }">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
-                                            </svg>
-                                        </button>
-                                        <div 
-                                            :data-button-id="comment.id+'lb'"
-                                            class="flex items-center justify-center hidden">
-                                            <svg class="animate-spin h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                            </svg>
-                                        </div>
-                                        <span class="likes text-xs font-medium text-gray-500" :data-comment-id="comment.id+'lCount'" x-text="comment.likes || 0"></span>
-                                        <span class="text-xs font-medium" 
-                                            :class="comment.voted ? 'text-[#FF0000]' : 'text-[#808080]'"
-                                            x-text="comment.votes"></span>
-                                        <button @click="vote(comment.id,'dislike')"
-                                            :data-comment-id="comment.id+'dislike'"
-                                            class="dislike-button p-1 rounded hover:bg-[#2a2a2a] transition-colors"
-                                            :class="{
-                                                'text-blue-500': comment.isUnliked,
-                                                'text-gray-500': !comment.isUnliked,
-                                                'opacity-50 cursor-not-allowed': isLoading
-                                            }">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018a2 2 0 01.485.06l3.76.94m-7 10v5a2 2 0 002 2h.096c.5 0 .905-.405.905-.904 0-.715.211-1.413.608-2.008L17 13V4m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5" />
-                                            </svg>
-                                        </button>
-                                        <div 
-                                            :data-button-id="comment.id+'disb'"
-                                            class="flex items-center justify-center hidden">
-                                            <svg class="animate-spin h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                            </svg>
-                                        </div>
-                                    </div>
-                
-                                    <!-- Comment content -->
-                                    <div class="flex-1">
-                                        <div class="flex items-center gap-2 mb-1">
-                                            <span class="text-md font-medium text-white" x-text="comment.author"></span>
-                                            <span class="text-sm text-[#808080]" x-text="comment.time"></span>
-                                        </div>
-                                        <p class="text-md text-[#808080] mb-2" x-text="comment.content"></p>
-                                        
-                                        <!-- Action buttons -->
-                                        <div class="flex items-center gap-4">
-                                            <button @click="toggleReply(comment.id)"
-                                                class="text-xs text-[#FF0000] hover:text-white transition-colors">
-                                                Reply
-                                            </button>
-                                            <button 
-                                                x-show="comment.replies.length > 0"
-                                                @click="toggleReplies(comment.id)"
-                                                class="text-xs text-[#FF0000] hover:text-white transition-colors flex items-center gap-1">
-                                                <span x-text="comment.showReplies ? 'Hide' : 'View'"></span>
-                                                <span x-text="comment.replies.length"></span>
-                                                <span x-text="comment.replies.length === 1 ? 'reply' : 'replies'"></span>
-                                            </button>
-                                            <div class="relative" @click.away="comment.showMoreOptions = false">
-                                                <button @click="comment.showMoreOptions = !comment.showMoreOptions"
-                                                    class="text-xs text-[#FF0000] hover:text-white transition-colors">
-                                                    More
-                                                </button>
-                                                <div x-show="comment.showMoreOptions"
-                                                    class="absolute left-0 mt-2 w-32 bg-[#2a2a2a] rounded-md shadow-lg py-1 z-10">
-                                                    <button class="w-full px-4 py-2 text-left text-xs text-[#808080] hover:bg-[#3a3a3a] hover:text-white">
-                                                        Edit
-                                                    </button>
-                                                    <button class="w-full px-4 py-2 text-left text-xs text-[#808080] hover:bg-[#3a3a3a] hover:text-white">
-                                                        Delete
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-                
-                                        <!-- Reply form -->
-                                        <div x-show="comment.showReplyForm" class="mt-4">
-                                            <form @submit.prevent="postReply(comment.id)">
-                                                <textarea x-model="comment.replyContent"
-                                                    class="w-full bg-[#2a2a2a] text-white rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF0000]"
-                                                    rows="2" placeholder="Write a reply..."></textarea>
-                                                <div class="flex justify-end mt-2">
-                                                    <button type="submit"
-                                                        class="bg-[#FF0000] text-white py-1 px-4 rounded text-sm hover:bg-opacity-80 transition-colors duration-200">
-                                                        Reply
-                                                    </button>
-                                                </div>
-                                            </form>
-                                        </div>
-                
-                                        <!-- Replies -->
-                                        <div x-show="comment.showReplies" class="mt-4 space-y-4">
-                                            <template x-for="reply in comment.replies" :key="reply.id">
-                                                <div class="pl-8 border-l-2 border-[#2a2a2a]">
-                                                    <div class="flex items-start gap-4">
-                                                        <!-- Reply content -->
-                                                        <div class="flex-1">
-                                                            <div class="flex items-center gap-2 mb-1">
-                                                                <span class="text-md font-medium text-white" x-text="reply.author"></span>
-                                                                <span class="text-sm text-[#808080]" x-text="reply.time"></span>
-                                                            </div>
-                                                            <p class="text-md text-[#808080]" x-text="reply.content"></p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </template>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </template>
-                    </div>
-                    </div>
-                    <!-- Disqus comments -->
-                    <div x-show="useDisqus" x-transition:enter="transition ease-out duration-300"
-                        x-transition:enter-start="opacity-0 transform scale-95"
-                        x-transition:enter-end="opacity-100 transform scale-100"
-                        x-transition:leave="transition ease-in duration-200"
-                        x-transition:leave-start="opacity-100 transform scale-100"
-                        x-transition:leave-end="opacity-0 transform scale-95">
-                    <div id="disqus_thread"></div>
-                    </div>
-                </div>
+            </div>
+
+            <div class="block lg:hidden">
+                <!-- Your comments section here -->
+                {% include "comments.html" %}
             </div>
 
             <!-- Episodes Section -->
-            <aside class="lg:w-1/4 space-y-6 p-4 scrollbar-thin scrollbar-thumb-[#FF0000] scrollbar-track-[#2a2a2a]"
-                id="episode-container">
-                <div class="flex flex-col bg-[#1a1a1a] rounded-lg p-6 shadow-lg  mb-6">
+            <aside class="lg:w-3/12 space-y-6 p-4 scrollbar-thin scrollbar-thumb-[#FF0000] scrollbar-track-[#2a2a2a]" 
+                id="episode-container"
+                x-bind:style="'max-height: ' + mainContentHeight + 'px; overflow-y: hidden;'">
+                <div class="flex flex-col bg-[#1a1a1a] rounded-lg p-6 shadow-lg  mb-6" x-bind:style="'max-height: ' + mainContentHeight + 'px; overflow-y: hidden;'">
                     <h2 class="text-2xl font-semibold mb-4 text-white">Episodes</h2>
 
                     <!-- Search Input -->
@@ -600,7 +727,7 @@
 
                     <div
                     x-ref="episodesContainer"
-                    class="space-y-4 max-h-[calc(100vh-200px)] lg:min-h-[600px] lg:max-h-[600px] overflow-y-auto pl-4 pr-4 pb-4 scrollbar-thin scrollbar-thumb-[#FF0000] scrollbar-track-[#1a1a1a] bg-black rounded-md border border-[#808080]">
+                    class="space-y-4  overflow-y-auto pl-4 pr-4 pb-4 scrollbar-thin scrollbar-thumb-[#FF0000] scrollbar-track-[#1a1a1a] bg-black rounded-md border border-[#808080]">
                     <template x-for="episode in filteredEpisodes" :key="episode.id">
                         <div class="group"> <!-- Changed from button to div -->
                             <div class="episode bg-black p-4 rounded-lg cursor-pointer hover:bg-[#412c2c] transition-colors duration-200"
@@ -610,13 +737,8 @@
                                 }">
                                 <div class="flex items-center justify-between">
                                     <div class="flex items-center flex-1" @click="selectEpisode(episode.number)">
-                                        <div class="w-16 h-9 bg-[#1a1a1a] rounded-md flex-shrink-0 mr-4 overflow-hidden border border-[#808080]">
-                                            <img :src="episode.thumbnail || '{{ url_for('static', filename='placeholder.svg') }}?height=90&width=160'"
-                                                class="w-full h-full object-cover"
-                                                :alt="episode.titles + episode.number">
-                                        </div>
                                         <div class="flex-1">
-                                            <h3 class="font-semibold text-white"
+                                            <h3 class="font-semibold text-white line-clamp-1"
                                                 x-text="episode.number +'. ' + episode.titles[0]"></h3>
                                             <p class="text-sm text-[#808080]" x-text="'Aired '+episode.aired"></p>
                                         </div>
@@ -634,40 +756,8 @@
                     </template>
                 </div>
                 </div>
-                <div class="bg-[#1a1a1a] rounded-lg p-6 shadow-lg mb-4" x-data="{ showFullDescription: false }">
-                    <div class="flex items-start mb-4">
-                        <img @click="window.location.href='{{ animeInfo.url }}'" src="{{animeInfo.cover}}?height=150&width=100" alt="Anime Cover"
-                            class="w-24 h-36 object-cover rounded-md mr-4" />
-                        <div>
-                            <h2 @click="window.location.href='{{ animeInfo.url }}'" class="text-xl font-semibold text-white mb-2 hover:cursor-pointer">{{animeInfo.english}}</h2>
-                            <div class="flex items-center mb-2">
-                                <svg class="w-5 h-5 text-yellow-400 mr-1" fill="currentColor" viewBox="0 0 20 20"
-                                    xmlns="http://www.w3.org/2000/svg">
-                                    <path
-                                        d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z">
-                                    </path>
-                                </svg>
-                                <span class="text-white font-semibold">{{animeInfo.malScore}}</span>
-                                <span class="text-gray-400 text-sm ml-1">(MAL Rating)</span>
-                            </div>
-                            <p class="text-gray-400 text-sm">
-                                <span>Genres: </span>
-                                <span class="text-white">{{ animeInfo.genres | join(', ') }}</span>
-                            </p>
-                            <p class="text-gray-400 text-sm">
-                                <span>Studios: </span>
-                                <span class="text-white">{{ animeInfo.studios | join(', ') }}</span>
-                            </p>
-                        </div>
-                    </div>
-                    <p class="text-gray-300 text-sm" x-show="!showFullDescription">
-                        <span class="line-clamp-3">{{animeInfo.description | safe }}</span>
-                        <button @click="showFullDescription = true" class="text-[#FF0000] hover:underline ml-1">Read more</button>
-                    </p>
-                    <p class="text-gray-300 text-sm" x-show="showFullDescription">
-                        {{animeInfo.description | safe}}
-                        <button @click="showFullDescription = false" class="text-[#FF0000] hover:underline ml-1">Read less</button>
-                    </p>
+                <div class="bg-[#1a1a1a] rounded-lg shadow-lg overflow-hidden block xl:hidden" x-data="{ showFullDescription: false }">
+                    {% include "infoCard.html" %}
                 </div>
             </aside>
         </div>
@@ -803,6 +893,11 @@
                 </div>
             </div>
         </div>
+
+        <div class="hidden lg:inline-block">
+        {% include "comments.html" %}
+        </div>
+    </div>
         <!-- Episode Edit Modal -->
 <div x-cloak x-show="isEditModalOpen" 
      class="fixed inset-0 bg-black/80 flex items-center justify-center z-50"
@@ -872,9 +967,56 @@
     </div>
     <script src="{{ url_for('static', filename='js/emoji.js') }}"></script>
     <script>
+
+            function animeData() {
+                return {
+                    currentTab: 'today',
+                    animeList: {},
+                    isLoading: true,
+                    
+                    async init() {
+                        await this.fetchAnimeData();
+                    },
+                    
+                    async fetchAnimeData() {
+                        this.isLoading = true;
+                        try {
+                            const response = await fetch(`/api/top/anime/?tab=month&limit=3`);
+                            if (!response.ok) throw new Error('Network response was not ok');
+                            const data = await response.json();
+                            this.animeList = {
+                                ...this.animeList,
+                                [this.currentTab]: data
+                            };
+                        } catch (error) {
+                            console.error('Error fetching anime data:', error);
+                            this.animeList[this.currentTab] = [];
+                        } finally {
+                            this.isLoading = false;
+                        }
+                    },
+                    
+                    get filteredAnime() {
+                        return this.animeList[this.currentTab] || [];
+                    }
+                }
+            }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const videoIframe = document.getElementById('playerIframeId');
+            if (videoIframe) {
+            videoIframe.addEventListener('load', function() {
+                // Dispatch a custom event that Alpine.js can listen for
+                document.dispatchEvent(new CustomEvent('videoLoaded'));
+            });
+            }
+
+            
+        });
         window.__watchConfig__ = {
             userInfo: {{ userInfo | tojson | safe }},  // Remove quotes
             animeId: "{{ anime_id }}",
+            animeIInfo: {{animeInfo | tojson | safe }},
             epNumber: {{ ep_number }},
             likes: {{ animeInfo.likes | default(0) }},
             dislikes: {{ animeInfo.dislikes | default(0) }},

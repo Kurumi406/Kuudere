@@ -3,7 +3,7 @@
 // Anime Player Component
 function animePlayer(config) {
     const prefData = localStorage.getItem("pref");
-    let useDisqus = true;
+    let useDisqus = false;
     let AutoNext = false;
     let AutoSkipOutro = false;
     let AutoSkipIntro = false;
@@ -16,11 +16,8 @@ function animePlayer(config) {
         if (storedData.expiration && currentTime < storedData.expiration) {
             const settingsData = storedData.value;
     
-            if (settingsData.defaultComments === "true") {
-                useDisqus = false;
-            } else {
-                useDisqus = true;
-            }
+            useDisqus = false;
+
 
             AutoNext = settingsData.autoNext
             AutoSkipIntro = settingsData.autoSkipIntro
@@ -51,6 +48,12 @@ function animePlayer(config) {
         currentVideoLink: '',
         isLoading: false,
         isVideoLoading: false,
+        isCommentsLoading: false,
+        isLoadingMore: false,
+        currentPage: 1,
+        hasMoreComments: true,
+        visibleComments: 5, // Number of initially visible comments
+        commentsPerLoad: 5, // Number of comments to load each time
         searchInput: '',
         newComment: '',
         isSpoiler: false,
@@ -86,6 +89,7 @@ function animePlayer(config) {
         pausedOnStart: null,
         isEditModalOpen: false,
         isUpdating: false,
+        isPostingComment: false,
         editData: {
             id: null,
             title: '',
@@ -269,17 +273,9 @@ function animePlayer(config) {
                 this.unique = `/watch/${this.animeId}/${episodeNumber}`;
                 this.uniqueUrll = `https://kuudere.to/watch/${this.animeId}/${episodeNumber}`;
 
-                if (this.useDisqus && document.getElementById('disqus_thread')) {
-                    // Clear existing Disqus thread
-                    document.getElementById('disqus_thread').innerHTML = '';
-                    // Reload with new configuration
-                    this.loadDisqus();
-                }
-
                 this.animeInfo = data.anime_info || {};
                 this.allEpisodes = (data.all_episodes || []).sort((a, b) => a.number - b.number);
-                this.episodeLinks = data.episode_links || [];
-                this.comments = data.episode_comments || [];
+                this.episodeLinks = data.episode_links || []
                 this.currentEpisode = episodeNumber;
                 this.outro_end = parseFloat(data.outro_end) || 0;
                 this.intro_start = parseFloat(data.intro_start) || 0;
@@ -350,6 +346,8 @@ function animePlayer(config) {
                 } else {
                     this.currentVideoLink = '';
                 }
+
+                this.fetchComments(episodeNumber)
                 
             } catch (error) {
                 console.error('Error fetching episode data:', error);
@@ -380,58 +378,74 @@ function animePlayer(config) {
             }
         },
 
+        async fetchComments(episodeNumber, page = 1) {
+            this.isCommentsLoading = true;
+            let url = `/api/anime/comments/${this.animeId}/${episodeNumber}?page=${page}`;
+            
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (page === 1) {
+                    this.comments = data.comments.map(comment => ({
+                        ...comment,
+                        showReplyForm: false,
+                        showReplies: false,
+                        replyContent: '',
+                        isPostingReply: false
+                    }));
+                    this.visibleComments = Math.min(this.comments.length, this.commentsPerLoad);
+                } else {
+                    const newComments = data.comments.map(comment => ({
+                        ...comment,
+                        showReplyForm: false,
+                        showReplies: false,
+                        replyContent: '',
+                        isPostingReply: false
+                    }));
+                    this.comments = [...this.comments, ...newComments];
+                    this.visibleComments = Math.min(this.comments.length, this.visibleComments + this.commentsPerLoad);
+                }
+                
+                this.currentPage = page;
+                this.hasMoreComments = data.has_more;
+                this.total_comments = data.total_comments || this.comments.length;
+            } catch (error) {
+                console.error('Error fetching comments:', error);
+                // Handle error appropriately
+            } finally {
+                this.isCommentsLoading = false;
+            }
+        },
+
+        // New method for loading more comments
+        loadMoreComments() {
+            if (this.isLoadingMore) return;
+        
+            this.isLoadingMore = true;
+        
+            if (this.visibleComments < this.comments.length) {
+                // Load more from existing comments
+                this.visibleComments = Math.min(this.visibleComments + this.commentsPerLoad, this.comments.length);
+                this.isLoadingMore = false;
+            } else if (this.hasMoreComments) {
+                // Fetch more comments from the server
+                const nextPage = this.currentPage + 1;
+                this.fetchComments(this.currentEpisode, nextPage)
+                    .finally(() => {
+                        this.isLoadingMore = false;
+                    });
+            } else {
+                this.isLoadingMore = false;
+            }
+        },
+
         switchToBuiltIn() {
             this.useDisqus = false;
             this.animateSwitch('left');
         },
         
-        switchToDisqus() {
-            this.useDisqus = true;
-            this.animateSwitch('right');
-            this.loadDisqus();
-        },
         
-        animateSwitch(direction) {
-            const target = direction === 'left' ? '.built-in-comments' : '#disqus_thread';
-            anime({
-                targets: target,
-                translateX: [direction === 'left' ? '100%' : '-100%', 0],
-                opacity: [0, 1],
-                duration: 500,
-                easing: 'easeOutQuad'
-            });
-        },
-        
-        loadDisqus() {
-            const component = this;
-            
-            // Remove any existing Disqus script
-            const existingScript = document.querySelector('script[src*="disqus.com/embed.js"]');
-            if (existingScript) {
-                existingScript.remove();
-            }
-
-            // Clear the disqus thread
-            if (document.getElementById('disqus_thread')) {
-                document.getElementById('disqus_thread').innerHTML = '';
-            }
-
-            // Reset DISQUS object
-            window.DISQUS = undefined;
-
-            // Configure new Disqus instance
-            window.disqus_config = function () {
-                this.page.identifier = component.unique;
-                this.page.url = component.uniqueUrll;
-            };
-
-            // Load new Disqus script
-            var d = document, s = d.createElement('script');
-            s.src = 'https://kuudere-to.disqus.com/embed.js';
-            s.setAttribute('data-timestamp', +new Date());
-            (d.head || d.body).appendChild(s);
-        },
-
         selectServer(server) {
             this.isVideoLoading = true;
             this.currentServer = server;
@@ -848,9 +862,13 @@ function animePlayer(config) {
 
         saveProgress() {
             // Add validation for server and category
+            console.log('lol')
             if (!this.currentServer || !this.currentServer.dataType) return;
 
-            if (this.playerStatusz !== "Playing" && this.playerStatusz !== "Ready") return;
+            if (this.duration !== null && this.duration !== undefined) return;
+
+            if(this.playerDuration <= 0 || this.currentPlaybackTime <= 0) return;
+
             console.log(this.playerStatusz)
             const data = {
                 anime: this.animeId,
@@ -890,6 +908,7 @@ function animePlayer(config) {
 
         postComment() {
             if (this.newComment.trim() !== '') {
+                this.isPostingComment = true;
                 const newComment = {
                     id: this.comments.length + 1,
                     author: 'User' + Math.floor(Math.random() * 1000),
@@ -900,7 +919,8 @@ function animePlayer(config) {
                     showReplyForm: false,
                     showReplies: false,
                     replyContent: '',
-                    replies: []
+                    replies: [],
+                    isPostingReply: false
                 };
 
                 fetch('/anime/comment/', {
@@ -928,7 +948,8 @@ function animePlayer(config) {
                             showReplyForm: false,
                             showReplies: false,
                             replyContent: '',
-                            replies: []
+                            replies: [],
+                            isPostingReply: false
                         };
                         this.comments.unshift(newCommentl);
                         this.newComment = '';
@@ -945,6 +966,9 @@ function animePlayer(config) {
                     })
                     .catch(error => {
                         console.error('Error posting comment:', error);
+                    })
+                    .finally(() => {
+                        this.isPostingComment = false; // Add this line
                     });
             }
         },
@@ -966,6 +990,7 @@ function animePlayer(config) {
         async postReply(commentId) {
             const comment = this.comments.find(c => c.id === commentId);
             if (comment && comment.replyContent.trim() !== '') {
+                comment.isPostingReply = true;
                 try {
                     const response = await fetch('/anime/comments/reply', {
                         method: 'POST',
@@ -1007,6 +1032,8 @@ function animePlayer(config) {
                 } catch (error) {
                     console.error('Error posting reply:', error);
                     alert('Failed to post reply. Please try again later.');
+                }finally {
+                    comment.isPostingReply = false;
                 }
             }
         },
@@ -1191,7 +1218,8 @@ function counter() {
         socket: null,
         currentRoom: null,
 
-        initializeSocket() {
+        init() {
+            // Initialize the socket connection
             this.socket = io({ transports: ['websocket'] });
 
             this.socket.on('connect', () => {
@@ -1199,18 +1227,40 @@ function counter() {
                 this.joinRoom();
             });
 
+            // Event handler for initial count
             this.socket.on('current_room_count', (data) => {
                 if (data.room === this.currentRoom) {
+                    // Alpine will track this property change automatically
                     this.previousCount = this.count;
                     this.count = data.count || 0;
-
-                    if (this.count > this.previousCount) {
-                        this.animateCountChange('up');
-                    } else if (this.count < this.previousCount) {
-                        this.animateCountChange('down');
-                    }
+                    
+                    this.handleCountChange();
+                    console.log('Initial count received:', this.count);
                 }
             });
+
+            // Event handler for ongoing updates
+            this.socket.on('update_counts', (data) => {
+                if (data.room === this.currentRoom) {
+                    // Alpine will track this property change automatically
+                    this.previousCount = this.count;
+                    this.count = data.count || 0;
+                    
+                    this.handleCountChange();
+                    console.log('Count updated via update_counts:', this.count);
+                }
+            });
+
+            // Listen for URL changes if it's a SPA
+            window.addEventListener('popstate', () => this.joinRoom());
+        },
+
+        handleCountChange() {
+            if (this.count > this.previousCount) {
+                this.animateCountChange('up');
+            } else if (this.count < this.previousCount) {
+                this.animateCountChange('down');
+            }
         },
 
         joinRoom() {
@@ -1222,6 +1272,7 @@ function counter() {
             if (this.currentRoom) {
                 this.socket.emit('leave', { room: this.currentRoom });
             }
+            
             this.currentRoom = part;
             this.socket.emit('join', { other_id: this.currentRoom });
             this.socket.emit('get_current_room_count', { room: this.currentRoom });
@@ -1247,7 +1298,6 @@ function counter() {
         }
     };
 }
-
 // Like System Component
 function likeSystem(config) {
     return {
@@ -1258,6 +1308,51 @@ function likeSystem(config) {
         disliked: config.userUnliked || false,
         anime: config.animeId,
         isLoading: false,
+
+        createParticles(buttonId, particleClass) {
+            const button = document.getElementById(buttonId);
+            if (!button) return;
+            
+            const rect = button.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            
+            // Add button pop animation
+            button.classList.remove('button-pop');
+            void button.offsetWidth; // Force reflow
+            button.classList.add('button-pop');
+            
+            // Create 8 particles
+            for (let i = 0; i < 8; i++) {
+                const particle = document.createElement('div');
+                particle.classList.add('particle', particleClass);
+                
+                // Random size between 3-6px
+                const size = Math.random() * 3 + 3;
+                particle.style.width = `${size}px`;
+                particle.style.height = `${size}px`;
+                
+                // Random direction
+                const angle = Math.random() * Math.PI * 2;
+                const distance = 20 + Math.random() * 20;
+                const tx = Math.cos(angle) * distance;
+                const ty = Math.sin(angle) * distance;
+                
+                particle.style.setProperty('--tx', `${tx}px`);
+                particle.style.setProperty('--ty', `${ty}px`);
+                
+                // Position at center of button
+                particle.style.left = `${centerX}px`;
+                particle.style.top = `${centerY}px`;
+                
+                document.body.appendChild(particle);
+                
+                // Remove particle after animation completes
+                setTimeout(() => {
+                    particle.remove();
+                }, 600);
+            }
+        },
 
         async like() {
             if (!this.userInfo) {
@@ -1347,6 +1442,164 @@ function likeSystem(config) {
     };
 }
 
+function watchlist(config) {
+    return {
+        // Configuration and state properties
+        open: false,
+        selectedFolder: '',
+        folders: ['Plan To Watch', 'Watching', 'Completed', 'On Hold', 'Dropped', 'Remove'],
+        animeId: config.animeId,
+        loading: null,
+        success: null,
+        error: null,
+        inWatchlist: config.animeIInfo.inWatchlist,
+        currentFolder: config.animeIInfo.folder,
+        dropdownOpen: false,
+        isLoading: false,
+        
+        // Toggle dropdown visibility
+        toggleDropdown() {
+            this.dropdownOpen = !this.dropdownOpen;
+        },
+        
+        // Add anime to selected watchlist folder
+        addToWatchlist(folder) {
+            this.selectedFolder = folder;
+            this.loading = folder;
+            this.success = null;
+            this.error = null;
+            this.isLoading = true;
+
+            fetch(`/add-to-watchlist/${folder}/${this.animeId}`, {
+                method: 'GET',
+            })
+            .then(response => response.json())
+            .then(data => {
+                this.loading = null;
+                this.isLoading = false;
+                if (data.success) {
+                    this.success = folder;
+                    if (folder == 'Remove'){
+                        this.inWatchlist = false;
+                    } else {
+                        const statusMap = {
+                            "Watching": "CURRENT",
+                            "Plan To Watch": "PLANNING",
+                            "Completed": "COMPLETED",
+                            "Dropped": "DROPPED",
+                            "On Hold": "PAUSED"
+                        };
+                        const status = statusMap[folder] || "PLANNING";
+                        fetch("https://graphql.anilist.co", {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                                "Accept": "application/json",
+                                "Authorization": `Bearer ${data.data.token}`
+                            },
+                            body: JSON.stringify({
+                                query: `
+                                mutation ($mediaId: Int!, $status: MediaListStatus) {
+                                    SaveMediaListEntry(mediaId: $mediaId, status: $status) {
+                                        id
+                                        status
+                                    }
+                                }
+                                `,
+                                variables: { mediaId: data.data.anilist, status }
+                            })
+                        })
+                        .then(res => res.json())
+                        .then(response => {
+                            if (response.errors) {
+                                throw new Error(response.errors.map(err => err.message).join(", "));
+                            }
+                            console.log(response);
+                        })
+                        .catch(err => {
+                            console.error("AniList error:", err);
+                            window.dispatchEvent(new CustomEvent('notify', {
+                                detail: { message: `AniList error: ${err.message}`, type: 'error' }
+                            }));
+                        });
+                        this.inWatchlist = true;
+                    }
+                    this.currentFolder = folder;
+                    this.animateIcon('success');
+                    this.dropdownOpen = false;  // Close dropdown after successful addition
+                } else {
+                    this.error = folder;
+                    this.animateIcon('error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                this.loading = null;
+                this.isLoading = false;
+                this.error = folder;
+                this.animateIcon('error');
+            });
+        },
+        
+        // Create particle animation effects
+        createParticles(buttonId, particleClass) {
+            const button = document.getElementById(buttonId);
+            if (!button) return;
+            
+            const rect = button.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            
+            for (let i = 0; i < 10; i++) {
+                const particle = document.createElement('div');
+                particle.className = `particle ${particleClass}`;
+                
+                // Random position
+                const angle = Math.random() * Math.PI * 2;
+                const distance = 30 + Math.random() * 30;
+                const tx = Math.cos(angle) * distance;
+                const ty = Math.sin(angle) * distance;
+                
+                // Set CSS variables for the animation
+                particle.style.setProperty('--tx', `${tx}px`);
+                particle.style.setProperty('--ty', `${ty}px`);
+                
+                // Set size and starting position
+                particle.style.width = `${3 + Math.random() * 4}px`;
+                particle.style.height = particle.style.width;
+                particle.style.left = `${centerX}px`;
+                particle.style.top = `${centerY}px`;
+                
+                document.body.appendChild(particle);
+                
+                // Remove particle after animation completes
+                particle.addEventListener('animationend', () => {
+                    particle.remove();
+                });
+            }
+            
+            // Animate button
+            button.classList.remove('button-pop');
+            void button.offsetWidth; // Force reflow
+            button.classList.add('button-pop');
+        },
+        
+        // Animate icon for success or error states
+        animateIcon(type) {
+            const element = document.querySelector(`[x-show="${type} === '${this.selectedFolder}']`);
+            if (element) {
+                anime({
+                    targets: element,
+                    scale: [0, 1],
+                    opacity: [0, 1],
+                    duration: 300,
+                    easing: 'easeOutQuad'
+                });
+            }
+        }
+    };
+}
+
 // INITIALIZATION ==============================================================
 document.addEventListener('alpine:init', () => {
     // Get config from inline script
@@ -1356,4 +1609,6 @@ document.addEventListener('alpine:init', () => {
     Alpine.data('animePlayer', () => animePlayer(watchConfig));
     Alpine.data('counter', counter);
     Alpine.data('likeSystem', () => likeSystem(watchConfig));
+    Alpine.data('watchlist', () => watchlist(watchConfig));
+    
 });

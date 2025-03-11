@@ -1,0 +1,295 @@
+<div class="bg-[#1a1a1a] rounded-lg shadow-lg overflow-hidden" x-data="setupAnimeVoting()" x-init="init()">
+    <!-- Blurred Background Image -->
+    <div class="relative h-56 w-full">
+        <!-- Blurred background image -->
+        <div class="absolute inset-0 w-full h-full">
+            <img 
+                src="{{animeInfo.cover}}" 
+                alt=""
+                class="w-full h-full object-cover blur-xl scale-110 opacity-30"
+            />
+            <div class="blur-lg"></div>
+        </div>
+        
+        <!-- Non-blurred cover image on top -->
+        <div class="relative z-10 w-32 h-48 mx-auto mt-4 rounded-md overflow-hidden shadow-lg transform hover:scale-105 transition-transform duration-300">
+            <img 
+                @click="window.location.href='{{ animeInfo.url }}'" 
+                src="{{animeInfo.cover}}" 
+                alt="Anime Cover"
+                class="w-full h-full object-cover cursor-pointer"
+            />
+        </div>
+    </div>
+    
+    <!-- Content -->
+    <div class="p-4 pt-2 space-y-2">
+        <!-- Title -->
+        <h2 @click="window.location.href='{{ animeInfo.url }}'" 
+            class="text-2xl font-bold text-white leading-tight cursor-pointer text-center hover:text-red-500 transition-colors duration-300">
+            {{animeInfo.english}}
+        </h2>
+        
+        <!-- Japanese/Korean Title -->
+        <p class="text-gray-400 text-sm text-center">{{animeInfo.native}}</p>
+        
+        <!-- Badges -->
+        <div class="flex items-center justify-center gap-2 mt-1">
+            <span class="bg-red-600 font-bold text-white text-xs px-2 py-0.5 rounded">{{animeInfo.ageRating}}</span>
+            <span class="bg-red-700 font-bold text-white text-xs px-2 py-0.5 rounded flex items-center justify-center gap-1"><i data-lucide="captions" class="w-4 h-4"></i> {{animeInfo.subbedCount}}</span>
+            <span class="bg-blue-800 font-bold text-white text-xs px-2 py-0.5 rounded flex items-center justify-center gap-1"><i data-lucide="mic" class="w-4 h-4"></i> {{animeInfo.dubbedCount}}</span>
+            <span class="bg-green-900 text-white text-xs px-2 py-0.5 rounded">{{animeInfo.type}}</span>
+        </div>
+
+        {% set clean_description = animeInfo.description|striptags %}
+        
+        <!-- Description -->
+        <div class="text-sm text-gray-300 mt-2">
+            <p x-show="!showFullDescription">
+                <span class="line-clamp-3">{{clean_description}}</span>
+                <button @click="showFullDescription = true" 
+                        class="text-red-500 hover:text-red-400 hover:underline text-xs transition-colors duration-300">
+                    Read more
+                </button>
+            </p>
+            <p x-show="showFullDescription">
+                {{clean_description}}
+                <button @click="showFullDescription = false" 
+                        class="text-red-500 hover:text-red-400 hover:underline text-xs transition-colors duration-300">
+                    Read less
+                </button>
+            </p>
+        </div>
+        
+        <!-- Metadata -->
+        <div class="space-y-1.5 text-sm mt-2">
+            <p>
+                <span class="text-gray-400">Country: </span>
+                <span class="text-white">{{animeInfo.country}}</span>
+            </p>
+            <p>
+                <span class="text-gray-400">Genres: </span>
+                <span class="text-white">{{animeInfo.genres | join(', ')}}</span>
+            </p>
+            <p>
+                <span class="text-gray-400">Premiered: </span>
+                <span class="text-white">{{animeInfo.year}} {{animeInfo.season}}</span>
+            </p>
+            <p>
+                <span class="text-gray-400">MAL: </span>
+                <span class="text-white">{{animeInfo.malScore}} by {{animeInfo.malUsers}} users</span>
+            </p>
+            <p>
+                <span class="text-gray-400">Date aired: </span>
+                <span class="text-white">{{animeInfo.startDate}}</span>
+            </p>
+            <p>
+                <span class="text-gray-400">Status: </span>
+                <span class="text-white">{{animeInfo.status}}</span>
+            </p>
+            <p>
+                <span class="text-gray-400">Episodes: </span>
+                <span class="text-white">{{animeInfo.epCount}}</span>
+            </p>
+            <p>
+                <span class="text-gray-400">Duration: </span>
+                <span class="text-white">{{animeInfo.duration}} m</span>
+            </p>
+            <p>
+                <span class="text-gray-400">Studios: </span>
+                <span class="text-white">{{animeInfo.studios | join(', ')}}</span>
+            </p>
+            
+            <!-- Rating System -->
+            <div class="mt-6 pt-4 border-t border-red-800 relative flex flex-col items-center ">
+                <div class="w-32 bg-[#1a1a1a] px-2 py-0.5 rounded-full border border-red-600">
+                    <h3 class="text-red-500 font-bold text-sm text-center">Rate This Anime</h3>
+                </div>
+                
+                <div class="flex flex-col items-center mt-4">
+                    <div class="flex flex-col items-center">
+                        <p class="text-2xl font-bold text-white">
+                            <span x-text="currentRating.toFixed(2)">0.00</span>
+                            <span class="text-red-500">/10</span>
+                        </p>
+                        <p class="text-gray-400 text-xs">
+                            <span x-text="currentRatingCount.toLocaleString()">0</span> reviews
+                        </p>
+                    </div>
+                    
+                    <div class="flex space-x-1 mt-2">
+                        <template x-for="i in stars" :key="i">
+                            <svg 
+                                @click="rate(i)" 
+                                @mouseenter="hoverRating = i" 
+                                @mouseleave="hoverRating = 0"
+                                class="star w-8 h-8 cursor-pointer transition-all duration-200 hover:scale-110" 
+                                :class="{ 
+                                    'text-red-500': i <= (hoverRating || rating),
+                                    'text-yellow-500': isUserVoted && i <= usersVote && hoverRating === 0,
+                                    'text-gray-600': (i > (hoverRating || rating)) && (!isUserVoted || i > usersVote || hoverRating > 0),
+                                    'hover:text-red-400': i > (hoverRating || rating)
+                                }"
+                                fill="currentColor" 
+                                viewBox="0 0 24 24">
+                                <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"></path>
+                            </svg>
+                        </template>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add the voting functionality script -->
+<script>
+function setupAnimeVoting() {
+  return {
+    showFullDescription: false,
+    rating: 0,
+    hoverRating: 0,
+    stars: 5,
+    animationPlayed: false,
+    // Store the current display values
+    currentRating: 0,
+    currentRatingCount: 0,
+    isUserVoted: false,
+    usersVote: 0,
+    
+    // Initialize by fetching current votes
+    init() {
+      const mainId = '{{animeInfo.id}}';
+      this.fetchVotes(mainId);
+    },
+    
+    // Fetch votes from API
+    fetchVotes(animeId) {
+      fetch(`/votes/anime/${animeId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Failed to fetch votes');
+        }
+        return response.json();
+      })
+      .then(data => {
+        console.log('Votes data:', data);
+        this.currentRating = parseFloat(data.rating);
+        this.currentRatingCount = parseInt(data.total);
+        this.isUserVoted = data.isUserVoted;
+        
+        // If user has already voted, set their rating
+        if (this.isUserVoted) {
+          this.usersVote = data.usersVote;
+        }
+      })
+      .catch(error => {
+        window.dispatchEvent(new CustomEvent('notify', {
+            detail: { message: error, type: 'error' }
+        }));
+      });
+    },
+    
+    rate(value) {
+      const previousRating = this.rating;
+      this.rating = value;
+      
+      // Don't resubmit the same rating
+      if (this.isUserVoted && this.usersVote === value) {
+        return;
+      }
+      
+      // Call the API to submit the vote
+      this.submitVote(value);
+      
+      // Play animation if not played yet
+      if (!this.animationPlayed) {
+        this.animateStars();
+        this.animationPlayed = true;
+      }
+    },
+    
+    submitVote(rating) {
+      const mainId = '{{animeInfo.id}}';
+      
+      fetch(`/vote/anime/${mainId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          rating: rating
+        })
+      })
+      .then(response => {
+        if (!response.ok) {
+          window.dispatchEvent(new CustomEvent('notify', {
+            detail: { message: 'Failed to submit vote', type: 'error' }
+        }));
+        }
+        return response.json();
+      })
+      .then(data => {
+        console.log('Vote submitted successfully:', data);
+        window.dispatchEvent(new CustomEvent('notify', {
+            detail: { message: 'Thank You For The vote!!', type: 'success' }
+        }));
+        
+        // After submitting vote, refresh the vote data
+        this.fetchVotes(mainId);
+        
+        // Show success feedback
+        this.showSuccessFeedback();
+      })
+      .catch(error => {
+        console.error('Error submitting vote:', error);
+        window.dispatchEvent(new CustomEvent('notify', {
+            detail: { message: 'Error submitting vote', type: 'error' }
+        }));
+        // Handle error
+        this.rating = previousRating; // Reset to previous rating
+        this.showErrorFeedback();
+      });
+    },
+    
+    showSuccessFeedback() {
+      // Visual feedback for successful vote
+      const ratingText = document.querySelector('.text-2xl.font-bold.text-white');
+      if (ratingText) {
+        // Apply a brief highlight effect
+        ratingText.classList.add('text-green-500');
+        setTimeout(() => {
+          ratingText.classList.remove('text-green-500');
+        }, 1000);
+      }
+    },
+    
+    showErrorFeedback() {
+      // Visual feedback for failed vote
+      const stars = document.querySelectorAll('.star');
+      stars.forEach(star => {
+        star.classList.add('text-red-300');
+        setTimeout(() => {
+          star.classList.remove('text-red-300');
+        }, 1000);
+      });
+    },
+    
+    animateStars() {
+      anime({
+        targets: '.star',
+        scale: [1, 1.5, 1],
+        rotateY: [0, 360],
+        duration: 1500,
+        delay: anime.stagger(150),
+        easing: 'easeInOutQuad'
+      });
+    }
+  };
+}
+</script>

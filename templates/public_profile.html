@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Anime Profile</title>
+    <title>{{userInfo.username}}'s Profile on Kuudere</title>
     <link href="{{ url_for('static', filename='css/output.css') }}" rel="stylesheet">
     <script defer src="{{ url_for('static', filename='js/alphine.js') }}"></script>
     <script src="{{ url_for('static', filename='js/lucide.min.js') }}"></script>
@@ -123,7 +123,7 @@
                 <div class="flex items-start gap-8 mb-8">
                     <!-- Profile Info -->
                     <div class="flex items-start gap-4">
-                        <img src="/static/placeholder.svg?v=660ec85c" alt="Profile" class="w-20 h-20 rounded-full border-4 border-red-900" />
+                        <img src="{{userInfo.pfp}}" alt="Profile" class="w-20 h-20 rounded-full border-4 border-red-900" />
                         <div class="flex flex-col gap-2 mx-2">
                             <h2 class="text-xl font-semibold">{{userInfo.username}}</h2>
                             <span class="mr-auto border border-red-600 text-red-500 text-xs px-2 py-1 rounded uppercase tracking-wide">Member</span>
@@ -185,7 +185,7 @@
                         <div class="w-[77%] h-1 bg-red-800 rounded-full absolute bottom-0">
                             <div class="h-full bg-red-600 rounded-full transition-all duration-300 relative" style="width: {{userInfo.progress}}%">
                                 <span class="absolute translate-x-1/2 -translate-y-1/2 top-1/2 right-0 rounded-full w-6 h-6 overflow-hidden">
-                                    <img src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Pasted_image-removebg-preview-KaEHqWFxepoHgjNEFDgIcjkebauvZY.png" alt="" />
+                                    <img src="/static/kumi.png" alt="" />
                                 </span>
                             </div>
                         </div>

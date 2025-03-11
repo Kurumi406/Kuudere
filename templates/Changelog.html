@@ -180,23 +180,27 @@
                                 </div>
                                 <div class="flex items-start space-x-2">
                                     <span class="text-white">•</span>
-                                    <p>Disqus As Main Comments </p>
+                                    <p>Anilist Sync </p>
                                 </div>
                                 <div class="flex items-start space-x-2">
                                     <span class="text-white">•</span>
-                                    <p>Auto Next: Added </p>
+                                    <p>Disqus Removed Due to TOS </p>
                                 </div>
                                 <div class="flex items-start space-x-2">
                                     <span class="text-white">•</span>
-                                    <p>Skip Intro & Outro: Added</p>
+                                    <p>Improved Watch page </p>
                                 </div>
                                 <div class="flex items-start space-x-2">
                                     <span class="text-white">•</span>
-                                    <p>Notification In Profile: Added</p>
+                                    <p>Hardsub servers unblocked In India</p>
                                 </div>
                                 <div class="flex items-start space-x-2">
                                     <span class="text-white">•</span>
-                                    <p>Settings : Added</p>
+                                    <p>Extreame Performance Boost</p>
+                                </div>
+                                <div class="flex items-start space-x-2">
+                                    <span class="text-white">•</span>
+                                    <p>Import/Export Watchlist</p>
                                 </div>
                             </div>
                         </div>
@@ -408,37 +412,41 @@
     </div>
 </div>
 <script>
-    function animeCountdown(targetDate) {
-        return {
-            countdown: { days: 0, hours: 0, minutes: 0, seconds: 0 },
-            init() {
-                this.updateCountdown();
-                setInterval(() => this.updateCountdown(), 1000);
+function animeCountdown(targetDate) {
+    console.log(targetDate)
+    return {
+        countdown: { days: 0, hours: 0, minutes: 0, seconds: 0 },
+        interval: null,
+        init() {
+            this.updateCountdown();
+            this.interval = setInterval(() => this.updateCountdown(), 1000);
+        },
+        updateCountdown() {
+            const now = new Date().getTime();
+            const distance = targetDate - now;
 
-                anime({
-                    targets: this.$el.querySelectorAll('.text-lg'),
-                    innerHTML: [0, el => el.innerHTML],
-                    easing: 'linear',
-                    round: 1,
-                    duration: 1000
-                });
-            },
-            updateCountdown() {
-                const now = new Date().getTime();
-                const distance = targetDate - now;
-
-                if (distance < 0) {
-                    this.countdown = { days: 0, hours: 0, minutes: 0, seconds: 0 };
-                    return;
-                }
-
-                this.countdown = {
-                    days: Math.floor(distance / (1000 * 60 * 60 * 24)),
-                    hours: Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
-                    minutes: Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60)),
-                    seconds: Math.floor((distance % (1000 * 60)) / 1000)
-                };
+            if (distance < 0) {
+                clearInterval(this.interval);
+                this.countdown = { days: 0, hours: 0, minutes: 0, seconds: 0 };
+                return;
             }
+
+            this.countdown = {
+                days: Math.floor(distance / (1000 * 60 * 60 * 24)),
+                hours: Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
+                minutes: Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60)),
+                seconds: Math.floor((distance % (1000 * 60)) / 1000)
+            };
+
+            // Animate numbers dynamically
+            anime({
+                targets: '.countdown-number',
+                innerHTML: el => el.innerHTML,
+                easing: 'linear',
+                round: 1,
+                duration: 500
+            });
         }
-    }
+    };
+}
 </script>

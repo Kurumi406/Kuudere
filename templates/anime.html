@@ -51,7 +51,7 @@
 
                     <!-- Action Buttons -->
                     <div x-data="watchlist()" class="flex flex-wrap gap-4 mb-6">
-                        {% if anime.subbedCount > 0 %}
+                        {% if anime.subbedCount > 0 or  anime.dubbedCount > 0%}
                         <a href="/watch/{{ anime.id }}" class="px-6 py-3 border-2 border-theme-red text-theme-red rounded-lg hover:bg-theme-red hover:text-white transition-colors flex items-center gap-2">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                                 <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"/>
@@ -287,6 +287,46 @@
                             if (folder == 'Remove'){
                                 this.inWatchlist = false;
                             }else{
+                                const statusMap = {
+                                    "Watching": "CURRENT",
+                                    "Plan To Watch": "PLANNING",
+                                    "Completed": "COMPLETED",
+                                    "Dropped": "DROPPED",
+                                    "On Hold": "PAUSED"
+                                };
+                                const status = statusMap[folder] || "PLANNING";
+                                fetch("https://graphql.anilist.co", {
+                                    method: "POST",
+                                    headers: {
+                                        "Content-Type": "application/json",
+                                        "Accept": "application/json",
+                                        "Authorization": `Bearer ${data.data.token}`
+                                    },
+                                    body: JSON.stringify({
+                                        query: `
+                                        mutation ($mediaId: Int!, $status: MediaListStatus) {
+                                            SaveMediaListEntry(mediaId: $mediaId, status: $status) {
+                                                id
+                                                status
+                                            }
+                                        }
+                                        `,
+                                        variables: { mediaId: data.data.anilist, status }
+                                    })
+                                })
+                                .then(res => res.json())
+                                .then(response => {
+                                    if (response.errors) {
+                                        throw new Error(response.errors.map(err => err.message).join(", "));
+                                    }
+                                    console.log(response);
+                                })
+                                .catch(err => {
+                                    console.error("AniList error:", err);
+                                    window.dispatchEvent(new CustomEvent('notify', {
+                                        detail: { message: `AniList error: ${err.message}`, type: 'error' }
+                                    }));
+                                });
                                 this.inWatchlist = true;
                             }
                             this.currentFolder = folder;

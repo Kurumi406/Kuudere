@@ -109,7 +109,7 @@
                 <div class="flex flex-col items-center mt-4">
                     <div class="flex flex-col items-center">
                         <p class="text-2xl font-bold text-white">
-                            <span x-text="currentRating.toFixed(2)">0.00</span>
+                          <span x-text="formatRating(currentRating)">0</span>
                             <span class="text-red-500">/10</span>
                         </p>
                         <p class="text-gray-400 text-xs">
@@ -161,6 +161,11 @@ function setupAnimeVoting() {
     init() {
       const mainId = '{{animeInfo.id}}';
       this.fetchVotes(mainId);
+    },
+
+    formatRating(rating) {
+      // Check if the decimal part is zero
+      return rating % 1 === 0 ? rating.toFixed(0) : rating.toFixed(2);
     },
     
     // Fetch votes from API

@@ -33,6 +33,7 @@ function animePlayer(config) {
     }    
     return {
         // Initialize with passed config
+        mainContentHeight: 0,
         userInfo: typeof config.userInfo === 'string' ? JSON.parse(config.userInfo) : config.userInfo,
         animeId: config.animeId,
         currentEpisode: config.epNumber,
@@ -186,11 +187,39 @@ function animePlayer(config) {
 
         // Initialize the player
         init() {
+            this.setupHeightCalculation();
             this.initEmojiPicker();
             this.fetchPlayerData();
             this.skipIntro();
             this.skipOutro();
         },
+
+        setupHeightCalculation() {
+            // Function to calculate and set heights
+            const updateHeights = () => {
+              // Get the main content element
+              const mainContent = document.querySelector('.main-content');
+              if (!mainContent) return;
+              
+              // Calculate its height
+              this.mainContentHeight = mainContent.offsetHeight;
+              
+              // Log for debugging
+              console.log('Main content height updated:', this.mainContentHeight);
+            };
+            
+            // Initial calculation after DOM is loaded
+            this.$nextTick(() => {
+              // Wait a bit for everything to render properly
+              setTimeout(updateHeights, 100);
+            });
+            
+            // Update when window is resized
+            window.addEventListener('resize', updateHeights);
+            
+            // Update when video is loaded (which might change the height)
+            document.addEventListener('videoLoaded', updateHeights);
+          },
 
         fetchPlayerData(limk){
             if (limk !== undefined){

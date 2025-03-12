@@ -93,32 +93,7 @@
             <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-red-600"></div>
         </div>
 
-        <div class="flex flex-col lg:flex-row h-full" x-data="{ mainContentHeight: 0 }" x-init="() => { 
-            // Function to calculate and set heights
-            function updateHeights() {
-              // Get the main content element
-              const mainContent = document.querySelector('.main-content');
-              if (!mainContent) return;
-              
-              // Calculate its height
-              mainContentHeight = mainContent.offsetHeight;
-              
-              // Log for debugging
-              console.log('Main content height updated:', mainContentHeight);
-            }
-            
-            // Initial calculation after DOM is loaded
-            $nextTick(() => {
-              // Wait a bit for everything to render properly
-              setTimeout(updateHeights, 100);
-            });
-            
-            // Update when window is resized
-            window.addEventListener('resize', updateHeights);
-            
-            // Update when video is loaded (which might change the height)
-            document.addEventListener('videoLoaded', updateHeights);
-          }">
+        <div class="flex flex-col lg:flex-row h-full">
             <!-- Main Content Area -->
             <aside class="hidden xl:inline-block lg:w-3/12 space-y-6 p-4 scrollbar-ass scrollbar-thumb-[#FF0000] scrollbar-track-[#2a2a2a]" x-bind:style="'max-height: ' + mainContentHeight + 'px; overflow-y: auto;'">
                 {% include "infoCard.html" %}

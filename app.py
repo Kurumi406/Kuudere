@@ -109,7 +109,7 @@ lock = threading.Lock()
 CORS(app)
 Compress(app)
 ext = Sitemap(app)
-cache = Cache(app, config={'CACHE_TYPE': 'RedisCache'})
+cache = Cache(app, config={'CACHE_TYPE': 'simple'})
 def get_client(header=None,session_id=None, secret=None, jwt=None):
     client = Client()
     client.set_endpoint(os.getenv('PROJECT_ENDPOINT'))
@@ -615,6 +615,7 @@ def register():
     email = data.get('email')
     password = data.get('password')
     secret = data.get('secret')
+    user_agent = get_user_agent()
 
     if not name and email and password:
         return jsonify({'success': False, 'message': 'Complete the form'}),400
@@ -630,7 +631,7 @@ def register():
     print(secret)
     
     try:
-        client = get_client(None,None,secret)
+        client = get_client(user_agent,None,secret)
         databases = Databases(client)
         user_check = databases.list_documents(
             database_id=os.getenv('DATABASE_ID'),
@@ -649,7 +650,7 @@ def register():
 
         session_data = account.create_email_password_session(email=email, password=password)
 
-        client = get_client(None,session_data['secret'],None)
+        client = get_client(user_agent,session_data['secret'],None)
         databases = Databases(client)
 
         user = f"user:{session_data['userId']}",
@@ -8140,13 +8141,26 @@ def submit_vote(anime_id):
     # Initialize database client
     client = get_client(None, None, os.getenv('SECRET'), None)
     databases = Databases(client)
+
+    # Extract a valid IP address
+    def get_valid_ip():
+        ip_address = request.headers.get('X-Forwarded-For', request.remote_addr)
+        ip_list = ip_address.split(",") if ip_address else []
+        
+        for ip in ip_list:
+            ip = ip.strip()  # Remove spaces
+            if re.match(r"^\d{1,3}(\.\d{1,3}){3}$", ip) or re.match(r"^[a-fA-F0-9:]+$", ip):
+                return ip  # Return the first valid IP
+        return "0.0.0.0"  # Fallback if no valid IP exists
     
+    client_ip = get_valid_ip()
+
     # Check if user already voted
     query_filters = [Query.equal("anime", anime_id)]
     if userInfo:
         query_filters.append(Query.equal("user", userInfo.get('userId')))
     else:
-        query_filters.append(Query.equal("ip", request.headers.get('X-Forwarded-For', request.remote_addr)))
+        query_filters.append(Query.equal("ip", client_ip))
     
     try:
         user_ratings = databases.list_documents(
@@ -8171,7 +8185,7 @@ def submit_vote(anime_id):
             vote_data = {
                 "anime": anime_id,
                 "vote": rating,
-                "ip": request.headers.get('X-Forwarded-For', request.remote_addr)
+                "ip": client_ip
             }
             if userInfo:
                 vote_data["user"] = userInfo.get('userId')

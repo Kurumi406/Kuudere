@@ -6318,7 +6318,7 @@ def continue_watching_home():
 def continue_watching():
     
     page = int(request.args.get('page', 1))
-    per_page = 8
+    per_page = 12
     start = (page - 1) * per_page
     end = start + per_page
     secret = None
@@ -6363,6 +6363,8 @@ def continue_watching():
             Query.equal("userId", acc.get("$id")),
             Query.order_desc('$updatedAt'),
             Query.select(['continueId','animeId','episodeId','currentTime','duration','server','language']),
+            Query.limit(per_page),
+            Query.offset(start)
         ]
     )
     
@@ -6408,12 +6410,10 @@ def continue_watching():
         animes.append(ff)
 
     # Paginate the results
-    continue_watching_data = animes
-    paginated_data = continue_watching_data[start:end]
-    total_pages = math.ceil(len(continue_watching_data) / per_page)
+    total_pages = math.ceil(search['total'] / per_page)
     
     return jsonify({
-        "data": paginated_data,
+        "data": animes,
         "total_pages": total_pages,
         "current_page": page
     })

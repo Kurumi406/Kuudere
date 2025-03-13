@@ -86,6 +86,35 @@
             border-color: #EF4444;
             box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
         }
+
+        /* Highlight for current episode */
+        .episode.current-episode {
+            border-color: #FF0000 !important;
+            box-shadow: 0 0 8px rgba(255, 0, 0, 0.5);
+        }
+
+        /* Animation for episode highlight */
+        @keyframes episode-pulse {
+            0% { box-shadow: 0 0 0 rgba(255, 0, 0, 0.5); }
+            50% { box-shadow: 0 0 10px rgba(255, 0, 0, 0.8); }
+            100% { box-shadow: 0 0 5px rgba(255, 0, 0, 0.5); }
+        }
+
+        /* Apply animation to current episode */
+        .episode.current-episode {
+            animation: episode-pulse 2s ease-in-out infinite;
+        }
+
+        /* Ensure smooth scrolling in episode container */
+        #episode-container .scrollbar-thin {
+            scroll-behavior: smooth;
+        }
+
+        /* Improve visibility of current episode */
+        .episode.current-episode .text-white {
+            color: #ffffff;
+            text-shadow: 0 0 2px rgba(255, 255, 255, 0.3);
+        }
 </style>
     <div x-data="animePlayer()" x-init="fetchInitialData()" class="h-full">
         <!-- Loading Overlay -->
@@ -688,52 +717,55 @@
 
             <!-- Episodes Section -->
             <aside class="lg:w-3/12 space-y-6 p-4 scrollbar-thin scrollbar-thumb-[#FF0000] scrollbar-track-[#2a2a2a]" 
-                id="episode-container"
-                x-bind:style="'max-height: ' + mainContentHeight + 'px; overflow-y: hidden;'">
-                <div class="flex flex-col bg-[#1a1a1a] rounded-lg p-6 shadow-lg  mb-6" x-bind:style="'max-height: ' + mainContentHeight + 'px; overflow-y: hidden;'">
-                    <h2 class="text-2xl font-semibold mb-4 text-white">Episodes</h2>
+              id="episode-container"
+              x-bind:style="'max-height: ' + mainContentHeight + 'px; overflow-y: hidden;'">
+              <div class="flex flex-col bg-[#1a1a1a] rounded-lg p-6 shadow-lg mb-6" x-bind:style="'max-height: ' + mainContentHeight + 'px; overflow-y: hidden;'">
+                  <h2 class="text-2xl font-semibold mb-4 text-white">Episodes</h2>
 
-                    <!-- Search Input -->
-                    <div class="mb-4">
-                        <input x-model="searchInput" @input="searchEpisodes" type="text"
-                            placeholder="Search by episode number or title..."
-                            class="w-full p-2 rounded-lg border border-[#808080] bg-black text-gray-300 focus:outline-none focus:ring-2 focus:ring-[#FF0000]">
-                    </div>
+                  <!-- Search Input -->
+                  <div class="mb-4">
+                      <input x-model="searchInput" @input="searchEpisodes" type="text"
+                          placeholder="Search by episode number or title..."
+                          class="w-full p-2 rounded-lg border border-[#808080] bg-black text-gray-300 focus:outline-none focus:ring-2 focus:ring-[#FF0000]">
+                  </div>
 
-                    <div
-                    x-ref="episodesContainer"
-                    class="space-y-4  overflow-y-auto pl-4 pr-4 pb-4 scrollbar-thin scrollbar-thumb-[#FF0000] scrollbar-track-[#1a1a1a] bg-black rounded-md border border-[#808080]">
-                    <template x-for="episode in filteredEpisodes" :key="episode.id">
-                        <div class="group"> <!-- Changed from button to div -->
-                            <div class="episode bg-black p-4 rounded-lg cursor-pointer hover:bg-[#412c2c] transition-colors duration-200"
-                                :class="{
-                                    'border-2 border-red-600': currentEpisode === episode.number,
-                                    'border-2 border-gray-600 hover:border-gray-700': currentEpisode !== episode.number
-                                }">
-                                <div class="flex items-center justify-between">
-                                    <div class="flex items-center flex-1" @click="selectEpisode(episode.number)">
-                                        <div class="flex-1">
-                                            <h3 class="font-semibold text-white line-clamp-1"
-                                                x-text="episode.number +'. ' + episode.titles[0]"></h3>
-                                            <p class="text-sm text-[#808080]" x-text="'Aired '+episode.aired"></p>
-                                        </div>
-                                    </div>
-                                    <button x-show="currentEpisode === episode.number"
-                                        @click.stop="openEpisodeEdit(episode)"
-                                        class="ml-4 p-1 hover:bg-red-500/20 rounded-full transition-colors flex-shrink-0">
-                                        <svg class="w-5 h-5 text-red-500 hover:text-red-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
-                                        </svg>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </template>
-                </div>
-                </div>
-                <div class="bg-[#1a1a1a] rounded-lg shadow-lg overflow-hidden block xl:hidden" x-data="{ showFullDescription: false }">
-                    {% include "infoCard.html" %}
-                </div>
+                  <!-- Episode List Container with Smooth Scrolling -->
+                  <div
+                      x-ref="episodesContainer"
+                      class="space-y-4 overflow-y-auto pl-4 pr-4 pb-4 scrollbar-thin scrollbar-thumb-[#FF0000] scrollbar-track-[#1a1a1a] bg-black rounded-md border border-[#808080]"
+                      @scroll="handleScroll"
+                      style="scroll-behavior: smooth;">
+                      <template x-for="episode in filteredEpisodes" :key="episode.id">
+                          <div class="group" :data-episode="episode.number">
+                              <div class="episode bg-black p-4 rounded-lg cursor-pointer hover:bg-[#412c2c] transition-colors duration-200"
+                                  :class="{
+                                      'border-2 border-red-600 current-episode': currentEpisode === episode.number,
+                                      'border-2 border-gray-600 hover:border-gray-700': currentEpisode !== episode.number
+                                  }">
+                                  <div class="flex items-center justify-between">
+                                      <div class="flex items-center flex-1" @click="selectEpisode(episode.number)">
+                                          <div class="flex-1">
+                                              <h3 class="font-semibold text-white line-clamp-1"
+                                                  x-text="episode.number +'. ' + episode.titles[0]"></h3>
+                                              <p class="text-sm text-[#808080]" x-text="'Aired '+episode.aired"></p>
+                                          </div>
+                                      </div>
+                                      <button x-show="currentEpisode === episode.number"
+                                          @click.stop="openEpisodeEdit(episode)"
+                                          class="ml-4 p-1 hover:bg-red-500/20 rounded-full transition-colors flex-shrink-0">
+                                          <svg class="w-5 h-5 text-red-500 hover:text-red-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                              <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                                          </svg>
+                                      </button>
+                                  </div>
+                              </div>
+                          </div>
+                      </template>
+                  </div>
+              </div>
+              <div class="bg-[#1a1a1a] rounded-lg shadow-lg overflow-hidden block xl:hidden" x-data="{ showFullDescription: false }">
+                  {% include "infoCard.html" %}
+              </div>
             </aside>
         </div>
 

@@ -1010,6 +1010,9 @@ def load_home():
             collection_id = os.getenv('Anime_Episodes'),
             queries = [
                 Query.select("animeId"),
+                Query.not_equal('animeId','Digimon-Adventure-2020'),
+                Query.not_equal('animeId','Kaleido-Star-2003'),
+                Query.not_equal('animeId','Sekai-de-Ichiban-Tsuyoku-Naritai-2013'),
                 Query.order_desc("aired"),
                 Query.limit(50),
             ] # optional
@@ -1088,7 +1091,7 @@ def load_home():
                 "subbedCount": anii.get("subbed"),
                 "dubbedCount": anii.get("dubbed"),
                 "description": anii.get("description"),
-                "url":f'/watch/{anii.get("mainId")}/{anii.get("subbed")}',
+                "url":f'/watch/{anii.get("mainId")}?ep=latest',
             })
 
             if len(filtered_documents_eps) >= 12:
@@ -1842,6 +1845,7 @@ def watch_page(anime_id, ep_number=None):
     epASs =  None
     search = None
     ref = request.args.get('ref')
+    latest = request.args.get('ep')
 
     isApi, key, secret, userInfo, acc = verify_api_request(request)
 
@@ -1904,6 +1908,36 @@ def watch_page(anime_id, ep_number=None):
 
     if not result:
         return {"error": "Anime not found","success": False}, 404
+    
+    if bool(latest):
+
+        eps = databases.list_documents(
+                database_id=os.getenv('DATABASE_ID'),
+                collection_id=os.getenv('Anime_Episodes'),
+                queries=[
+                    Query.equal("animeId", result.get("animeId")),
+                    Query.order_desc('number'),
+                    Query.select(["number"]),
+                    Query.limit(1)
+                ]
+            )
+        
+        epASs = eps['documents'][0].get('number')
+    
+    elif not epASs:
+        eps = databases.list_documents(
+                database_id=os.getenv('DATABASE_ID'),
+                collection_id=os.getenv('Anime_Episodes'),
+                queries=[
+                    Query.equal("animeId", result.get("animeId")),
+                    Query.order_asc('number'),
+                    Query.select(["number"]),
+                    Query.limit(1)
+                ]
+            )
+        
+        epASsz = eps['documents'][0].get('number')
+        
     
     img = databases.get_document(
             database_id = os.getenv('DATABASE_ID'),
@@ -2020,7 +2054,7 @@ def watch_page(anime_id, ep_number=None):
             ep = eps['documents'][0].get('number')
             ep_number = eps['documents'][0].get('number')
         else:
-            ep_number = 1
+            ep_number = epASsz
             eps = databases.list_documents(
                 database_id=os.getenv('DATABASE_ID'),
                 collection_id=os.getenv('Anime_Episodes'),
@@ -2032,8 +2066,8 @@ def watch_page(anime_id, ep_number=None):
                 ]
             )
     else:
-        epASs = epASs or 1
-        ep_number = epASs or 1
+        epASs = epASs or epASsz
+        ep_number = epASs or epASsz
         eps = databases.list_documents(
                 database_id=os.getenv('DATABASE_ID'),
                 collection_id=os.getenv('Anime_Episodes'),
@@ -2045,7 +2079,7 @@ def watch_page(anime_id, ep_number=None):
                 ]
             )
 
-    epASs = epASs or 1
+    epASs = epASs or epASsz
     bitch = databases.list_documents(
         database_id=os.getenv('DATABASE_ID'),
         collection_id=os.getenv('Anime_Episodes_Links'),

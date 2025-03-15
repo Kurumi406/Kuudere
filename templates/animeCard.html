@@ -1,0 +1,406 @@
+<a href="/anime/{{ anime.id }}" class="anime-card relative aspect-[3/4] overflow-visible rounded-lg group" 
+   x-data="animeCard('{{ anime.id }}')" 
+   @mouseenter="handleMouseEnter()" 
+   @mouseleave="handleMouseLeave()" 
+   @focus="handleMouseEnter()"
+   @blur="handleMouseLeave()" 
+   tabindex="0">
+
+    <!-- Micro-interaction indicator (subtle dot that appears on hover) -->
+    <div class="micro-interaction absolute -top-1 -right-1 w-3 h-3 bg-pink-500 rounded-full opacity-0 z-10 shadow-lg shadow-pink-500/30"></div>
+
+    <div class="relative h-full w-full overflow-hidden rounded-md transition-transform duration-300 ease-in-out group-hover:shadow-lg group-hover:shadow-black/30">
+        <!-- Card image with subtle parallax effect -->
+        <img src="{{ anime.cover }}" alt="{{ anime.english }}" class="card-image w-full h-full object-cover transition-all">
+        
+        <!-- Gradient overlay with improved contrast for readability -->
+        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent opacity-90 group-hover:opacity-100 transition-opacity duration-300"></div>
+        
+        <!-- Badges with improved visual hierarchy -->
+        <div class="absolute left-2 top-2 flex flex-wrap gap-1">
+            <span class="badge bg-black/70 backdrop-blur-sm text-white text-[10px] uppercase px-2 py-1 rounded-full font-medium border border-white/10 shadow-sm transform transition-transform duration-300 hover:scale-105">{{
+                anime.type }}</span>
+            <span
+                class="badge bg-black/70 backdrop-blur-sm text-white text-[10px] uppercase px-2 py-1 rounded-full flex items-center font-medium border border-white/10 shadow-sm transform transition-transform duration-300 hover:scale-105">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1 text-yellow-400" viewBox="0 0 24 24"
+                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect>
+                    <line x1="7" y1="2" x2="7" y2="22"></line>
+                    <line x1="17" y1="2" x2="17" y2="22"></line>
+                    <line x1="2" y1="12" x2="22" y2="12"></line>
+                    <line x1="2" y1="7" x2="7" y2="7"></line>
+                    <line x1="2" y1="17" x2="7" y2="17"></line>
+                    <line x1="17" y1="17" x2="22" y2="17"></line>
+                    <line x1="17" y1="7" x2="22" y2="7"></line>
+                </svg>
+                {{ anime.epCount }}
+            </span>
+            <span
+                class="badge bg-black/70 backdrop-blur-sm text-white text-[10px] uppercase px-2 py-1 rounded-full flex items-center font-medium border border-white/10 shadow-sm transform transition-transform duration-300 hover:scale-105">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1 text-blue-400" viewBox="0 0 24 24"
+                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                    <line x1="12" y1="19" x2="12" y2="23"></line>
+                    <line x1="8" y1="23" x2="16" y2="23"></line>
+                </svg>
+                {{ anime.dubbedCount }}
+            </span>
+        </div>
+        
+        <!-- Title area with improved typography and spacing -->
+        <div class="absolute bottom-2 left-2 right-2 transform transition-transform duration-300 group-hover:translate-y-[-2px]">
+            <h3 class="text-sm font-medium text-white line-clamp-2 text-shadow-sm">{{ anime.english }}</h3>
+            <p class="mt-1 text-xs text-gray-300 opacity-80 group-hover:opacity-100 transition-opacity">Episodes {{ anime.epCount }}</p>
+        </div>
+    </div>
+
+    <!-- Advanced hover card with detailed info -->
+    <div x-show="showHover && window.innerWidth >= 640" x-cloak 
+        class="anime-info absolute left-0 top-full z-50 mt-2 w-full sm:left-full sm:top-0 sm:-translate-x-[25%] sm:mt-0 sm:w-72 transition-all duration-300 ease-out transform"
+        :class="{'opacity-0 translate-y-2': !showHover, 'opacity-100 translate-y-0': showHover}"
+        @mouseenter="clearTimeout(hoverTimeout); showHover = true" @mouseleave="handleMouseLeave()">
+
+        <div
+            class="anime-info-content rounded-md bg-gray-900/95 backdrop-blur-md p-4 shadow-xl border border-gray-800/50 transform-gpu relative overflow-hidden">
+            <!-- Decorative background pattern for visual interest -->
+            <div class="absolute inset-0 bg-gradient-to-br from-pink-500/5 to-purple-600/5 z-0"></div>
+            <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiMyMjIiIGZpbGwtb3BhY2l0eT0iLjAyIj48cGF0aCBkPSJNMzYgMzRjMC0yLjIxLTEuNzktNC00LTRzLTQgMS43OS00IDQgMS43OSA0IDQgNCA0LTEuNzkgNC00eiIvPjwvZz48L2c+PC9zdmc+')] opacity-10 z-0"></div>
+            
+            <!-- Loading state with subtle animation -->
+            <template x-if="loading">
+                <div class="flex flex-col items-center justify-center py-8 relative z-10">
+                    <div class="w-8 h-8 relative">
+                        <div class="absolute inset-0 border-2 border-pink-500/30 border-t-pink-500 rounded-full animate-spin"></div>
+                        <div class="absolute inset-1 border-2 border-blue-500/20 border-t-blue-500 rounded-full animate-spin" style="animation-duration: 1.2s;"></div>
+                    </div>
+                    <p class="mt-3 text-xs text-gray-400 font-medium animate-pulse">Loading details...</p>
+                </div>
+            </template>
+
+            <!-- Content when data is loaded -->
+            <template x-if="!loading && hoverData">
+                <div x-html="htmlContent" class="relative z-10"></div>
+            </template>
+        </div>
+    </div>
+</a>
+
+<style>
+    /* Add text shadow for better readability */
+    .text-shadow-sm {
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+    }
+    
+    /* Add shimmer animation for buttons */
+    @keyframes shimmer {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(100%); }
+    }
+    
+    .animate-shimmer {
+        animation: shimmer 2s infinite;
+    }
+    
+    /* Add subtle bounce effect for interactive elements */
+    @keyframes bounce-subtle {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-2px); }
+    }
+    
+    .hover\:bounce-subtle:hover {
+        animation: bounce-subtle 1s ease infinite;
+    }
+</style>
+
+<script>
+    // Define the component logic in a separate Alpine.js component
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('animeCard', (animeId) => ({
+            showHover: false,
+            hoverData: null,
+            loading: false,
+            hasInteracted: false,
+            isBookmarked: false,
+            isHovered: false,
+            watchlistOpen: false,
+            selectedFolder: '',
+            folders: ['Plan To Watch', 'Watching', 'Completed', 'On Hold', 'Dropped', 'Remove'],
+            loadingFolder: null,
+            successFolder: null,
+            errorFolder: null,
+            hoverTimeout: null,
+            htmlContent: '',
+
+            async fetchHoverData() {
+                if (this.hoverData) return;
+                
+                this.loading = true;
+                try {
+                    // First fetch the HTML template
+                    const htmlResponse = await fetch('/api/hover/html');
+                    if (htmlResponse.ok) {
+                        const htmlData = await htmlResponse.json();
+                        this.htmlContent = htmlData.html;
+                    }
+                    
+                    // Then fetch the anime data
+                    const response = await fetch(`/api/hover/anime/${animeId}`);
+                    if (response.ok) {
+                        this.hoverData = await response.json();
+                        this.hasInteracted = true;
+                        if (this.hoverData.isInWatchlist) {
+                            this.isBookmarked = true;
+                            this.selectedFolder = this.hoverData.folder || '';
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error fetching hover data:', error);
+                } finally {
+                    this.loading = false;
+                    
+                    // Run animations after data is loaded
+                    if (window.anime && this.hoverData) {
+                        this.$nextTick(() => {
+                            this.runEntranceAnimations();
+                        });
+                    }
+                }
+            },
+
+            runEntranceAnimations() {
+                // Get all animatable elements from the loaded content
+                const card = this.$el.querySelector('.anime-info-content');
+                if (!card) return;
+                
+                // Animate title and elements with staggered timing
+                if (window.anime) {
+                    // Title animation
+                    const title = card.querySelector('h4');
+                    if (title) {
+                        window.anime({
+                            targets: title,
+                            translateY: [10, 0],
+                            opacity: [0, 1],
+                            duration: 600,
+                            easing: 'easeOutCubic'
+                        });
+                    }
+                    
+                    // Native title animation
+                    const nativeTitle = card.querySelector('h4 + p');
+                    if (nativeTitle) {
+                        window.anime({
+                            targets: nativeTitle,
+                            translateY: [5, 0],
+                            opacity: [0, 1],
+                            duration: 600,
+                            delay: 100,
+                            easing: 'easeOutCubic'
+                        });
+                    }
+                    
+                    // Badges animation
+                    const badges = card.querySelectorAll('.flex.gap-1 span');
+                    if (badges.length) {
+                        window.anime({
+                            targets: badges,
+                            translateY: [5, 0],
+                            opacity: [0, 1],
+                            delay: window.anime.stagger(80),
+                            duration: 400,
+                            easing: 'easeOutQuad'
+                        });
+                    }
+                    
+                    // Sections animation with staggered timing
+                    const sections = card.querySelectorAll('.mt-3, .mt-4');
+                    if (sections.length) {
+                        window.anime({
+                            targets: sections,
+                            translateY: [10, 0],
+                            opacity: [0, 1],
+                            delay: window.anime.stagger(100, {start: 200}),
+                            duration: 500,
+                            easing: 'easeOutQuad'
+                        });
+                    }
+                }
+            },
+
+            handleMouseEnter() {
+                // Clear any existing timeout to prevent flicker
+                if (this.hoverTimeout) clearTimeout(this.hoverTimeout);
+                this.showHover = true;
+                this.isHovered = true;
+                
+                // Animate micro-interaction on hover
+                if (window.anime) {
+                    const microInteraction = this.$el.querySelector('.micro-interaction');
+                    if (microInteraction) {
+                        window.anime({
+                            targets: microInteraction,
+                            scale: [0, 1],
+                            opacity: [0, 1],
+                            duration: 400,
+                            easing: 'easeOutElastic(1, .6)'
+                        });
+                    }
+                    
+                    // Card image zoom effect
+                    const cardImage = this.$el.querySelector('.card-image');
+                    if (cardImage) {
+                        window.anime({
+                            targets: cardImage,
+                            scale: 1.05,
+                            duration: 600,
+                            easing: 'easeOutCubic'
+                        });
+                    }
+                    
+                    // Badge animations
+                    const badges = this.$el.querySelectorAll('.badge');
+                    if (badges.length) {
+                        window.anime({
+                            targets: badges,
+                            translateY: [10, 0],
+                            opacity: [0, 1],
+                            delay: window.anime.stagger(80),
+                            duration: 500,
+                            easing: 'easeOutQuint'
+                        });
+                    }
+                }
+                
+                this.fetchHoverData();
+            },
+
+            handleMouseLeave() {
+                // Add a small delay before hiding to prevent accidental hiding
+                this.hoverTimeout = setTimeout(() => {
+                    this.showHover = false;
+                    this.isHovered = false;
+                    
+                    // Reset micro-interaction
+                    if (window.anime) {
+                        const microInteraction = this.$el.querySelector('.micro-interaction');
+                        if (microInteraction) {
+                            window.anime({
+                                targets: microInteraction,
+                                scale: 0,
+                                opacity: 0,
+                                duration: 200,
+                                easing: 'easeOutQuad'
+                            });
+                        }
+                        
+                        // Reset card image zoom
+                        const cardImage = this.$el.querySelector('.card-image');
+                        if (cardImage) {
+                            window.anime({
+                                targets: cardImage,
+                                scale: 1,
+                                duration: 400,
+                                easing: 'easeOutQuad'
+                            });
+                        }
+                    }
+                }, 100);
+            },
+
+            addToWatchlist(folder) {
+                this.selectedFolder = folder;
+                this.loadingFolder = folder;
+                this.successFolder = null;
+                this.errorFolder = null;
+
+                fetch(`/add-to-watchlist/${folder}/${animeId}`, {
+                    method: 'GET',
+                })
+                .then(response => response.json())
+                .then(data => {
+                    this.loadingFolder = null;
+                    if (data.success) {
+                        this.successFolder = folder;
+                        if (folder === 'Remove') {
+                            this.isBookmarked = false;
+                        } else {
+                            const statusMap = {
+                                "Watching": "CURRENT",
+                                "Plan To Watch": "PLANNING",
+                                "Completed": "COMPLETED",
+                                "Dropped": "DROPPED",
+                                "On Hold": "PAUSED"
+                            };
+                            const status = statusMap[folder] || "PLANNING";
+                            
+                            // AniList integration
+                            fetch("https://graphql.anilist.co", {
+                                method: "POST",
+                                headers: {
+                                    "Content-Type": "application/json",
+                                    "Accept": "application/json",
+                                    "Authorization": `Bearer ${data.data.token}`
+                                },
+                                body: JSON.stringify({
+                                    query: `
+                                    mutation ($mediaId: Int!, $status: MediaListStatus) {
+                                        SaveMediaListEntry(mediaId: $mediaId, status: $status) {
+                                            id
+                                            status
+                                        }
+                                    }
+                                    `,
+                                    variables: { mediaId: data.data.anilist, status }
+                                })
+                            })
+                            .then(res => res.json())
+                            .then(response => {
+                                if (response.errors) {
+                                    throw new Error(response.errors.map(err => err.message).join(", "));
+                                }
+                                console.log(response);
+                            })
+                            .catch(err => {
+                                console.error("AniList error:", err);
+                                window.dispatchEvent(new CustomEvent('notify', {
+                                    detail: { message: `AniList error: ${err.message}`, type: 'error' }
+                                }));
+                            });
+                            
+                            this.isBookmarked = true;
+                        }
+                        this.selectedFolder = folder;
+                        this.animateIcon('success');
+                        setTimeout(() => {
+                            this.watchlistOpen = false;
+                        }, 800);
+                    } else {
+                        this.errorFolder = folder;
+                        this.animateIcon('error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    this.loadingFolder = null;
+                    this.errorFolder = folder;
+                    this.animateIcon('error');
+                });
+            },
+
+            animateIcon(type) {
+                const selector = type === 'success' ? '.success-icon' : '.error-icon';
+                const element = this.$el.querySelector(selector);
+                if (element && window.anime) {
+                    window.anime({
+                        targets: element,
+                        scale: [0, 1],
+                        opacity: [0, 1],
+                        duration: 300,
+                        easing: 'easeOutQuad'
+                    });
+                }
+            }
+        }));
+    });
+</script>

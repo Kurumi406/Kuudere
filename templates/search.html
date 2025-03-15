@@ -345,51 +345,7 @@
             </div>
             <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
                 {% for anime in result %}
-                <a href="/anime/{{ anime.id }}" class="anime-card relative aspect-[3/4] overflow-visible rounded-md">
-                    <div
-                        class="relative h-full w-full overflow-hidden rounded-md transition-transform duration-300 ease-in-out hover:scale-105">
-                        <img src="{{ anime.cover }}" alt="{{ anime.english }}" class="w-full h-full object-cover">
-                        <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent">
-                        </div>
-                        <div class="absolute left-2 top-2 flex flex-wrap gap-1">
-                            <span
-                                class="bg-black/50 backdrop-blur-sm text-white text-[10px] uppercase px-2 py-1 rounded-full">{{
-                                anime.type }}</span>
-                            <span
-                                class="bg-black/50 backdrop-blur-sm text-white text-[10px] uppercase px-2 py-1 rounded-full flex items-center">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1 text-yellow-400"
-                                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                    stroke-linecap="round" stroke-linejoin="round">
-                                    <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect>
-                                    <line x1="7" y1="2" x2="7" y2="22"></line>
-                                    <line x1="17" y1="2" x2="17" y2="22"></line>
-                                    <line x1="2" y1="12" x2="22" y2="12"></line>
-                                    <line x1="2" y1="7" x2="7" y2="7"></line>
-                                    <line x1="2" y1="17" x2="7" y2="17"></line>
-                                    <line x1="17" y1="17" x2="22" y2="17"></line>
-                                    <line x1="17" y1="7" x2="22" y2="7"></line>
-                                </svg>
-                                {{ anime.epCount }}
-                            </span>
-                            <span
-                                class="bg-black/50 backdrop-blur-sm text-white text-[10px] uppercase px-2 py-1 rounded-full flex items-center">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1 text-blue-400"
-                                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                    stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-                                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-                                    <line x1="12" y1="19" x2="12" y2="23"></line>
-                                    <line x1="8" y1="23" x2="16" y2="23"></line>
-                                </svg>
-                                {{ anime.dubbedCount }}
-                            </span>
-                        </div>
-                        <div class="absolute bottom-2 left-2 right-2">
-                            <h3 class="text-sm font-medium text-white line-clamp-2">{{ anime.english }}</h3>
-                            <p class="mt-1 text-xs text-gray-300">Episodes {{ anime.epCount }}</p>
-                        </div>
-                    </div>
-                </a>
+                {% include "animeCard.html" %}
                 {% endfor %}
             </div>
             {% if total %}

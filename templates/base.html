@@ -33,6 +33,9 @@
     <link rel="preload" href="{{ url_for('static', filename='favicon.png') }}" as="image">
 
     <link href="{{ url_for('static', filename='css/output.css') }}" rel="stylesheet">
+    {% block extra_css %}
+    <link href="{{ url_for('static', filename='css/custom.css') }}" rel="stylesheet">
+    {% endblock %}
     <script defer src="{{ url_for('static', filename='js/alphine.js') }}"></script>
     <script src="{{ url_for('static', filename='js/socket.io.min.js') }}"></script>
     <script src="{{ url_for('static', filename='js/anime.min.js') }}"></script>

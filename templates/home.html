@@ -6,45 +6,306 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kuudere - Free Anime Streaming Platform</title>
     <link href="{{ url_for('static', filename='css/output.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/custom.css') }}" rel="stylesheet">
     <link rel="icon" href="{{ url_for('static', filename='favicon.png') }}" type="image/x-icon">
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
     <script src="{{ url_for('static', filename='js/socket.io.min.js') }}"></script>
 
-    <meta name="description" content="{{ description | default('Stream anime for free in HD on Kuudere. Enjoy the latest episodes with no ads!') }}">
+    <meta name="description"
+        content="{{ description | default('Stream anime for free in HD on Kuudere. Enjoy the latest episodes with no ads!') }}">
     <link rel="icon" href="{{ url_for('static', filename='favicon.png') }}" type="image/x-icon">
     <link rel="canonical" href="{{ canonical_url | default(request.url) }}">
-    
+
     <!-- Open Graph Meta Tags -->
     <meta property="og:title" content="{{ title | default('Kuudere - Watch Anime Free in HD') }}">
-    <meta property="og:description" content="{{ description | default('Stream anime for free in HD on Kuudere. No ads, just anime!') }}">
+    <meta property="og:description"
+        content="{{ description | default('Stream anime for free in HD on Kuudere. No ads, just anime!') }}">
     <meta property="og:url" content="{{ canonical_url | default(request.url) }}">
-    <meta property="og:image" content="{{ cover | default(url_for('static', filename='favicon.png', _external=True)) }}">
+    <meta property="og:image"
+        content="{{ cover | default(url_for('static', filename='favicon.png', _external=True)) }}">
     <meta property="og:type" content="website">
     <meta property="og:locale" content="en_US">
-    
+
     <!-- Twitter Meta Tags -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="{{ title | default('Kuudere - Watch Anime Free in HD') }}">
-    <meta name="twitter:description" content="{{ description | default('Stream anime for free in HD on Kuudere. No ads, just anime!') }}">
-    <meta name="twitter:image" content="{{ cover | default(url_for('static', filename='favicon.png', _external=True)) }}">
+    <meta name="twitter:description"
+        content="{{ description | default('Stream anime for free in HD on Kuudere. No ads, just anime!') }}">
+    <meta name="twitter:image"
+        content="{{ cover | default(url_for('static', filename='favicon.png', _external=True)) }}">
     <meta name="twitter:site" content="@KuudereAnime">
 </head>
+<style>
+    /* Custom scrollbar styles */
+    .scrollbar-thin::-webkit-scrollbar {
+        width: 4px;
+    }
 
-<body class="bg-primary text-white" x-data="{ searchQuery: '', isMenuOpen: false, ...searchBar() }">
-    <!-- Navigation -->
+    .scrollbar-thin::-webkit-scrollbar-track {
+        background: #2a2a2a;
+    }
+
+    .scrollbar-thin::-webkit-scrollbar-thumb {
+        background-color: #FF0000;
+        border-radius: 3px;
+    }
+</style>
+
+<body class="bg-primary scrollbar-thin text-white" x-data="{ searchQuery: '', isMenuOpen: false, ...searchBar() }">
+    <!-- Mobile Menu Button - Only visible on mobile -->
+    <div class="md:hidden bg-primary py-3 px-4 flex items-center">
+        <button class="text-white" @click="isMenuOpen = !isMenuOpen">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+        </button>
+        <span class="ml-3 font-medium">Menu</span>
+    </div>
+
+    <!-- Mobile Menu - Only visible when toggled -->
+    <div x-show="isMenuOpen" x-transition:enter="transition ease-out duration-300"
+        x-transition:enter-start="opacity-0 transform -translate-y-4"
+        x-transition:enter-end="opacity-100 transform translate-y-0"
+        x-transition:leave="transition ease-in duration-300"
+        x-transition:leave-start="opacity-100 transform translate-y-0"
+        x-transition:leave-end="opacity-0 transform -translate-y-4"
+        class="md:hidden bg-primary absolute w-full z-50 shadow-lg">
+        <div class="p-4 space-y-3">
+            <a href="/home" class="block py-2 px-3 hover:bg-red-500/20 rounded-lg transition-colors">Home</a>
+            <a href="/search" class="block py-2 px-3 hover:bg-red-500/20 rounded-lg transition-colors">Search</a>
+            <a href="/recently-updated" class="block py-2 px-3 hover:bg-red-500/20 rounded-lg transition-colors">Latest
+                Episodes</a>
+            <a href="/search?type=Movie&sort=default" class="block py-2 px-3 hover:bg-red-500/20 rounded-lg transition-colors">Movies</a>
+            <a href="/upcoming" class="block py-2 px-3 hover:bg-red-500/20 rounded-lg transition-colors">Upcoming</a>
+        </div>
+    </div>
 
     <!-- Hero Section -->
     <div class="relative min-h-screen bg-primary" x-data="joinRealtime()" x-init="initializeSocket()">
-        <!-- Background with anime characters -->
-        <div class="absolute inset-0 w-full h-full">
+        <!-- Background with anime characters - Hidden on mobile, visible on desktop -->
+        <div class="absolute inset-0 w-full h-full hidden md:block">
             <div class="absolute inset-0 bg-gradient-to-b from-transparent to-primary/90 z-10"></div>
             <img src="{{ url_for('static', filename='kurumi-bg.jpg') }}" alt="Kurumi"
                 class="w-full h-full object-cover object-center">
         </div>
 
-        <!-- Main Content -->
-        <div class="relative z-20 container mx-auto px-4 pt-20 mb-8">
+        <!-- Mobile Content -->
+        <div class="md:hidden bg-primary min-h-screen">
+            <!-- Logo Section -->
+            <div class="pt-6 pb-4 flex justify-center">
+                <img src="{{ url_for('static', filename='logo.png') }}" width="150" class="lazyload">
+            </div>
+
+            <!-- Search Section -->
+            <div class="px-4 pb-4">
+                <div class="relative">
+                    <form action="/search" method="get" class="flex" @keydown.enter.prevent="submitSearch">
+                        <input type="text" name="keyword" placeholder="Search anime..."
+                            class="w-full px-4 py-3 bg-black/40 rounded-l-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500/50"
+                            x-model="searchQuery" @input.debounce.300ms="fetchResults" @click.away="clearResults">
+                        <button type="button" @click="submitSearch"
+                            class="bg-red-500 text-white px-4 rounded-r-lg flex items-center justify-center hover:bg-red-600 active:bg-red-700 transition-colors">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                        </button>
+                    </form>
+
+                    <!-- Search Results Dropdown -->
+                    <div x-show="searchQuery.length > 0" x-cloak
+                        class="absolute w-full mt-1 bg-black/80 backdrop-blur-md rounded-lg shadow-lg overflow-hidden z-50 max-h-[60vh] overflow-y-auto border border-gray-800">
+                        <!-- Loading indicator -->
+                        <div x-cloak x-show="isLoading"
+                            class="px-4 py-3 text-center text-sm text-gray-400 flex items-center justify-center">
+                            <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-red-500" xmlns="http://www.w3.org/2000/svg"
+                                fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                                    stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor"
+                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                                </path>
+                            </svg>
+                            Loading...
+                        </div>
+                        <!-- Search Results -->
+                        <template x-if="!isLoading && searchResults.length > 0">
+                            <div>
+                                <template x-for="result in searchResults" :key="result.id">
+                                    <a :href="`/anime/${result.id}`"
+                                        class="flex items-center px-4 py-3 text-sm text-gray-200 hover:bg-red-500/20 active:bg-red-500/30 transition-all duration-300 dropdown-item">
+                                        <!-- Small Cover Image -->
+                                        <img :src="result.coverImage" alt="Cover Image"
+                                            class="w-10 h-14 mr-3 rounded-md object-cover shadow-md" />
+                                        <!-- Title and Details -->
+                                        <div>
+                                            <p class="font-bold text-white" x-text="result.title"></p>
+                                            <p class="text-xs text-gray-400" x-text="result.details"></p>
+                                        </div>
+                                    </a>
+                                </template>
+                                <!-- View All Button -->
+                                <a :href="`/search?keyword=${searchQuery}`"
+                                    class="block px-4 py-3 text-center text-sm font-bold text-red-500 bg-black/60 hover:bg-red-500/20 active:bg-red-500/30 transition-all duration-300">
+                                    View All Results
+                                </a>
+                            </div>
+                        </template>
+                        <!-- If no results are found -->
+                        <template x-if="!isLoading && searchResults.length === 0">
+                            <div class="px-4 py-6 text-center text-sm text-gray-400">
+                                <p>Nothing Found</p>
+                                <a href="/search"
+                                    class="mt-4 inline-block px-4 py-2 text-sm font-bold text-red-500 bg-black/60 rounded-md hover:bg-red-500/20 active:bg-red-500/30 transition-all duration-300">
+                                    Find Out More
+                                </a>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top Search -->
+            <div class="px-4 pb-4">
+                <span class="text-gray-400 text-xs">Top search:</span>
+                <div class="mt-2 flex flex-wrap gap-1">
+                    {% for keyword in keywords %}
+                    <a href="/search?keyword={{ keyword.keyword }}"
+                        class="inline-block text-xs px-2 py-1 bg-black/30 hover:bg-red-500/20 active:bg-red-500/30 rounded-full text-gray-300 mb-1 truncate max-w-[150px] transition-colors"
+                        title="{{ keyword.keyword }}">
+                        {{ keyword.keyword }}
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Watch Anime Button -->
+            <div class="px-4 pb-6">
+                <a href="/home"
+                    class="block w-full py-3 bg-red-500 text-white rounded-lg text-center font-medium flex items-center justify-center hover:bg-red-600 active:bg-red-700 transition-colors">
+                    Watch anime
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-2" viewBox="0 0 20 20"
+                        fill="currentColor">
+                        <path fill-rule="evenodd"
+                            d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z"
+                            clip-rule="evenodd" />
+                    </svg>
+                </a>
+            </div>
+
+            <!-- Site Info -->
+            <div class="px-4 space-y-6 pb-8">
+                <div class="bg-black/20 p-4 rounded-lg">
+                    <h2 class="text-xl text-white mb-3 font-bold">Kuudere - Watch Anime Online for FREE</h2>
+                    <p class="text-sm text-gray-300 leading-relaxed">
+                        Kuudere is a premier free anime streaming platform that offers high-quality anime with
+                        English subtitles or dubbing, all at no cost. Our extensive database ensures you can
+                        effortlessly find and enjoy virtually any anime with just a single click.
+                    </p>
+                </div>
+
+                <div class="bg-black/20 p-4 rounded-lg">
+                    <h2 class="text-lg text-white mb-2 font-bold">Is Kuudere safe?</h2>
+                    <p class="text-sm text-gray-300 leading-relaxed">
+                        Yes. We started this site to improve UX and are committed to keeping our users safe. We
+                        encourage all our users to notify us if anything looks suspicious.
+                    </p>
+                </div>
+
+                <div class="bg-black/20 p-4 rounded-lg">
+                    <h2 class="text-lg text-white mb-2 font-bold">What makes Kuudere the best site to watch anime free
+                        online?</h2>
+                    <ul class="space-y-2 text-sm text-gray-300">
+                        <li class="flex">
+                            <span class="text-red-500 mr-1">•</span>
+                            <span>Content library: Our extensive database ensures you can find almost everything
+                                here.</span>
+                        </li>
+                        <li class="flex">
+                            <span class="text-red-500 mr-1">•</span>
+                            <span>Streaming experience: We have top of the line streaming servers. You can simply choose
+                                one that is fast for you.</span>
+                        </li>
+                        <li class="hidden">• We are based on <a class="hover:text-accent/80"
+                                href="http://pfo5xckqttdpyfaa3udik2wg5z6uata2ax5wvniqy6s52wcfrzwvsyyd.onion">TOR</a>
+                            & <a class="hover:text-accent/80"
+                                href="http://ruif5ytuzjjtsjekdwsd7owo73hfaclzlatzy3jwylp3goyjudva.b32.i2p">I2P</a>
+                            network.</li>
+                        <li class="flex">
+                            <span class="text-red-500 mr-1">•</span>
+                            <span>Still Got Questions? <a class="text-red-400 hover:text-red-300" href="/faq">Browse our
+                                    F&Q</a></span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Download Banner - Standalone Component -->
+            <div class="px-4 pb-6">
+                <div class="kuudere-download-banner">
+                    <div class="kuudere-download-content">
+                        <h3 class="kuudere-download-title">
+                            <span class="kuudere-download-highlight">Download</span> Kuudere
+                        </h3>
+                        <p class="kuudere-download-subtitle">Watch anime offline on all your devices!</p>
+
+                        <div class="kuudere-download-devices">
+                            <div class="kuudere-device-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20"
+                                    fill="currentColor">
+                                    <path fill-rule="evenodd"
+                                        d="M7 2a2 2 0 00-2 2v12a2 2 0 002 2h6a2 2 0 002-2V4a2 2 0 00-2-2H7zm3 14a1 1 0 100-2 1 1 0 000 2z"
+                                        clip-rule="evenodd" />
+                                </svg>
+                                <span>Phone</span>
+                            </div>
+                            <div class="kuudere-device-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20"
+                                    fill="currentColor">
+                                    <path fill-rule="evenodd"
+                                        d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V4a2 2 0 00-2-2H6zm4 14a1 1 0 100-2 1 1 0 000 2z"
+                                        clip-rule="evenodd" />
+                                </svg>
+                                <span>Tablet</span>
+                            </div>
+                            <div class="kuudere-device-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20"
+                                    fill="currentColor">
+                                    <path fill-rule="evenodd"
+                                        d="M3 5a2 2 0 012-2h10a2 2 0 012 2v8a2 2 0 01-2 2h-2.22l.123.489.804.804A1 1 0 0113 18H7a1 1 0 01-.707-1.707l.804-.804L7.22 15H5a2 2 0 01-2-2V5zm5.771 7H5V5h10v7H8.771z"
+                                        clip-rule="evenodd" />
+                                </svg>
+                                <span>Desktop</span>
+                            </div>
+                            <div class="kuudere-device-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20"
+                                    fill="currentColor">
+                                    <path fill-rule="evenodd"
+                                        d="M7 2a1 1 0 00-.707 1.707L7 4.414v3.758a1 1 0 01-.293.707l-4 4C.817 14.769 2.156 18 4.828 18h10.343c2.673 0 4.012-3.231 2.122-5.121l-4-4A1 1 0 0113 8.172V4.414l.707-.707A1 1 0 0013 2H7zm2 6.172V4h2v4.172a3 3 0 00.879 2.12l1.027 1.028a4 4 0 00-2.171.102l-.47.156a4 4 0 01-2.53 0l-.563-.187a1.993 1.993 0 00-.114-.035l1.063-1.063A3 3 0 009 8.172z"
+                                        clip-rule="evenodd" />
+                                </svg>
+                                <span>TV</span>
+                            </div>
+                        </div>
+
+                        <a href="/download" class="kuudere-download-button">
+                            <span>Get the App</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-1" viewBox="0 0 20 20"
+                                fill="currentColor">
+                                <path fill-rule="evenodd"
+                                    d="M16.707 10.293a1 1 0 010 1.414l-6 6a1 1 0 01-1.414 0l-6-6a1 1 0 111.414-1.414L9 14.586V3a1 1 0 012 0v11.586l4.293-4.293a1 1 0 011.414 0z"
+                                    clip-rule="evenodd" />
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Desktop Content - Original Design -->
+        <div class="hidden md:block relative z-20 container mx-auto px-4 pt-20 mb-8">
             <div class="max-w-6xl mx-auto">
                 <!-- Logo Section -->
                 <div class="mb-8">
@@ -61,16 +322,12 @@
                         <img src="{{ url_for('static', filename='logo.png') }}" width="200px" class="lazyload">
                         <div class="w-full max-w-md mb-6 mt-6 relative">
                             <form action="/search" method="get" class="relative" @keydown.enter.prevent="submitSearch">
-                                <input type="text" 
-                                       name="keyword" 
-                                       placeholder="Search anime..."
-                                       class="w-full px-5 py-4 bg-black/40 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-accent/50"
-                                       x-model="searchQuery"
-                                       @input.debounce.300ms="fetchResults"
-                                       @click.away="clearResults">
-                                <button type="button"
-                                        @click="submitSearch"
-                                        class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-accent">
+                                <input type="text" name="keyword" placeholder="Search anime..."
+                                    class="w-full px-5 py-4 bg-black/40 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-accent/50"
+                                    x-model="searchQuery" @input.debounce.300ms="fetchResults"
+                                    @click.away="clearResults">
+                                <button type="button" @click="submitSearch"
+                                    class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-accent">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                             d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -126,12 +383,11 @@
                             <span class="text-gray-400 text-sm">Top search:</span>
                             <div class="mt-2 flex flex-wrap justify-center gap-2">
                                 {% for keyword in keywords %}
-                                    <a href="/search?keyword={{ keyword.keyword }}"
-                                        class="inline-block text-sm px-3 py-1 bg-black/30 hover:bg-accent/20 rounded-full text-gray-300 hover:text-white transition-colors mb-2 md:mb-0
+                                <a href="/search?keyword={{ keyword.keyword }}" class="inline-block text-sm px-3 py-1 bg-black/30 hover:bg-accent/20 rounded-full text-gray-300 hover:text-white transition-colors mb-2 md:mb-0
                                             sm:max-w-[150px] md:max-w-none sm:truncate md:overflow-visible"
-                                        title="{{ keyword.keyword }}">
-                                        {{ keyword.keyword }}
-                                    </a>
+                                    title="{{ keyword.keyword }}">
+                                    {{ keyword.keyword }}
+                                </a>
                                 {% endfor %}
                             </div>
                         </div>
@@ -175,8 +431,8 @@
                                     & <a class="hover:text-accent/80"
                                         href="http://ruif5ytuzjjtsjekdwsd7owo73hfaclzlatzy3jwylp3goyjudva.b32.i2p">I2P</a>
                                     network.</li>
-                                <li>• Still Got Questions? <a class="hover:text-accent/80"
-                                        href="/faq">Browse our F&Q</a>
+                                <li>• Still Got Questions? <a class="hover:text-accent/80" href="/faq">Browse our
+                                        F&Q</a>
                             </ul>
                         </div>
                     </div>
@@ -230,6 +486,10 @@
 
                 submitSearch() {
                     if (this.searchQuery.trim()) {
+                        // Add haptic feedback for mobile if available
+                        if (navigator.vibrate) {
+                            navigator.vibrate(50);
+                        }
                         // Manually submit by changing window location
                         window.location.href = `/search?keyword=${encodeURIComponent(this.searchQuery.trim())}`;
                     }
@@ -292,31 +552,67 @@
                 },
             };
         }
-        function joinRealtime(){
-            console.log("lol")
-            return{
-            socket: null,
-            currentRoom: null,
-            initializeSocket() {
-                        this.socket = io({ transports: ['websocket'] });
 
-                        this.socket.on('connect', () => {
-                            console.log('Connected to server');
-                            this.joinRoom();
-                        });
-                    },
-                    joinRoom() {
+        function joinRealtime() {
+            return {
+                socket: null,
+                currentRoom: null,
+                initializeSocket() {
+                    this.socket = io({ transports: ['websocket'] });
+
+                    this.socket.on('connect', () => {
+                        console.log('Connected to server');
+                        this.joinRoom();
+                    });
+                },
+                joinRoom() {
                     const part = '/'
-                    console.log(part);
                     if (this.currentRoom) {
                         this.socket.emit('leave', { room: this.currentRoom });
                     }
                     this.currentRoom = part;
                     this.socket.emit('join', { other_id: this.currentRoom });
-                    this.socket.emit('get_current_room_count', { room: this.currentRoom }); // Request count for the current room
-                }
+                    this.socket.emit('get_current_room_count', { room: this.currentRoom });
                 }
             }
+        }
+
+        // Animate the download banner when it comes into view
+        document.addEventListener('DOMContentLoaded', function () {
+            // Create intersection observer for download banner
+            const downloadBanner = document.querySelector('.kuudere-download-banner');
+            if (downloadBanner) {
+                const observer = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            // Animate the banner
+                            anime({
+                                targets: '.kuudere-download-banner',
+                                opacity: [0, 1],
+                                translateY: [20, 0],
+                                duration: 800,
+                                easing: 'easeOutExpo'
+                            });
+
+                            // Animate the device icons with delay
+                            anime({
+                                targets: '.kuudere-device-icon',
+                                opacity: [0, 1],
+                                translateY: [10, 0],
+                                delay: anime.stagger(100, { start: 300 }),
+                                duration: 600,
+                                easing: 'easeOutQuad'
+                            });
+
+                            // Unobserve after animation
+                            observer.unobserve(entry.target);
+                        }
+                    });
+                }, { threshold: 0.2 });
+
+                observer.observe(downloadBanner);
+            }
+        });
     </script>
 </body>
 

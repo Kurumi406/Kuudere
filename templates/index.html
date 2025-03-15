@@ -18,25 +18,28 @@
         background-color: #ecf2f7;
     }
 
-    .swiper-button-next-notification, .swiper-button-prev-notification {
-                width: 40px;
-                height: 40px;
-                background-color: rgba(43, 29, 29, 0.781);
-                border-radius: 50%;
-                color: #a5a2a2;
-                transition: all 0.3s ease;
-            }
-    
-            .swiper-button-next-notification:hover, .swiper-button-prev-notification:hover {
-                background-color: rgba(0, 0, 0, 0.8);
-                color: #FFFFFF;
-                box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
-            }
-    
-            .swiper-button-next-notification:after, .swiper-button-prev-notification:after {
-                font-size: 1.2rem;
-                font-weight: bold;
-            }
+    .swiper-button-next-notification,
+    .swiper-button-prev-notification {
+        width: 40px;
+        height: 40px;
+        background-color: rgba(43, 29, 29, 0.781);
+        border-radius: 50%;
+        color: #a5a2a2;
+        transition: all 0.3s ease;
+    }
+
+    .swiper-button-next-notification:hover,
+    .swiper-button-prev-notification:hover {
+        background-color: rgba(0, 0, 0, 0.8);
+        color: #FFFFFF;
+        box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+    }
+
+    .swiper-button-next-notification:after,
+    .swiper-button-prev-notification:after {
+        font-size: 1.2rem;
+        font-weight: bold;
+    }
 
     @keyframes dots {
 
@@ -61,16 +64,17 @@
     }
 
     @keyframes reverse-spin {
-    0% {
-        transform: rotate(360deg);
-    }
-    100% {
-        transform: rotate(0deg);
-    }
+        0% {
+            transform: rotate(360deg);
+        }
+
+        100% {
+            transform: rotate(0deg);
+        }
     }
 
     .animate-reverse-spin {
-    animation: reverse-spin 1s linear infinite;
+        animation: reverse-spin 1s linear infinite;
     }
 </style>
 <div class="relative w-full overflow-hidden bg-black">
@@ -82,32 +86,39 @@
                     <!-- Image -->
                     <img src="{{ top.banner }}" alt="{{ top.english }}"
                         class="absolute inset-0 w-full h-full object-cover object-center">
-            
+
                     <!-- Gradient Overlay - Multiple layers for better effect -->
-                    <div class="absolute inset-0 bg-gradient-to-r from-[#1a1625]/95 via-[#1a1625]/60 to-transparent"></div>
+                    <div class="absolute inset-0 bg-gradient-to-r from-[#1a1625]/95 via-[#1a1625]/60 to-transparent">
+                    </div>
                     <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
-                    <div class="absolute inset-0 bg-gradient-to-l from-[#1a1625]/70 via-transparent to-transparent"></div>
-            
+                    <div class="absolute inset-0 bg-gradient-to-l from-[#1a1625]/70 via-transparent to-transparent">
+                    </div>
+
                     <!-- Content -->
                     <div class="absolute inset-0 flex flex-col justify-end p-4 sm:p-6 lg:p-8">
                         <!-- Spotlight Badge -->
                         <div class="flex items-center space-x-2 mb-2 sm:mb-4">
-                            <span class="bg-purple-500/20 text-purple-200 border border-purple-400 px-2 py-0.5 sm:px-3 sm:py-1 rounded-md text-xs sm:text-sm">
+                            <span
+                                class="bg-purple-500/20 text-purple-200 border border-purple-400 px-2 py-0.5 sm:px-3 sm:py-1 rounded-md text-xs sm:text-sm">
                                 #{{ loop.index }} Spotlight
                             </span>
                         </div>
-            
+
                         <!-- Title -->
-                        <h2 class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-1 sm:mb-2 line-clamp-2">
+                        <h2
+                            class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-1 sm:mb-2 line-clamp-2">
                             {{ top.english }}
                         </h2>
-                        
+
                         <!-- Metadata Row -->
-                        <div class="flex flex-wrap items-center gap-2 sm:gap-3 mt-2 sm:mt-4 mb-2 sm:mb-3 text-xs sm:text-sm text-gray-300">
+                        <div
+                            class="flex flex-wrap items-center gap-2 sm:gap-3 mt-2 sm:mt-4 mb-2 sm:mb-3 text-xs sm:text-sm text-gray-300">
                             <div class="flex items-center">
-                                <svg class="w-3 h-3 sm:w-4 sm:h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                                        d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                                <svg class="w-3 h-3 sm:w-4 sm:h-4 mr-1" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z">
+                                    </path>
                                 </svg>
                                 <span>{{top.type}}</span>
                             </div>
@@ -116,25 +127,29 @@
                             <div class="w-1 h-1 rounded-full bg-gray-500 hidden sm:block"></div>
                             <span>{{top.startDate}}</span>
                             <div class="w-1 h-1 rounded-full bg-gray-500 hidden sm:block"></div>
-                            <span class="bg-red-500/20 text-white border border-red-500 px-1.5 py-0.5 rounded-md text-xs">
+                            <span
+                                class="bg-red-500/20 text-white border border-red-500 px-1.5 py-0.5 rounded-md text-xs">
                                 HD
                             </span>
                             <div class="flex items-center space-x-1 sm:space-x-2">
-                                <span class="bg-green-500/20 text-white border border-green-500 px-1.5 py-0.5 rounded-md text-xs">
+                                <span
+                                    class="bg-green-500/20 text-white border border-green-500 px-1.5 py-0.5 rounded-md text-xs">
                                     {{top.malScore}}
                                 </span>
-                                <span class="bg-gray-500/20 text-white border border-gray-500 px-1.5 py-0.5 rounded-md text-xs">
+                                <span
+                                    class="bg-gray-500/20 text-white border border-gray-500 px-1.5 py-0.5 rounded-md text-xs">
                                     {{top.ageRating}}
                                 </span>
                             </div>
                         </div>
                         {% set clean_description = top.description|striptags %}
-            
+
                         <!-- Description -->
-                        <p class="text-gray-300 mb-3 sm:mb-6 max-w-2xl text-xs sm:text-sm md:text-base line-clamp-2 sm:line-clamp-3">
+                        <p
+                            class="text-gray-300 mb-3 sm:mb-6 max-w-2xl text-xs sm:text-sm md:text-base line-clamp-2 sm:line-clamp-3">
                             {{clean_description}}
                         </p>
-            
+
                         <!-- Buttons -->
                         <div class="flex flex-wrap gap-2 sm:gap-4">
                             <a href="/watch/{{ top.id }}"
@@ -182,7 +197,7 @@
     </div>
 </div>
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
         var countdownElement = document.getElementById('countdown');
         var goDownElement = document.getElementById('go-down');
         var counterElement = document.getElementById('counter');
@@ -192,7 +207,7 @@
 
         redirectButton.style.display = 'none'; // Hide the redirect button initially
 
-        var interval = setInterval(function() {
+        var interval = setInterval(function () {
             countdown--;
             countdownElement.textContent = countdown;
 
@@ -203,7 +218,7 @@
             }
         }, 1000);
 
-        verifyButton.addEventListener('click', function() {
+        verifyButton.addEventListener('click', function () {
             goDownElement.style.display = 'none';
             redirectButton.style.display = 'block'; // Show the redirect button when verify button is clicked
             redirectButton.disabled = true; // Disable the redirect button initially
@@ -211,7 +226,7 @@
             var redirectCountdown = 5;
             redirectButton.textContent = `Open Link (${redirectCountdown}s)`;
 
-            var redirectInterval = setInterval(function() {
+            var redirectInterval = setInterval(function () {
                 redirectCountdown--;
                 redirectButton.textContent = `Open Link (${redirectCountdown}s)`;
 
@@ -317,222 +332,40 @@
             </section>
             {% endif %}
             <section class="mt-5">
-                <div class="mb-6 flex items-center justify-between">
-                    <h2 class="text-xl sm:text-2xl font-semibold">Latest Episodes</h2>
-                    <a href="/recently-updated" class="text-sm text-gray-400 hover:text-white">View more →</a>
+                <div class="mb-8 flex items-center justify-between">
+                    <h2 class="text-xl sm:text-2xl font-bold text-white relative inline-flex items-center">
+                        <span class="absolute -left-3 top-0 bottom-0 w-1 bg-red-600"></span>
+                        Latest Episodes
+                        <span class="ml-2 text-xs font-normal px-2 py-0.5 bg-red-600/20 text-red-400 rounded-sm">HOT</span>
+                    </h2>
+                    <a href="/recently-updated" class="text-sm text-gray-400 hover:text-red-500 transition-colors duration-300 flex items-center group">
+                        View more 
+                        <span class="transform translate-x-0 group-hover:translate-x-1 transition-transform duration-300 ml-1">→</span>
+                    </a>
                 </div>
                 <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
                     {% for anime in latest_eps %}
-                    <div class="anime-card relative aspect-[3/4] overflow-visible rounded-md"
-                        @mouseenter="$store.animeData.hoveredCard = {{ loop.index0 }}"
-                        @mouseleave="$store.animeData.hoveredCard = null"
-                        @click="window.location.href='{{ anime.url }}'">
-                        <div
-                            class="relative h-full w-full overflow-hidden rounded-md transition-transform duration-300 ease-in-out hover:scale-105">
-                            <img src="{{ anime.cover }}" alt="{{ anime.english }}" class="w-full h-full object-cover">
-                            <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent">
-                            </div>
-                            <div class="absolute left-2 top-2 flex flex-wrap gap-1">
-                                <span
-                                    class="bg-black/50 backdrop-blur-sm text-white text-[10px] uppercase px-2 py-1 rounded-full">{{
-                                    anime.type }}</span>
-                                <span
-                                    class="bg-black/50 backdrop-blur-sm text-white text-[10px] uppercase px-2 py-1 rounded-full flex items-center">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1 text-yellow-400"
-                                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                        stroke-linecap="round" stroke-linejoin="round">
-                                        <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect>
-                                        <line x1="7" y1="2" x2="7" y2="22"></line>
-                                        <line x1="17" y1="2" x2="17" y2="22"></line>
-                                        <line x1="2" y1="12" x2="22" y2="12"></line>
-                                        <line x1="2" y1="7" x2="7" y2="7"></line>
-                                        <line x1="2" y1="17" x2="7" y2="17"></line>
-                                        <line x1="17" y1="17" x2="22" y2="17"></line>
-                                        <line x1="17" y1="7" x2="22" y2="7"></line>
-                                    </svg>
-                                    {{ anime.epCount }}
-                                </span>
-                                <span
-                                    class="bg-black/50 backdrop-blur-sm text-white text-[10px] uppercase px-2 py-1 rounded-full flex items-center">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1 text-blue-400"
-                                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                        stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-                                        <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-                                        <line x1="12" y1="19" x2="12" y2="23"></line>
-                                        <line x1="8" y1="23" x2="16" y2="23"></line>
-                                    </svg>
-                                    {{ anime.dubbedCount }}
-                                </span>
-                            </div>
-                            <div class="absolute bottom-2 left-2 right-2">
-                                <h3 @click="window.location.href='/anime/{{ anime.id }}'" class="text-sm font-medium text-white line-clamp-2">{{ anime.english }}</h3>
-                                <p class="mt-1 text-xs text-gray-300">Episodes {{ anime.epCount }}</p>
-                            </div>
-                        </div>
-                        <div x-show="$store.animeData.hoveredCard === {{ loop.index0 }} && $store.animeData.isDesktop"
-                            x-cloak
-                            class="anime-info absolute left-0 top-full z-60 mt-2 w-full sm:left-full sm:top-0 sm:mt-0  sm:ml-2 sm:w-72">
-                            <!-- Info content here -->
-                            <div class="anime-info-content rounded-lg bg-gray-900/95 p-4 shadow-xl">
-                                <div class="flex items-start justify-between gap-2">
-                                    <div class="space-y-1">
-                                        <h4 class="font-medium text-white">{{ anime.english }}</h4>
-                                        <p class="text-xs text-gray-400">{{ anime.native }}</p>
-                                    </div>
-                                    <div class="flex gap-1">
-                                        <span
-                                            class="bg-pink-500/20 text-pink-500 text-[10px] px-2 py-1 rounded-full">HD</span>
-                                        <span
-                                            class="bg-emerald-500/20 text-emerald-500 text-[10px] px-2 py-1 rounded-full">{{
-                                            anime.subbedCount }}</span>
-                                        <span
-                                            class="bg-white/20 text-white text-[10px] px-2 py-1 rounded-full">TV</span>
-                                    </div>
-                                </div>
-                                <p class="mt-2 text-xs leading-relaxed text-gray-300 line-clamp-2">{{
-                                    anime.description }}</p>
-                                <div class="mt-3 space-y-1 text-xs text-gray-400">
-                                    <p>Aired: {{ anime.startDate }}</p>
-                                    <p>Status: {{ anime.status }}</p>
-                                    <p>Genres: {{ anime.genres | join(', ') }}</p>
-                                </div>
-                                <div class="mt-4 flex items-center gap-2">
-                                    <a href="/watch/{{ anime.id }}"
-                                        class="flex-1 bg-pink-600 hover:bg-pink-700 px-4 py-2 rounded-md text-sm font-medium flex items-center justify-center">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none"
-                                            viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                        </svg>
-                                        Watch now
-                                    </a>
-                                    {% if  anime.epCount > 0 %}
-                                    <button class="bg-gray-800 hover:bg-gray-700 p-2 rounded-md hidden">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
-                                            viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                                        </svg>
-                                    </button>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    {% include "animeCard.html" %}
                     {% endfor %}
                 </div>
             </section>
 
 
             <section class="mt-12">
-                <div class="mb-6 flex items-center justify-between">
-                    <h2 class="text-xl sm:text-2xl font-semibold">New On Site</h2>
-                    <a href="/search?sort=Last%20Updated" class="text-sm text-gray-400 hover:text-white">View more →</a>
+                <div class="mb-8 flex items-center justify-between">
+                    <h2 class="text-xl sm:text-2xl font-bold text-white relative inline-flex items-center">
+                        <span class="absolute -left-3 top-0 bottom-0 w-1 bg-red-600"></span>
+                        New On Site
+                        <span class="ml-2 text-xs font-normal px-2 py-0.5 bg-red-600/20 text-red-400 rounded-sm">HOT</span>
+                    </h2>
+                    <a href="/search?sort=Last%20Updated" class="text-sm text-gray-400 hover:text-red-500 transition-colors duration-300 flex items-center group">
+                        View more 
+                        <span class="transform translate-x-0 group-hover:translate-x-1 transition-transform duration-300 ml-1">→</span>
+                    </a>
                 </div>
                 <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
                     {% for anime in last_updated %}
-                    <div class="anime-card relative aspect-[3/4] overflow-visible rounded-md"
-                        @mouseenter="$store.animeData.hoveredCard = {{ loop.index0 }}"
-                        @mouseleave="$store.animeData.hoveredCard = null"
-                        @click="window.location.href='/anime/{{ anime.id }}'">
-                        <div
-                            class="relative h-full w-full overflow-hidden rounded-md transition-transform duration-300 ease-in-out hover:scale-105">
-                            <img src="{{ anime.cover }}" alt="{{ anime.english }}" class="w-full h-full object-cover">
-                            <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent">
-                            </div>
-                            <div class="absolute left-2 top-2 flex flex-wrap gap-1">
-                                <span
-                                    class="bg-black/50 backdrop-blur-sm text-white text-[10px] uppercase px-2 py-1 rounded-full">{{
-                                    anime.type }}</span>
-                                <span
-                                    class="bg-black/50 backdrop-blur-sm text-white text-[10px] uppercase px-2 py-1 rounded-full flex items-center">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1 text-yellow-400"
-                                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                        stroke-linecap="round" stroke-linejoin="round">
-                                        <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect>
-                                        <line x1="7" y1="2" x2="7" y2="22"></line>
-                                        <line x1="17" y1="2" x2="17" y2="22"></line>
-                                        <line x1="2" y1="12" x2="22" y2="12"></line>
-                                        <line x1="2" y1="7" x2="7" y2="7"></line>
-                                        <line x1="2" y1="17" x2="7" y2="17"></line>
-                                        <line x1="17" y1="17" x2="22" y2="17"></line>
-                                        <line x1="17" y1="7" x2="22" y2="7"></line>
-                                    </svg>
-                                    {{ anime.epCount }}
-                                </span>
-                                <span
-                                    class="bg-black/50 backdrop-blur-sm text-white text-[10px] uppercase px-2 py-1 rounded-full flex items-center">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1 text-blue-400"
-                                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                        stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-                                        <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-                                        <line x1="12" y1="19" x2="12" y2="23"></line>
-                                        <line x1="8" y1="23" x2="16" y2="23"></line>
-                                    </svg>
-                                    {{ anime.dubbedCount }}
-                                </span>
-                            </div>
-                            <div class="absolute bottom-2 left-2 right-2">
-                                <h3 class="text-sm font-medium text-white line-clamp-2">{{ anime.english }}</h3>
-                                <p class="mt-1 text-xs text-gray-300">Episodes {{ anime.epCount }}</p>
-                            </div>
-                        </div>
-                        <div x-show="$store.animeData.hoveredCard === {{ loop.index0 }} && $store.animeData.isDesktop"
-                            x-cloak
-                            class="anime-info absolute left-0 top-full z-60 mt-2 w-full sm:left-full sm:top-0 sm:mt-0  sm:ml-2 sm:w-72">
-                            <!-- Info content here -->
-                            <div class="anime-info-content rounded-lg bg-gray-900/95 p-4 shadow-xl">
-                                <div class="flex items-start justify-between gap-2">
-                                    <div class="space-y-1">
-                                        <h4 class="font-medium text-white">{{ anime.english }}</h4>
-                                        <p class="text-xs text-gray-400">{{ anime.native }}</p>
-                                    </div>
-                                    <div class="flex gap-1">
-                                        <span
-                                            class="bg-pink-500/20 text-pink-500 text-[10px] px-2 py-1 rounded-full">HD</span>
-                                        <span
-                                            class="bg-emerald-500/20 text-emerald-500 text-[10px] px-2 py-1 rounded-full">{{
-                                            anime.subbedCount }}</span>
-                                        <span
-                                            class="bg-white/20 text-white text-[10px] px-2 py-1 rounded-full">TV</span>
-                                    </div>
-                                </div>
-                                <p class="mt-2 text-xs leading-relaxed text-gray-300 line-clamp-2">{{
-                                    anime.description }}</p>
-                                <div class="mt-3 space-y-1 text-xs text-gray-400">
-                                    <p>Aired: {{ anime.startDate }}</p>
-                                    <p>Status: {{ anime.status }}</p>
-                                    <p>Genres: {{ anime.genres | join(', ') }}</p>
-                                </div>
-                                {% if  anime.epCount > 0 %}
-                                <div class="mt-4 flex items-center gap-2">
-                                    <a href="/watch/{{ anime.id }}"
-                                        class="flex-1 bg-pink-600 hover:bg-pink-700 px-4 py-2 rounded-md text-sm font-medium flex items-center justify-center">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none"
-                                            viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                        </svg>
-                                        Watch now
-                                    </a>
-                                    <button class="bg-gray-800 hover:bg-gray-700 p-2 rounded-md hidden">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
-                                            viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                                        </svg>
-                                    </button>
-                                </div>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
+                    {% include "animeCard.html" %}
                     {% endfor %}
                 </div>
             </section>
@@ -622,109 +455,20 @@
                 </div>
             </section>
             <section class="mt-12">
-                <div class="mb-6 flex items-center justify-between">
-                    <h2 class="text-xl sm:text-2xl font-semibold">Top Upcoming</h2>
-                    <a href="/upcoming" class="text-sm text-gray-400 hover:text-white">View more →</a>
+                <div class="mb-8 flex items-center justify-between">
+                    <h2 class="text-xl sm:text-2xl font-bold text-white relative inline-flex items-center">
+                        <span class="absolute -left-3 top-0 bottom-0 w-1 bg-red-600"></span>
+                        Top Upcoming
+                        <span class="ml-2 text-xs font-normal px-2 py-0.5 bg-red-600/20 text-red-400 rounded-sm">HOT</span>
+                    </h2>
+                    <a href="/upcoming" class="text-sm text-gray-400 hover:text-red-500 transition-colors duration-300 flex items-center group">
+                        View more 
+                        <span class="transform translate-x-0 group-hover:translate-x-1 transition-transform duration-300 ml-1">→</span>
+                    </a>
                 </div>
                 <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-                    {% for topUp in topUpcoming %}
-                    <a href="/anime/{{ topUp.id }}" class="anime-card relative aspect-[3/4] overflow-visible rounded-md"
-                        @mouseenter="$store.animeData.hoveredCard = {{ loop.index0 }}"
-                        @mouseleave="$store.animeData.hoveredCard = null">
-                        <div
-                            class="relative h-full w-full overflow-hidden rounded-md transition-transform duration-300 ease-in-out hover:scale-105">
-                            <img src="{{ topUp.cover }}" alt="{{ topUp.english }}" class="w-full h-full object-cover">
-                            <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent">
-                            </div>
-                            <div class="absolute left-2 top-2 flex flex-wrap gap-1">
-                                <span
-                                    class="bg-black/50 backdrop-blur-sm text-white text-[10px] uppercase px-2 py-1 rounded-full">{{
-                                    topUp.type }}</span>
-                                <span
-                                    class="bg-black/50 backdrop-blur-sm text-white text-[10px] uppercase px-2 py-1 rounded-full flex items-center">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1 text-yellow-400"
-                                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                        stroke-linecap="round" stroke-linejoin="round">
-                                        <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect>
-                                        <line x1="7" y1="2" x2="7" y2="22"></line>
-                                        <line x1="17" y1="2" x2="17" y2="22"></line>
-                                        <line x1="2" y1="12" x2="22" y2="12"></line>
-                                        <line x1="2" y1="7" x2="7" y2="7"></line>
-                                        <line x1="2" y1="17" x2="7" y2="17"></line>
-                                        <line x1="17" y1="17" x2="22" y2="17"></line>
-                                        <line x1="17" y1="7" x2="22" y2="7"></line>
-                                    </svg>
-                                    {{ topUp.epCount }}
-                                </span>
-                                <span
-                                    class="bg-black/50 backdrop-blur-sm text-white text-[10px] uppercase px-2 py-1 rounded-full flex items-center">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1 text-blue-400"
-                                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                        stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-                                        <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-                                        <line x1="12" y1="19" x2="12" y2="23"></line>
-                                        <line x1="8" y1="23" x2="16" y2="23"></line>
-                                    </svg>
-                                    {{ topUp.dubbedCount }}
-                                </span>
-                            </div>
-                            <div class="absolute bottom-2 left-2 right-2">
-                                <h3 class="text-sm font-medium text-white line-clamp-2">{{ topUp.english }}</h3>
-                                <p class="mt-1 text-xs text-gray-300">Episodes {{ topUp.epCount }}</p>
-                            </div>
-                        </div>
-                        <div x-show="$store.animeData.hoveredCard === {{ loop.index0 }} && $store.animeData.isDesktop"
-                            x-cloak
-                            class="anime-info absolute left-0 top-full z-60 mt-2 w-full sm:left-full sm:top-0 sm:mt-0  sm:ml-2 sm:w-72">
-                            <div class="anime-info-content rounded-lg bg-gray-900/95 p-4 shadow-xl">
-                                <div class="flex items-start justify-between gap-2">
-                                    <div class="space-y-1">
-                                        <h4 class="font-medium text-white">{{ topUp.english }}</h4>
-                                        <p class="text-xs text-gray-400">{{ topUp.native }}</p>
-                                    </div>
-                                    <div class="flex gap-1">
-                                        <span
-                                            class="bg-pink-500/20 text-pink-500 text-[10px] px-2 py-1 rounded-full">HD</span>
-                                        <span
-                                            class="bg-emerald-500/20 text-emerald-500 text-[10px] px-2 py-1 rounded-full">{{
-                                            topUp.subbedCount }}</span>
-                                        <span
-                                            class="bg-white/20 text-white text-[10px] px-2 py-1 rounded-full">TV</span>
-                                    </div>
-                                </div>
-                                <p class="mt-2 text-xs leading-relaxed text-gray-300 line-clamp-2">{{
-                                    topUp.description }}</p>
-                                <div class="mt-3 space-y-1 text-xs text-gray-400">
-                                    <p>Aired: {{ topUp.startDate }}</p>
-                                    <p>Status: {{ topUp.status }}</p>
-                                    <p>Genres: {{ topUp.genres | join(', ') }}</p>
-                                </div>
-                                <div class="mt-4 flex items-center gap-2">
-                                    {% if topUp.epCount > 0 %}
-                                    <button
-                                        class="flex-1 bg-pink-600 hover:bg-pink-700 px-4 py-2 rounded-md text-sm font-medium flex items-center justify-center">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none"
-                                            viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                        </svg>
-                                        Watch now
-                                    </button>
-                                    {% endif %}
-                                    <button class="bg-gray-800 hover:bg-gray-700 p-2 rounded-md hidden">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
-                                            viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                                        </svg>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </a>
+                    {% for anime in topUpcoming %}
+                    {% include "animeCard.html" %}
                     {% endfor %}
                 </div>
             </section>
@@ -753,17 +497,17 @@
                                 @click="currentTab = 'month'; fetchAnimeData()">Month</button>
                         </div>
                     </div>
-            
+
                     <!-- Loading Animation -->
                     <div x-show="isLoading" class="space-y-4">
                         <template x-for="i in 3">
                             <div class="glass-effect grid grid-cols-[48px_60px_1fr] items-start gap-4 rounded-xl p-4">
                                 <!-- Ranking Number Skeleton -->
                                 <div class="h-8 w-8 animate-pulse rounded bg-gray-700/50"></div>
-                                
+
                                 <!-- Image Skeleton -->
                                 <div class="h-[76px] w-[60px] animate-pulse rounded-lg bg-gray-700/50"></div>
-                                
+
                                 <!-- Content Skeleton -->
                                 <div class="flex flex-col justify-between h-[76px]">
                                     <div class="h-5 w-3/4 animate-pulse rounded bg-gray-700/50"></div>
@@ -775,11 +519,12 @@
                             </div>
                         </template>
                     </div>
-            
+
                     <!-- Anime List -->
                     <div class="space-y-4" x-show="!isLoading">
                         <template x-for="(anime, index) in filteredAnime" :key="anime.title">
-                            <div @click="window.location.href=anime.url"  class="glass-effect grid grid-cols-[48px_60px_1fr] items-start gap-4 rounded-xl p-4"
+                            <div @click="window.location.href=anime.url"
+                                class="glass-effect grid grid-cols-[48px_60px_1fr] items-start gap-4 rounded-xl p-4"
                                 x-init="$nextTick(() => {
                                      anime({
                                     targets: $el,
@@ -793,11 +538,11 @@
                                 <!-- Ranking Number -->
                                 <span class="text-2xl font-bold text-gray-500"
                                     x-text="(index + 1).toString().padStart(2, '0')"></span>
-            
+
                                 <!-- Anime Image -->
                                 <img :src="anime.image" :alt="anime.title"
                                     class="w-[60px] h-[76px] rounded-lg object-cover">
-            
+
                                 <!-- Anime Details -->
                                 <div class="flex flex-col justify-between h-[76px] min-w-0" x-data>
                                     <h3 class="font-medium text-white leading-tight truncate" x-text="anime.title"></h3>
@@ -805,121 +550,35 @@
                                         <!-- Keep Subbed & Dubbed in the same row -->
                                         <div class="flex items-center gap-2">
                                             <!-- Subbed Tag -->
-                                            <span :class="`px-2 py-0.5 rounded text-xs font-bold bg-red-600 text-white flex items-center`">
+                                            <span
+                                                :class="`px-2 py-0.5 rounded text-xs font-bold bg-red-600 text-white flex items-center`">
                                                 <i data-lucide="captions" class="w-3 h-3 mr-1"></i>
                                                 <span x-text="anime.stats.subbed"></span>
                                             </span>
-                                            
+
                                             <!-- Dubbed Tag with Lucide Icon -->
-                                            <span :class="`px-2 py-0.5 rounded text-xs font-bold bg-blue-600 text-white flex items-center`">
+                                            <span
+                                                :class="`px-2 py-0.5 rounded text-xs font-bold bg-blue-600 text-white flex items-center`">
                                                 <i data-lucide="mic" class="w-3 h-3 mr-1"></i>
                                                 <span x-text="anime.stats.dubbed"></span>
                                             </span>
-                                        </div>                                        
+                                        </div>
                                     </div>
                                 </div>
-                                
+
                                 <!-- Ensure Lucide icons re-render -->
-                                <div x-effect="lucide.createIcons()"></div>                                
-                                
+                                <div x-effect="lucide.createIcons()"></div>
+
                             </div>
                         </template>
                     </div>
                 </div>
             </section>
 
-            <div class="mt-6 rounded-lg bg-red-500 p-4 text-center">
-                Your Ads Here...
+            <!-- Download Banner - Standalone Component -->
+            <div class="mt-6">
+                {% include "downloadBanner.html" %}
             </div>
-            <section class="mt-6 rounded-lg bg-gray-900/50 p-4 backdrop-blur-sm">
-                <div x-data="{ 
-                    showAll: false,
-                    genres: [
-                        { name: 'Action', color: 'text-green-400' },
-                        { name: 'Adventure', color: 'text-pink-400' },
-                        { name: 'Cars', color: 'text-orange-400' },
-                        { name: 'Comedy', color: 'text-purple-400' },
-                        { name: 'Dementia', color: 'text-gray-400' },
-                        { name: 'Demons', color: 'text-red-400' },
-                        { name: 'Drama', color: 'text-teal-400' },
-                        { name: 'Ecchi', color: 'text-yellow-400' },
-                        { name: 'Fantasy', color: 'text-pink-400' },
-                        { name: 'Game', color: 'text-orange-400' },
-                        { name: 'Harem', color: 'text-gray-400' },
-                        { name: 'Historical', color: 'text-blue-400' },
-                        { name: 'Horror', color: 'text-red-400' },
-                        { name: 'Isekai', color: 'text-teal-400' },
-                        { name: 'Josei', color: 'text-yellow-400' },
-                        { name: 'Kids', color: 'text-pink-400' },
-                        { name: 'Magic', color: 'text-purple-400' },
-                        { name: 'Martial Arts', color: 'text-blue-400' },
-                        { name: 'Mecha', color: 'text-gray-400' },
-                        { name: 'Military', color: 'text-green-400' },
-                        { name: 'Music', color: 'text-teal-400' },
-                        { name: 'Mystery', color: 'text-yellow-400' },
-                        { name: 'Parody', color: 'text-pink-400' },
-                        { name: 'Police', color: 'text-orange-400' }
-                    ],
-                    navigateToGenre(genreName) {
-                        window.location.href = `/search?genres=${genreName}`;
-                    }
-                }" class="container mx-auto">
-                    <h2 class="text-2xl font-bold text-white mb-6">Genres</h2>
-
-                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3" x-init="anime({
-                            targets: '.genre-item',
-                            scale: [0.5, 1],
-                            opacity: [0, 1],
-                            delay: anime.stagger(50),
-                            easing: 'easeOutElastic(1, .8)'
-                         })">
-                        <template x-for="(genre, index) in showAll ? genres : genres.slice(0, 12)" :key="index">
-                            <button @click="navigateToGenre(genre.name)"
-                                class="genre-item glass rounded-lg p-3 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-purple-500/20"
-                                :class="genre.color" @mouseenter="anime({
-                                    targets: $el,
-                                    scale: 1.05,
-                                    duration: 300,
-                                    easing: 'easeOutElastic(1, .8)'
-                                })" @mouseleave="anime({
-                                    targets: $el,
-                                    scale: 1,
-                                    duration: 300,
-                                    easing: 'easeOutElastic(1, .8)'
-                                })">
-                                <span x-text="genre.name" class="block text-center text-sm"></span>
-                            </button>
-                        </template>
-                    </div>
-
-                    <button x-show="genres.length > 12" @click="showAll = !showAll"
-                        class="mt-6 mx-auto block glass px-6 py-2 rounded-lg text-white text-sm transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/20"
-                        x-text="showAll ? 'Show Less' : 'Show More'" @mouseenter="anime({
-                            targets: $el,
-                            scale: 1.05,
-                            duration: 300,
-                            easing: 'easeOutElastic(1, .8)'
-                        })" @mouseleave="anime({
-                            targets: $el,
-                            scale: 1,
-                            duration: 300,
-                            easing: 'easeOutElastic(1, .8)'
-                        })">
-                    </button>
-                </div>
-
-                <script>
-                    document.addEventListener('DOMContentLoaded', () => {
-                        anime({
-                            targets: 'h2',
-                            opacity: [0, 1],
-                            translateY: [-20, 0],
-                            duration: 800,
-                            easing: 'easeOutExpo'
-                        });
-                    });
-                </script>
-            </section>
 
             <section class="mt-6 rounded-lg bg-gray-900/50 p-4 hidden">
                 <h3 class="mb-4 text-sm font-semibold uppercase text-red-500 flex items-center">
@@ -944,7 +603,7 @@
                 <div x-data="trendingPosts()" class="container mx-auto p-4 max-w-3xl">
                     <header class="flex justify-between items-center mb-6">
                         <h1 class="text-2xl font-bold text-pink-300">Trending Posts</h1>
-                        <button  @click="window.location.href='/community'"
+                        <button @click="window.location.href='/community'"
                             class="text-gray-400 hover:text-gray-200 transition-colors duration-300 flex items-center gap-1">
                             View more
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"
@@ -988,9 +647,8 @@
                                 <p class="text-gray-400 text-sm mb-4 line-clamp-2" x-text="post.content"></p>
                                 <div class="flex items-center gap-2">
                                     <div class="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500">
-                                        <img :src="post.authorAvatar"
-                                        alt="Avatar"
-                                        class="w-8 h-8 rounded-full border-0 border-[#DC143C] animate-pulse-slow">
+                                        <img :src="post.authorAvatar" alt="Avatar"
+                                            class="w-8 h-8 rounded-full border-0 border-[#DC143C] animate-pulse-slow">
                                     </div>
                                     <span class="text-white text-sm" x-text="post.author"></span>
                                     <template x-if="post.badge">
@@ -1050,15 +708,18 @@
 <div x-data="counter()" x-init="setupSocket()" @join-room.window="joinRoom()"
     class="float-counter hidden fixed bottom-8 right-8 rounded-full p-4 text-white flex items-center gap-2 z-50 cursor-pointer hover:scale-105 transition-transform duration-300"
     @mouseover="pulse()">
-    
+
     <!-- Loading Animation (visible when isLoading is true) -->
-    <svg x-cloak x-show="isLoading" class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+    <svg x-cloak x-show="isLoading" class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg"
+        fill="none" viewBox="0 0 24 24">
         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-      </svg>
+        <path class="opacity-75" fill="currentColor"
+            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+        </path>
+    </svg>
 
     <!-- Counter Display -->
-    <div x-cloak x-show="!isLoading"  class="relative overflow-hidden h-8">
+    <div x-cloak x-show="!isLoading" class="relative overflow-hidden h-8">
         <span x-text="formatCount(totalCount)" class="number-animation inline-block text-xl font-bold"
             :class="{'number-up': increasing, 'number-down': decreasing}"></span>
     </div>
@@ -1088,69 +749,7 @@
         }));
         Alpine.store('animeData', {
             isDesktop: window.innerWidth >= 768,
-            latestEpisodes: [
-                {
-                    title: "Attack on Titan Final Season",
-                    image: "{{ url_for('static', filename='placeholder.svg') }}?height=400&width=300&text=AoT",
-                    episodeNumber: 87,
-                    quality: "1080p",
-                    type: "TV",
-                    subType: "SUB",
-                    description: "The epic conclusion to the battle for humanity's survival.",
-                    japaneseTitle: "進撃の巨人 The Final Season",
-                    rating: 9.8,
-                    genres: ["Action", "Dark Fantasy", "Post-apocalyptic"],
-                    status: "Airing",
-                    airedDate: "2024-01-10",
-                    subtitledEpisodeCount: 87,
-                    totalEpisodeCount: 88
-                },
-                {
-                    title: "My Hero Academia Season 6",
-                    image: "{{ url_for('static', filename='placeholder.svg') }}?height=400&width=300&text=MHA",
-                    episodeNumber: 138,
-                    quality: "1080p",
-                    type: "TV",
-                    subType: "SUB",
-                    description: "The heroes face their greatest challenge yet in the Paranormal Liberation War.",
-                    japaneseTitle: "僕のヒーローアカデミア",
-                    rating: 8.7,
-                    genres: ["Superhero", "Action", "School"],
-                    status: "Airing",
-                    airedDate: "2024-01-07",
-                    subtitledEpisodeCount: 138,
-                    totalEpisodeCount: 150
-                },
-                // ... (other anime entries)
-            ],
-            topAiring: [
-                { title: "Demon Slayer: Swordsmith Village Arc", image: "{{ url_for('static', filename='placeholder.svg') }}?height=400&width=300&text=Demon+Slayer", rating: 9.2 },
-                { title: "Jujutsu Kaisen Season 2", image: "{{ url_for('static', filename='placeholder.svg') }}?height=400&width=300&text=JJK", rating: 9.1 },
-                { title: "One Piece", image: "{{ url_for('static', filename='placeholder.svg') }}?height=400&width=300&text=One+Piece", rating: 8.9 },
-                { title: "Spy x Family Part 2", image: "{{ url_for('static', filename='placeholder.svg') }}?height=400&width=300&text=Spy+Family", rating: 8.8 },
-                // ... (other top airing anime)
-            ],
-            topAnime: [
-                { title: "Fullmetal Alchemist: Brotherhood", image: "{{ url_for('static', filename='placeholder.svg') }}?height=60&width=100&text=FMAB" },
-                { title: "Death Note", image: "{{ url_for('static', filename='placeholder.svg') }}?height=60&width=100&text=Death+Note" },
-                { title: "Steins;Gate", image: "{{ url_for('static', filename='placeholder.svg') }}?height=60&width=100&text=Steins;Gate" },
-                { title: "Hunter x Hunter (2011)", image: "{{ url_for('static', filename='placeholder.svg') }}?height=60&width=100&text=HxH" },
-            ],
-            upcomingAnime: [
-                { title: "Chainsaw Man Part 2", image: "{{ url_for('static', filename='placeholder.svg') }}?height=60&width=100&text=Chainsaw" },
-                { title: "The Promised Neverland Season 3", image: "{{ url_for('static', filename='placeholder.svg') }}?height=60&width=100&text=Neverland" },
-                { title: "Dr. STONE Season 3", image: "{{ url_for('static', filename='placeholder.svg') }}?height=60&width=100&text=Dr.STONE" },
-            ],
-            topComments: [
-                { user: "AnimeGuru", comment: "The latest episode of Attack on Titan was mind-blowing!", likes: 328 },
-                { user: "MangaLover", comment: "Can't wait for the next chapter of Jujutsu Kaisen!", likes: 245 },
-                { user: "OtakuMaster", comment: "My Hero Academia's animation quality keeps improving!", likes: 187 },
-            ],
-            topPosts: [
-                { title: "Top 10 Anime Openings of All Time", views: "1.5M" },
-                { title: "Upcoming Anime to Watch in 2024", views: "980K" },
-                { title: "Best Anime Studios: A Comprehensive Ranking", views: "750K" },
-            ],
+
         });
 
         window.addEventListener('resize', () => {
@@ -1238,6 +837,38 @@
                 }
             }
         });
+        const downloadBanner = document.querySelector('.kuudere-download-banner');
+            if (downloadBanner) {
+                const observer = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            // Animate the banner
+                            anime({
+                                targets: '.kuudere-download-banner',
+                                opacity: [0, 1],
+                                translateY: [20, 0],
+                                duration: 800,
+                                easing: 'easeOutExpo'
+                            });
+
+                            // Animate the device icons with delay
+                            anime({
+                                targets: '.kuudere-device-icon',
+                                opacity: [0, 1],
+                                translateY: [10, 0],
+                                delay: anime.stagger(100, { start: 300 }),
+                                duration: 600,
+                                easing: 'easeOutQuad'
+                            });
+
+                            // Unobserve after animation
+                            observer.unobserve(entry.target);
+                        }
+                    });
+                }, { threshold: 0.2 });
+
+                observer.observe(downloadBanner);
+            }
     });
 
     // Anime.js animation for card hover
@@ -1375,11 +1006,11 @@
             currentTab: 'today',
             animeList: {},
             isLoading: true,
-            
+
             async init() {
                 await this.fetchAnimeData();
             },
-            
+
             async fetchAnimeData() {
                 this.isLoading = true;
                 try {
@@ -1397,7 +1028,7 @@
                     this.isLoading = false;
                 }
             },
-            
+
             get filteredAnime() {
                 return this.animeList[this.currentTab] || [];
             }

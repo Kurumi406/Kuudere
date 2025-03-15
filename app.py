@@ -40,6 +40,7 @@ import logging
 import asyncio
 import dotenv
 import json
+import html
 import time as shitl
 import math
 import pytz
@@ -64,7 +65,7 @@ def is_valid_url(url):
         return all([result.scheme, result.netloc])
     except ValueError:
         return False
-ALLOWED_DOMAINS = {"https://kuudere.to","http://127.0.0.1:5000"}
+ALLOWED_DOMAINS = {"https://kuudere.to"}
 os.environ['no_proxy'] = 'localhost,127.0.0.1'
 POINTS_LIKES = 25
 
@@ -1013,6 +1014,13 @@ def load_home():
                 Query.not_equal('animeId','Digimon-Adventure-2020'),
                 Query.not_equal('animeId','Kaleido-Star-2003'),
                 Query.not_equal('animeId','Sekai-de-Ichiban-Tsuyoku-Naritai-2013'),
+                Query.not_equal('animeId','Phi-Brain-Kami-no-Puzzle-2011'),
+                Query.not_equal('animeId','Utawarerumono-2006'),
+                Query.not_equal('animeId','Angel-Beats-2010'),
+                Query.not_equal('animeId','Jewelpet-Sunshine-2011'),
+                Query.not_equal('animeId','Duel-Masters-2002'),
+                Query.not_equal('animeId','Digimon-Frontier-2002'),
+                Query.not_equal('animeId','Kekkaishi-2006'),
                 Query.order_desc("aired"),
                 Query.limit(50),
             ] # optional
@@ -8323,7 +8331,155 @@ def home():
         return jsonify(keywords)
     else:
         return render_template("home.html",keywords=words)
+    
+def get_anime_hover_data(anime_id,user_id):
+        
+        client = get_client(None, None, os.getenv('SECRET'), None)
+        databases = Databases(client)
+        watchlist_tt = {
+            "total":0
+        }
 
+        anii = databases.list_documents(
+                database_id = os.getenv('DATABASE_ID'),
+                collection_id = os.getenv('Anime'),
+                queries=[
+                    Query.equal("mainId",anime_id),
+                    Query.select(["mainId", "english", "romaji", "native", "ageRating", "malScore", "averageScore", "duration", "genres",'studios', "season", "startDate", "status", "synonyms", "type", "year", "description","subbed","dubbed"])
+                ]
+            )
+        
+        if anii['total'] > 0:
+
+            media = anii['documents'][0]
+
+            watchlist_tt = databases.list_documents(
+                        database_id = os.getenv('DATABASE_ID'),
+                        collection_id = os.getenv('Watchlist'),
+                        queries = [
+                            Query.equal("animeId",anime_id),
+                            Query.select(['folder'])
+                        ]
+                )
+
+
+            try:
+            
+                watchlist = databases.list_documents(
+                        database_id = os.getenv('DATABASE_ID'),
+                        collection_id = os.getenv('Watchlist'),
+                        queries = [
+                            Query.equal("animeId",anime_id),
+                            Query.equal("userId",user_id.get('userId')),
+                            Query.select(['animeId','folder','lastUpdated'])
+                        ]
+                )
+                print(watchlist)
+            except Exception as e:
+                print(e)
+                watchlist = {
+                        "total": 0
+                    }
+
+            if watchlist['total'] > 0:
+                folder = watchlist['documents'][0].get('folder')
+                added = format_relative_time(watchlist['documents'][0].get('lastUpdated'))
+                isInWatchlist = True
+            else:
+                folder = None
+                added = None
+                isInWatchlist = False
+
+            
+            formatted_date = datetime.fromisoformat(media.get("startDate").replace("Z", "+00:00")).strftime("%b %d, %Y") if media.get("startDate") else None,
+            
+            # Clean HTML from description
+            description = media.get('description')
+            if description:
+                # Basic HTML tag removal (you might want to use a proper HTML parser)
+                description = html.unescape(description)
+                description = description.replace('<br>', ' ')
+                description = description.replace('<i>', '').replace('</i>', '')
+                description = description.replace('<b>', '').replace('</b>', '')
+            
+            # Get main studio
+            studio = media.get('studios')
+            
+            
+            return {
+                'id': media.get('mainId'),
+                'title': {
+                    'english':media.get('english') or media.get('native'),
+                    'native': media.get('native'),
+                },
+                'description': description,
+                'format': media.get('type'),
+                'episodes': media.get('subbed'),
+                'duration': media.get('duration'),
+                'status': media.get('status'),
+                'startDate': formatted_date,
+                'genres':media.get('genres'),
+                'score': media['malScore'],
+                'popularity': 1000,
+                'season': media.get('season'),
+                'studio': studio,
+                # These would come from your own database in a real implementation
+                'subbedCount': media.get('subbed'),
+                'dubbedCount': media.get('dubbed'),
+                'folder':folder,
+                'isInWatchlist':isInWatchlist,
+                'added':added,
+                "users":watchlist_tt['total'],
+                "userInfo":user_id,
+            }
+        
+        return None
+@app.route('/api/hover/html', methods=['GET'])
+def anime_hover_card():
+    html_content = render_template('cardHoverData.html')
+    return jsonify({'html': html_content})
+
+@app.route('/api/hover/anime/<anime_id>', methods=['GET'])
+def anime_hover_data(anime_id):
+    # Add a small artificial delay to prevent excessive API calls during quick mouse movements
+    shitl.sleep(0.1)
+
+    secret = None
+    key = None
+
+    isApi, key, secret, userInfo, acc = verify_api_request(request)
+
+    isKey = bool(secret)
+    if secret:
+            isKey = True
+            print("Key exists: ", secret)
+    else:
+            isKey = False
+            secret = os.getenv('SECRET')  # Default value
+            print("Key is missing or empty, setting default secret.")
+
+    if 'session_secret' in session:
+            try:
+                
+
+                client = get_client(None,session["session_secret"],None)
+                account = Account(client)
+
+                acc = account.get()
+                
+                userInfo = get_acc_info(acc)
+
+            except Exception as e:
+                userInfo = None   
+    
+    # Get the data (either from cache or by fetching it)
+    hover_data = get_anime_hover_data(anime_id,userInfo)
+    
+    if hover_data:
+        return jsonify(hover_data)
+    else:
+        return jsonify({'error': 'Anime not found or API error occurred'}), 404
+    
 # Custom error handler for 404 errors
 @app.errorhandler(404)
 def not_found_error(error):

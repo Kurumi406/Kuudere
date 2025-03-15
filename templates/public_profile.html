@@ -6,6 +6,7 @@
     <title>{{userInfo.username}}'s Profile on Kuudere</title>
     <link href="{{ url_for('static', filename='css/output.css') }}" rel="stylesheet">
     <script defer src="{{ url_for('static', filename='js/alphine.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/anime.min.js') }}"></script>
     <script src="{{ url_for('static', filename='js/lucide.min.js') }}"></script>
     <style>
         .profile-bg {
@@ -84,6 +85,55 @@
             background-color: #FF0000;
             border-radius: 3px;
         }
+        
+        /* Responsive styles for aura progress */
+        @media (max-width: 768px) {
+            .aura-box::before {
+                height: 20px;
+                bottom: -30px;
+            }
+            
+            .aura-title {
+                font-size: 0.7rem;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            
+            .aura-value {
+                font-size: 0.65rem;
+            }
+            
+            .aura-circle {
+                width: 1.5rem;
+                height: 1.5rem;
+            }
+            
+            .progress-marker {
+                width: 1.25rem;
+                height: 1.25rem;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .aura-title {
+                font-size: 0.6rem;
+            }
+            
+            .aura-value {
+                font-size: 0.55rem;
+            }
+            
+            .aura-circle {
+                width: 1.25rem;
+                height: 1.25rem;
+            }
+            
+            .progress-marker {
+                width: 1rem;
+                height: 1rem;
+            }
+        }
     </style>
 </head>
 
@@ -151,47 +201,47 @@
                     </div>
                 </div>
 
-                <!-- Rank Progress -->
-                 <div class="container ">
-                <div class="rank-prog bg-white bg-opacity-5 backdrop-filter backdrop-blur-md p-8 rounded-3xl relative ">
-                    <div class="grid grid-cols-5 gap-4 relative">
-                        <div class="aura-box text-center relative">
-                            <div class="text-sm font-semibold">Isekai Traveler</div>
-                            <div class="text-xs text-gray-400">0 Aura</div>
-                            <div class="w-8 h-8 mx-auto mt-2 rounded-full bg-red-600 flex items-center justify-center"></div>
+                <!-- Rank Progress - RESPONSIVE VERSION -->
+                <div class="container" x-data="{ animateProgress: true }">
+                    <div class="rank-prog bg-white bg-opacity-5 backdrop-filter backdrop-blur-md p-4 sm:p-6 md:p-8 rounded-3xl relative overflow-hidden">
+                        <div class="grid grid-cols-5 gap-1 sm:gap-2 md:gap-4 relative">
+                            <div class="aura-box text-center relative">
+                                <div class="aura-title text-xs sm:text-sm font-semibold">Isekai Traveler</div>
+                                <div class="aura-value text-[10px] sm:text-xs text-gray-400">0 Aura</div>
+                                <div class="aura-circle w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 mx-auto mt-2 rounded-full bg-red-600 flex items-center justify-center"></div>
+                            </div>
+                            <div class="aura-box text-center relative">
+                                <div class="aura-title text-xs sm:text-sm font-semibold">Spirit Tamer</div>
+                                <div class="aura-value text-[10px] sm:text-xs text-gray-400">60K Aura</div>
+                                <div class="aura-circle w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 mx-auto mt-2 rounded-full bg-red-900 flex items-center justify-center"></div>
+                            </div>
+                            <div class="aura-box text-center relative">
+                                <div class="aura-title text-xs sm:text-sm font-semibold">Guild Apprentice</div>
+                                <div class="aura-value text-[10px] sm:text-xs text-gray-400">120K Aura</div>
+                                <div class="aura-circle w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 mx-auto mt-2 rounded-full bg-red-900 flex items-center justify-center"></div>
+                            </div>
+                            <div class="aura-box text-center relative">
+                                <div class="aura-title text-xs sm:text-sm font-semibold">A-Class Adventurer</div>
+                                <div class="aura-value text-[10px] sm:text-xs text-gray-400">180K Aura</div>
+                                <div class="aura-circle w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 mx-auto mt-2 rounded-full bg-red-900 flex items-center justify-center"></div>
+                            </div>
+                            <div class="aura-box text-center relative">
+                                <div class="aura-title text-xs sm:text-sm font-semibold">Divine Summoner</div>
+                                <div class="aura-value text-[10px] sm:text-xs text-gray-400">240K Aura</div>
+                                <div class="aura-circle w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 mx-auto mt-2 rounded-full bg-red-900 flex items-center justify-center"></div>
+                            </div>
                         </div>
-                        <div class="aura-box text-center relative">
-                            <div class="text-sm font-semibold">Spirit Tamer</div>
-                            <div class="text-xs text-gray-400">60K Aura</div>
-                            <div class="w-8 h-8 mx-auto mt-2 rounded-full bg-red-900 flex items-center justify-center"></div>
-                        </div>
-                        <div class="aura-box text-center relative">
-                            <div class="text-sm font-semibold">Guild Apprentice</div>
-                            <div class="text-xs text-gray-400">120K Aura</div>
-                            <div class="w-8 h-8 mx-auto mt-2 rounded-full bg-red-900 flex items-center justify-center"></div>
-                        </div>
-                        <div class="aura-box text-center relative">
-                            <div class="text-sm font-semibold">A-Class Adventurer</div>
-                            <div class="text-xs text-gray-400">180K Aura</div>
-                            <div class="w-8 h-8 mx-auto mt-2 rounded-full bg-red-900 flex items-center justify-center"></div>
-                        </div>
-                        <div class="aura-box text-center relative">
-                            <div class="text-sm font-semibold">Divine Summoner</div>
-                            <div class="text-xs text-gray-400">240K Aura</div>
-                            <div class="w-8 h-8 mx-auto mt-2 rounded-full bg-red-900 flex items-center justify-center"></div>
-                        </div>
-                    </div>
-                    <div class="mt-6 flex flex-col items-center">
-                        <div class="w-[77%] h-1 bg-red-800 rounded-full absolute bottom-0">
-                            <div class="h-full bg-red-600 rounded-full transition-all duration-300 relative" style="width: {{userInfo.progress}}%">
-                                <span class="absolute translate-x-1/2 -translate-y-1/2 top-1/2 right-0 rounded-full w-6 h-6 overflow-hidden">
-                                    <img src="/static/kumi.png" alt="" />
-                                </span>
+                        <div class="mt-6 flex flex-col items-center">
+                            <div class="w-[77%] h-1 bg-red-800 rounded-full absolute bottom-0">
+                                <div class="progress-bar h-full bg-red-600 rounded-full transition-all duration-300 relative" style="width: 0%">
+                                    <span class="progress-marker absolute translate-x-1/2 -translate-y-1/2 top-1/2 right-0 rounded-full w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 overflow-hidden">
+                                        <img src="/static/kumi.png" alt="" />
+                                    </span>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
                 <!-- Watch List -->
                 <div>
@@ -288,6 +338,26 @@
     </div>
     <script>
         lucide.createIcons();
+        
+        // Initialize anime.js animation for the progress bar
+        document.addEventListener('DOMContentLoaded', function() {
+            anime({
+                targets: '.progress-bar',
+                width: '{{userInfo.progress}}%',
+                easing: 'easeInOutQuad',
+                duration: 1500,
+                delay: 300
+            });
+            
+            // Animate the progress marker
+            anime({
+                targets: '.progress-marker',
+                translateX: '{{userInfo.progress}}%',
+                easing: 'easeInOutQuad',
+                duration: 1500,
+                delay: 300
+            });
+        });
     </script>
 </body>
 </html>

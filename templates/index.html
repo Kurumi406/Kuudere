@@ -244,11 +244,14 @@
 </script>
 {% endif %}
 
-<main class="px-4 sm:px-6 py-8 flex-col-2 ">
-    <div class="grid grid-cols-10 space-y-8 xl:flex-row xl:space-x-8 xl:space-y-0">
-        <div class="flex-grow col-span-10 xl:col-span-8">
-            {% if userInfo and ctotal %}
-            <section class="mt-5 mb-16" x-data="{ 
+<main class="px-4 sm:px-6 py-8">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <!-- Main content area (left side) -->
+        <div class="lg:col-span-8 xl:col-span-9">
+            <!-- Your existing main content here -->
+            <section class="mt-5 mb-16">
+                {% if userInfo and ctotal %}
+                <section class="mt-5 mb-16" x-data="{ 
                     animes: [],
                     loading: true,
                     async fetchAnimes() {
@@ -267,232 +270,235 @@
                         }
                     }
                 }" x-init="fetchAnimes">
-                <div class="mb-6 flex items-center justify-between">
-                    <h2 class="text-xl sm:text-2xl font-semibold">Continue Watching</h2>
-                    <a href="/user/continue-watching" class="text-sm text-gray-400 hover:text-white">View more →</a>
-                </div>
-
-                <div x-show="loading" class="flex justify-center items-center h-64">
-                    <div class="text-2xl font-bold loading-dots" role="status">
-                        Loading<span class="sr-only">Loading...</span>
+                    <div class="mb-6 flex items-center justify-between">
+                        <h2 class="text-xl sm:text-2xl font-semibold">Continue Watching</h2>
+                        <a href="/user/continue-watching" class="text-sm text-gray-400 hover:text-white">View more →</a>
                     </div>
-                </div>
 
-                <div x-show="!loading" class="swiper anime_watchlist_swiper_7391">
-                    <div class="swiper-wrapper">
-                        <template x-for="anime in animes" :key="anime.title">
-                            <a x-bind:href="anime.link" class="swiper-slide">
-                                <div class="relative group cursor-pointer" @mouseenter="anime.hover = true"
-                                    @mouseleave="anime.hover = false">
-                                    <div class="relative overflow-hidden rounded-md">
-                                        <img :src="anime.thumbnail"
-                                            class="w-full aspect-video object-cover rounded-md transform transition-transform duration-300 group-hover:scale-105"
-                                            :alt="anime.title">
+                    <div x-show="loading" class="flex justify-center items-center h-64">
+                        <div class="text-2xl font-bold loading-dots" role="status">
+                            Loading<span class="sr-only">Loading...</span>
+                        </div>
+                    </div>
 
-                                        <!-- Play Button -->
-                                        <div
-                                            class="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-                                            <button class="bg-white p-2 rounded-full shadow-md hover:bg-gray-100">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-800"
-                                                    fill="currentColor" viewBox="0 0 24 24">
-                                                    <path d="M8 5v14l11-7z" />
+                    <div x-show="!loading" class="swiper anime_watchlist_swiper_7391">
+                        <div class="swiper-wrapper">
+                            <template x-for="anime in animes" :key="anime.title">
+                                <a x-bind:href="anime.link" class="swiper-slide">
+                                    <div class="relative group cursor-pointer" @mouseenter="anime.hover = true"
+                                        @mouseleave="anime.hover = false">
+                                        <div class="relative overflow-hidden rounded-md">
+                                            <img :src="anime.thumbnail"
+                                                class="w-full aspect-video object-cover rounded-md transform transition-transform duration-300 group-hover:scale-105"
+                                                :alt="anime.title">
+
+                                            <!-- Play Button -->
+                                            <div
+                                                class="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                                                <button class="bg-white p-2 rounded-full shadow-md hover:bg-gray-100">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-800"
+                                                        fill="currentColor" viewBox="0 0 24 24">
+                                                        <path d="M8 5v14l11-7z" />
+                                                    </svg>
+                                                </button>
+                                            </div>
+
+                                            <!-- Delete Icon -->
+                                            <button
+                                                class="absolute top-2 right-2 bg-black/70 hover:text-white p-2 rounded-md opacity-0 transition-opacity duration-300 group-hover:opacity-100 hover:bg-black">
+                                                <svg xmlns="http://www.w3.org/2000/svg"
+                                                    class="h-4 w-4 text-black hover:text-white" fill="none"
+                                                    viewBox="0 0 24 24" stroke="white" stroke-width="2">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        d="M6 18L18 6M6 6l12 12" />
                                                 </svg>
                                             </button>
-                                        </div>
 
-                                        <!-- Delete Icon -->
-                                        <button
-                                            class="absolute top-2 right-2 bg-black/70 hover:text-white p-2 rounded-md opacity-0 transition-opacity duration-300 group-hover:opacity-100 hover:bg-black">
-                                            <svg xmlns="http://www.w3.org/2000/svg"
-                                                class="h-4 w-4 text-black hover:text-white" fill="none"
-                                                viewBox="0 0 24 24" stroke="white" stroke-width="2">
-                                                <path stroke-linecap="round" stroke-linejoin="round"
-                                                    d="M6 18L18 6M6 6l12 12" />
-                                            </svg>
-                                        </button>
-
-                                        <div class="absolute top-2 left-2 bg-black/70 px-2 py-1 rounded text-sm">
-                                            EP <span x-text="anime.episode"></span>
-                                        </div>
-                                        <div class="absolute bottom-0 left-0 right-0 h-1 bg-gray-600">
-                                            <div class="h-full bg-red-600"
-                                                :style="`width: ${(parseInt(anime.progress) / parseInt(anime.duration)) * 100}%`">
+                                            <div class="absolute top-2 left-2 bg-black/70 px-2 py-1 rounded text-sm">
+                                                EP <span x-text="anime.episode"></span>
+                                            </div>
+                                            <div class="absolute bottom-0 left-0 right-0 h-1 bg-gray-600">
+                                                <div class="h-full bg-red-600"
+                                                    :style="`width: ${(parseInt(anime.progress) / parseInt(anime.duration)) * 100}%`">
+                                                </div>
+                                            </div>
+                                            <div class="absolute bottom-2 right-2 bg-black/70 px-2 py-1 rounded text-sm">
+                                                <span x-text="anime.progress"></span>/<span x-text="anime.duration"></span>
                                             </div>
                                         </div>
-                                        <div class="absolute bottom-2 right-2 bg-black/70 px-2 py-1 rounded text-sm">
-                                            <span x-text="anime.progress"></span>/<span x-text="anime.duration"></span>
+                                        <h3 class="mt-2 text-sm font-medium truncate" x-text="anime.title"></h3>
+                                    </div>
+                                </a>
+                            </template>
+                        </div>
+                    </div>
+                </section>
+                {% endif %}
+                <section class="mt-5">
+                    <div class="mb-8 flex items-center justify-between">
+                        <h2 class="text-xl sm:text-2xl font-bold text-white relative inline-flex items-center">
+                            <span class="absolute -left-3 top-0 bottom-0 w-1 bg-red-600"></span>
+                            Latest Episodes
+                            <span class="ml-2 text-xs font-normal px-2 py-0.5 bg-red-600/20 text-red-400 rounded-sm">HOT</span>
+                        </h2>
+                        <a href="/recently-updated" class="text-sm text-gray-400 hover:text-red-500 transition-colors duration-300 flex items-center group">
+                            View more 
+                            <span class="transform translate-x-0 group-hover:translate-x-1 transition-transform duration-300 ml-1">→</span>
+                        </a>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+                        {% for anime in latest_eps %}
+                        {% include "animeCard.html" %}
+                        {% endfor %}
+                    </div>
+                </section>
+
+
+                <section class="mt-12">
+                    <div class="mb-8 flex items-center justify-between">
+                        <h2 class="text-xl sm:text-2xl font-bold text-white relative inline-flex items-center">
+                            <span class="absolute -left-3 top-0 bottom-0 w-1 bg-red-600"></span>
+                            New On Site
+                            <span class="ml-2 text-xs font-normal px-2 py-0.5 bg-red-600/20 text-red-400 rounded-sm">HOT</span>
+                        </h2>
+                        <a href="/search?sort=Last%20Updated" class="text-sm text-gray-400 hover:text-red-500 transition-colors duration-300 flex items-center group">
+                            View more 
+                            <span class="transform translate-x-0 group-hover:translate-x-1 transition-transform duration-300 ml-1">→</span>
+                        </a>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+                        {% for anime in last_updated %}
+                        {% include "animeCard.html" %}
+                        {% endfor %}
+                    </div>
+                </section>
+
+                <section class="mt-12 rounded-lg bg-gray-900/50 p-4 sm:p-6 overflow-hidden" x-data="schedule()">
+                    <!-- Loading Animation -->
+                    <div x-show="isLoading" class="flex items-center justify-center h-64">
+                        <div class="flex space-x-2">
+                            <div class="loading-dot w-3 h-3 bg-theme-red rounded-full"></div>
+                            <div class="loading-dot w-3 h-3 bg-theme-red rounded-full"></div>
+                            <div class="loading-dot w-3 h-3 bg-theme-red rounded-full"></div>
+                        </div>
+                    </div>
+
+                    <!-- Schedule Content -->
+                    <div x-show="!isLoading">
+                        <div class="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between">
+                            <div>
+                                <h2 class="text-2xl font-bold text-white mb-1">Estimated Schedule</h2>
+                                <p class="text-sm text-gray-400"
+                                    x-text="`${selectedDate} (${new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long' })})`">
+                                </p>
+                            </div>
+                        </div>
+                        <div class="relative mb-6">
+                            <div class="absolute left-0 top-1/2 -translate-y-1/2 z-10">
+                                <button @click="scrollDates('left')"
+                                    class="p-2 rounded-full bg-gray-800 hover:bg-gray-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                                        stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M15 19l-7-7 7-7" />
+                                    </svg>
+                                </button>
+                            </div>
+                            <div class="overflow-x-auto scrollbar-ass" x-ref="dateScroller">
+                                <div class="inline-flex space-x-2 p-2">
+                                    <template x-for="date in dates" :key="date">
+                                        <button @click="setSelectedDate(date)" :class="{
+                                                'bg-red-600 text-white': date === selectedDate,
+                                                'bg-gray-800 text-gray-400 hover:bg-gray-700': date !== selectedDate
+                                            }"
+                                            class="flex-shrink-0 text-center py-2 px-4 rounded-lg text-sm font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 flex flex-col items-center justify-center w-16">
+                                            <span x-text="new Date(date).toLocaleDateString('en-US', { weekday: 'short' })"
+                                                class="block text-xs"></span>
+                                            <span x-text="new Date(date).getDate()"
+                                                class="block text-lg font-bold mt-1"></span>
+                                        </button>
+                                    </template>
+                                </div>
+                            </div>
+                            <div class="absolute right-0 top-1/2 -translate-y-1/2 z-10">
+                                <button @click="scrollDates('right')"
+                                    class="p-2 rounded-full bg-gray-800 hover:bg-gray-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                                        stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M9 5l7 7-7 7" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="space-y-4" x-data="{ hoveredItem: null }">
+                            <template x-for="(item, index) in scheduleData[selectedDate]" :key="index">
+                                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between rounded-lg bg-gray-800/50 p-4 transition-all duration-300 ease-in-out hover:bg-gray-700/50"
+                                    @mouseenter="hoveredItem = index" @mouseleave="hoveredItem = null"
+                                    :class="{ 'transform scale-[1.02]': hoveredItem === index }">
+                                    <div class="flex items-start sm:items-center gap-4 mb-2 sm:mb-0">
+                                        <div class="text-red-500 font-bold text-lg sm:text-base" x-text="item.time">
+                                        </div>
+                                        <div>
+                                            <h3 class="font-medium text-white text-md sm:text-base" x-text="item.title">
+                                            </h3>
+                                            <p class="text-sm text-gray-400" x-text="`Episode ${item.episode}`"></p>
                                         </div>
                                     </div>
-                                    <h3 class="mt-2 text-sm font-medium truncate" x-text="anime.title"></h3>
-                                </div>
-                            </a>
-                        </template>
-                    </div>
-                </div>
-            </section>
-            {% endif %}
-            <section class="mt-5">
-                <div class="mb-8 flex items-center justify-between">
-                    <h2 class="text-xl sm:text-2xl font-bold text-white relative inline-flex items-center">
-                        <span class="absolute -left-3 top-0 bottom-0 w-1 bg-red-600"></span>
-                        Latest Episodes
-                        <span class="ml-2 text-xs font-normal px-2 py-0.5 bg-red-600/20 text-red-400 rounded-sm">HOT</span>
-                    </h2>
-                    <a href="/recently-updated" class="text-sm text-gray-400 hover:text-red-500 transition-colors duration-300 flex items-center group">
-                        View more 
-                        <span class="transform translate-x-0 group-hover:translate-x-1 transition-transform duration-300 ml-1">→</span>
-                    </a>
-                </div>
-                <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-                    {% for anime in latest_eps %}
-                    {% include "animeCard.html" %}
-                    {% endfor %}
-                </div>
-            </section>
-
-
-            <section class="mt-12">
-                <div class="mb-8 flex items-center justify-between">
-                    <h2 class="text-xl sm:text-2xl font-bold text-white relative inline-flex items-center">
-                        <span class="absolute -left-3 top-0 bottom-0 w-1 bg-red-600"></span>
-                        New On Site
-                        <span class="ml-2 text-xs font-normal px-2 py-0.5 bg-red-600/20 text-red-400 rounded-sm">HOT</span>
-                    </h2>
-                    <a href="/search?sort=Last%20Updated" class="text-sm text-gray-400 hover:text-red-500 transition-colors duration-300 flex items-center group">
-                        View more 
-                        <span class="transform translate-x-0 group-hover:translate-x-1 transition-transform duration-300 ml-1">→</span>
-                    </a>
-                </div>
-                <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-                    {% for anime in last_updated %}
-                    {% include "animeCard.html" %}
-                    {% endfor %}
-                </div>
-            </section>
-
-            <section class="mt-12 rounded-lg bg-gray-900/50 p-4 sm:p-6 overflow-hidden" x-data="schedule()">
-                <!-- Loading Animation -->
-                <div x-show="isLoading" class="flex items-center justify-center h-64">
-                    <div class="flex space-x-2">
-                        <div class="loading-dot w-3 h-3 bg-theme-red rounded-full"></div>
-                        <div class="loading-dot w-3 h-3 bg-theme-red rounded-full"></div>
-                        <div class="loading-dot w-3 h-3 bg-theme-red rounded-full"></div>
-                    </div>
-                </div>
-
-                <!-- Schedule Content -->
-                <div x-show="!isLoading">
-                    <div class="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between">
-                        <div>
-                            <h2 class="text-2xl font-bold text-white mb-1">Estimated Schedule</h2>
-                            <p class="text-sm text-gray-400"
-                                x-text="`${selectedDate} (${new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long' })})`">
-                            </p>
-                        </div>
-                    </div>
-                    <div class="relative mb-6">
-                        <div class="absolute left-0 top-1/2 -translate-y-1/2 z-10">
-                            <button @click="scrollDates('left')"
-                                class="p-2 rounded-full bg-gray-800 hover:bg-gray-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
-                                    stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M15 19l-7-7 7-7" />
-                                </svg>
-                            </button>
-                        </div>
-                        <div class="overflow-x-auto scrollbar-ass" x-ref="dateScroller">
-                            <div class="inline-flex space-x-2 p-2">
-                                <template x-for="date in dates" :key="date">
-                                    <button @click="setSelectedDate(date)" :class="{
-                                            'bg-red-600 text-white': date === selectedDate,
-                                            'bg-gray-800 text-gray-400 hover:bg-gray-700': date !== selectedDate
-                                        }"
-                                        class="flex-shrink-0 text-center py-2 px-4 rounded-lg text-sm font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 flex flex-col items-center justify-center w-16">
-                                        <span x-text="new Date(date).toLocaleDateString('en-US', { weekday: 'short' })"
-                                            class="block text-xs"></span>
-                                        <span x-text="new Date(date).getDate()"
-                                            class="block text-lg font-bold mt-1"></span>
-                                    </button>
-                                </template>
-                            </div>
-                        </div>
-                        <div class="absolute right-0 top-1/2 -translate-y-1/2 z-10">
-                            <button @click="scrollDates('right')"
-                                class="p-2 rounded-full bg-gray-800 hover:bg-gray-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
-                                    stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M9 5l7 7-7 7" />
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="space-y-4" x-data="{ hoveredItem: null }">
-                        <template x-for="(item, index) in scheduleData[selectedDate]" :key="index">
-                            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between rounded-lg bg-gray-800/50 p-4 transition-all duration-300 ease-in-out hover:bg-gray-700/50"
-                                @mouseenter="hoveredItem = index" @mouseleave="hoveredItem = null"
-                                :class="{ 'transform scale-[1.02]': hoveredItem === index }">
-                                <div class="flex items-start sm:items-center gap-4 mb-2 sm:mb-0">
-                                    <div class="text-red-500 font-bold text-lg sm:text-base" x-text="item.time">
-                                    </div>
-                                    <div>
-                                        <h3 class="font-medium text-white text-md sm:text-base" x-text="item.title">
-                                        </h3>
-                                        <p class="text-sm text-gray-400" x-text="`Episode ${item.episode}`"></p>
+                                    <div class="flex items-center gap-2 mt-2 sm:mt-0">
+                                        <span class="bg-red-500/20 text-red-500 text-xs px-2 py-1 rounded-full">New</span>
+                                        <button
+                                            class="bg-red-600 hover:bg-red-700 text-white text-sm px-4 py-2 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500">
+                                            Watch
+                                        </button>
                                     </div>
                                 </div>
-                                <div class="flex items-center gap-2 mt-2 sm:mt-0">
-                                    <span class="bg-red-500/20 text-red-500 text-xs px-2 py-1 rounded-full">New</span>
-                                    <button
-                                        class="bg-red-600 hover:bg-red-700 text-white text-sm px-4 py-2 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500">
-                                        Watch
-                                    </button>
-                                </div>
-                            </div>
-                        </template>
+                            </template>
+                        </div>
                     </div>
-                </div>
+                </section>
+                <section class="mt-12">
+                    <div class="mb-8 flex items-center justify-between">
+                        <h2 class="text-xl sm:text-2xl font-bold text-white relative inline-flex items-center">
+                            <span class="absolute -left-3 top-0 bottom-0 w-1 bg-red-600"></span>
+                            Top Upcoming
+                            <span class="ml-2 text-xs font-normal px-2 py-0.5 bg-red-600/20 text-red-400 rounded-sm">HOT</span>
+                        </h2>
+                        <a href="/upcoming" class="text-sm text-gray-400 hover:text-red-500 transition-colors duration-300 flex items-center group">
+                            View more 
+                            <span class="transform translate-x-0 group-hover:translate-x-1 transition-transform duration-300 ml-1">→</span>
+                        </a>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+                        {% for anime in topUpcoming %}
+                        {% include "animeCard.html" %}
+                        {% endfor %}
+                    </div>
+                </section>
+                {% if Surl %}
+                <a href="{{ Surl }}" target="_blank" class="flex justify-center p-6">
+                    <button id="redirect-button" class="px-6 py-2 bg-red-600 rounded-full">Open Link</button>
+                </a>
+                {% endif %}
             </section>
-            <section class="mt-12">
-                <div class="mb-8 flex items-center justify-between">
-                    <h2 class="text-xl sm:text-2xl font-bold text-white relative inline-flex items-center">
-                        <span class="absolute -left-3 top-0 bottom-0 w-1 bg-red-600"></span>
-                        Top Upcoming
-                        <span class="ml-2 text-xs font-normal px-2 py-0.5 bg-red-600/20 text-red-400 rounded-sm">HOT</span>
-                    </h2>
-                    <a href="/upcoming" class="text-sm text-gray-400 hover:text-red-500 transition-colors duration-300 flex items-center group">
-                        View more 
-                        <span class="transform translate-x-0 group-hover:translate-x-1 transition-transform duration-300 ml-1">→</span>
-                    </a>
-                </div>
-                <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-                    {% for anime in topUpcoming %}
-                    {% include "animeCard.html" %}
-                    {% endfor %}
-                </div>
-            </section>
-            {% if Surl %}
-            <a href="{{ Surl }}" target="_blank" class="flex justify-center p-6">
-                <button id="redirect-button" class="px-6 py-2 bg-red-600 rounded-full">Open Link</button>
-            </a>
-            {% endif %}
         </div>
 
-        <div class="xl:w-80 hidden xl:inline-block">
+        <!-- Sidebar (right side) - Now responsive -->
+        <div class="lg:col-span-4 xl:col-span-3 space-y-6 hidden lg:block">
+            <!-- Top 10 Section -->
             <section class="rounded-lg bg-gray-900/50 p-4">
-                <div x-data="animeData()" x-init="init()" class="mx-auto max-w-2xl">
+                <div x-data="animeData()" x-init="init()" class="mx-auto">
                     <!-- Header -->
                     <div class="mb-6 flex items-center justify-between">
                         <h1 class="text-2xl font-bold text-white">Top 10</h1>
                         <div class="flex rounded-lg bg-gray-800/50 p-1">
-                            <button class="rounded px-4 py-1.5 text-sm font-semibold transition-colors duration-200"
+                            <button class="rounded px-3 py-1.5 text-xs sm:text-sm font-semibold transition-colors duration-200"
                                 :class="currentTab === 'today' ? 'bg-red-500 text-white' : 'text-gray-400 hover:bg-gray-700/50'"
                                 @click="currentTab = 'today'; fetchAnimeData()">Today</button>
-                            <button class="rounded px-4 py-1.5 text-sm font-semibold transition-colors duration-200"
+                            <button class="rounded px-3 py-1.5 text-xs sm:text-sm font-semibold transition-colors duration-200"
                                 :class="currentTab === 'week' ? 'bg-red-500 text-white' : 'text-gray-400 hover:bg-gray-700/50'"
                                 @click="currentTab = 'week'; fetchAnimeData()">Week</button>
-                            <button class="rounded px-4 py-1.5 text-sm font-semibold transition-colors duration-200"
+                            <button class="rounded px-3 py-1.5 text-xs sm:text-sm font-semibold transition-colors duration-200"
                                 :class="currentTab === 'month' ? 'bg-red-500 text-white' : 'text-gray-400 hover:bg-gray-700/50'"
                                 @click="currentTab = 'month'; fetchAnimeData()">Month</button>
                         </div>
@@ -524,16 +530,16 @@
                     <div class="space-y-4" x-show="!isLoading">
                         <template x-for="(anime, index) in filteredAnime" :key="anime.title">
                             <div @click="window.location.href=anime.url"
-                                class="glass-effect grid grid-cols-[48px_60px_1fr] items-start gap-4 rounded-xl p-4"
+                                class="glass-effect grid grid-cols-[48px_60px_1fr] items-start gap-4 rounded-xl p-4 cursor-pointer hover:bg-gray-800/50 transition-colors duration-200"
                                 x-init="$nextTick(() => {
-                                     anime({
-                                    targets: $el,
-                                    translateY: [20, 0],
-                                    opacity: [0, 1],
-                                    delay: anime.stagger(100),
-                                    easing: 'easeOutExpo',
-                                    duration: 800
-                                });
+                                    anime({
+                                        targets: $el,
+                                        translateY: [20, 0],
+                                        opacity: [0, 1],
+                                        delay: index * 100,
+                                        easing: 'easeOutExpo',
+                                        duration: 800
+                                    });
                                 })">
                                 <!-- Ranking Number -->
                                 <span class="text-2xl font-bold text-gray-500"
@@ -568,14 +574,13 @@
 
                                 <!-- Ensure Lucide icons re-render -->
                                 <div x-effect="lucide.createIcons()"></div>
-
                             </div>
                         </template>
                     </div>
                 </div>
             </section>
 
-            <!-- Download Banner - Standalone Component -->
+            <!-- Download Banner -->
             <div class="mt-6">
                 {% include "downloadBanner.html" %}
             </div>
@@ -599,8 +604,10 @@
                     </template>
                 </div>
             </section>
-            <section class="mt-6 rounded-lg bg-gray-900/50 p-4 backdrop-blur-sm">
-                <div x-data="trendingPosts()" class="container mx-auto p-4 max-w-3xl">
+
+            <!-- Trending Posts Section -->
+            <section class="rounded-lg bg-gray-900/50 p-4 backdrop-blur-sm">
+                <div x-data="trendingPosts()" x-init="init()" class="container mx-auto">
                     <header class="flex justify-between items-center mb-6">
                         <h1 class="text-2xl font-bold text-pink-300">Trending Posts</h1>
                         <button @click="window.location.href='/community'"
@@ -616,17 +623,17 @@
 
                     <div class="space-y-4">
                         <template x-for="(post, index) in posts" :key="index">
-                            <article class="glass rounded-lg p-4 transition-all duration-300 hover:bg-gray-700/30"
+                            <article class="glass rounded-lg p-4 transition-all duration-300 hover:bg-gray-700/30 cursor-pointer"
                                 x-init="
-                                 anime({
-                                     targets: $el,
-                                     translateY: [20, 0],
-                                     opacity: [0, 1],
-                                     delay: index * 100,
-                                     easing: 'easeOutElastic(1, .8)',
-                                     duration: 800
-                                 })
-                             ">
+                                    anime({
+                                        targets: $el,
+                                        translateY: [20, 0],
+                                        opacity: [0, 1],
+                                        delay: index * 100,
+                                        easing: 'easeOutElastic(1, .8)',
+                                        duration: 800
+                                    })
+                                ">
                                 <a x-bind:href="post.link" class="flex justify-between items-start mb-2">
                                     <div class="flex items-center gap-2">
                                         <span class="text-blue-400 text-sm" x-text="'#' + post.tag"></span>
@@ -660,50 +667,31 @@
                         </template>
                     </div>
                 </div>
-
-                <button
-                    class="fixed bottom-4 right-4 bg-gray-700 hover:bg-gray-600 text-white rounded-full p-2 transition-all duration-300 shadow-lg"
-                    onclick="window.scrollTo({top: 0, behavior: 'smooth'})" x-init="
-                anime({
-                    targets: $el,
-                    translateY: [20, 0],
-                    opacity: [0, 1],
-                    delay: 500,
-                    easing: 'easeOutElastic(1, .8)',
-                    duration: 800
-                })
-            ">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M5 10l7-7m0 0l7 7m-7-7v18"></path>
-                    </svg>
-                </button>
-
-                <script>
-                    function trendingPosts() {
-                        return {
-                            posts: [],
-                            async init() {
-                                try {
-                                    const response = await fetch('/api/top/posts');
-                                    if (!response.ok) {
-                                        throw new Error('Network response was not ok');
-                                    }
-                                    const data = await response.json();
-                                    this.posts = data.posts; // Assuming the API returns { posts: [...] }
-                                } catch (error) {
-                                    console.error('Error fetching posts:', error);
-                                    this.posts = []; // Fallback to an empty array
+            </section>
+            <script>
+                function trendingPosts() {
+                    return {
+                        posts: [],
+                        async init() {
+                            try {
+                                const response = await fetch('/api/top/posts');
+                                if (!response.ok) {
+                                    throw new Error('Network response was not ok');
                                 }
+                                const data = await response.json();
+                                this.posts = data.posts; // Assuming the API returns { posts: [...] }
+                            } catch (error) {
+                                console.error('Error fetching posts:', error);
+                                this.posts = []; // Fallback to an empty array
                             }
                         }
                     }
-                </script>
-            </section>
+                }
+            </script>
         </div>
     </div>
 </main>
+
 {% include "Changelog.html" %}
 <div x-data="counter()" x-init="setupSocket()" @join-room.window="joinRoom()"
     class="float-counter hidden fixed bottom-8 right-8 rounded-full p-4 text-white flex items-center gap-2 z-50 cursor-pointer hover:scale-105 transition-transform duration-300"

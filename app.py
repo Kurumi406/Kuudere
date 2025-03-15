@@ -1172,7 +1172,7 @@ def load_home():
                 "cover":new_url,
                 "banner": img.get("banner") or new_url,
                 "season": air.get("season"),
-                "startDate": datetime.fromisoformat(doc.get("startDate").replace("Z", "+00:00")).strftime("%b %d, %Y") if doc.get("startDate") else None,
+                "startDate": datetime.fromisoformat(air.get("startDate").replace("Z", "+00:00")).strftime("%b %d, %Y") if air.get("startDate") else None,
                 "status": air.get("status"),
                 "synonyms": air.get("synonyms"),
                 "type": air.get("type"),
@@ -8409,7 +8409,7 @@ def get_anime_hover_data(anime_id,user_id):
             return {
                 'id': media.get('mainId'),
                 'title': {
-                    'english':media.get('english') or media.get('native'),
+                    'english':media.get('english') or media.get('romaji'),
                     'native': media.get('native'),
                 },
                 'description': description,

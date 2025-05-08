@@ -5,6 +5,9 @@ Public Repo For Kuudere.to
 - [Overview](#overview)
 - [Authentication](#authentication)
   - [Obtaining the Key](#obtaining-the-key)
+- [User Registration & Login](#user-registration-login)
+  - [Creating New Users](#creating-new-users)
+  - [Authentication Flow](#authentication-flow)
 - [API Endpoints](#api-endpoints)
   - [Anime Search](#anime-search)
   - [Anime Info](#anime-info)
@@ -64,6 +67,99 @@ POST /login
         "userId":"sgsfafwer3r34wwgg3"
     },
     "success":true
+}
+```
+
+## <span id="user-registration-login">User Registration & Login</span>
+
+Developers can integrate with kuudere.to's user authentication system rather than using hardcoded sessions. This allows your application to dynamically register and authenticate users through our database.
+
+### <span id="creating-new-users">Creating New Users</span>
+
+#### Endpoint: `/register`
+- **Method**: POST
+- **Description**: Register a new user in the kuudere.to system
+
+**Body Parameters**:
+- `email`: User's email address
+- `username`: Desired username
+- `password`: User's password
+
+**Sample Request**:
+```json
+POST /register
+{
+  "email": "user@example.com",
+  "username": "animeuser",
+  "password": "securePassword123"
+}
+```
+
+**Sample Response**:
+```json
+{
+  "success": true,
+  "message": "User registered successfully",
+  "session": {
+    "expire": "2026-03-04T17:21:06.827+00:00",
+    "session": "user_session_key_here",
+    "sessionId": "session_id_here",
+    "userId": "user_id_here"
+  }
+}
+```
+
+### <span id="authentication-flow">Authentication Flow</span>
+
+1. **Register a new user** (if they don't already have an account):
+   - Use the `/register` endpoint to create a new user account
+
+2. **Log in the user**:
+   - Use the `/login` endpoint with the user's credentials
+   - Store the returned session key securely
+
+3. **Use the session for API requests**:
+   - Use the returned session as the `key` parameter in subsequent API requests
+   - Include your API `secret` with every request
+
+This approach allows you to build applications with dynamic user authentication rather than using static, hardcoded session values.
+
+#### Endpoint: `/login`
+- **Method**: POST
+- **Description**: Authenticate a user and retrieve session information
+
+**Body Parameters**:
+- `email`: User's email address
+- `password`: User's password
+
+**Sample Request**:
+```json
+POST /login
+{
+  "email": "user@example.com",
+  "password": "securePassword123"
+}
+```
+
+**Sample Response**:
+```json
+{
+  "message": "Logged in successfully",
+  "pref": {
+    "autoNext": true,
+    "autoPlay": false,
+    "autoSkipIntro": false,
+    "autoSkipOutro": false,
+    "defaultComments": "false",
+    "defaultLang": "japanese"
+  },
+  "session": {
+    "expire": "2026-03-04T17:21:06.827+00:00",
+    "session": "user_session_key", // Use this as 'key' for API requests
+    "sessionId": "session_id_here",
+    "userId": "user_id_here"
+  },
+  "success": true
 }
 ```
 
@@ -147,6 +243,69 @@ POST /watch/67759a9c00231b0dea36/1
 {
   "key": "your_session_key",
   "secret": "your_secret"
+}
+```
+
+#### Endpoint: `/watch-api/<anime_id>/<ep_number>`
+- **Method**: GET/POST
+- **Description**: Get episode streaming links and information (IMPORTANT: This is the primary endpoint for obtaining all streaming links)
+
+**URL Parameters**:
+- `anime_id`: Anime ID (in URL path)
+- `ep_number`: Episode number (in URL path)
+
+**Sample Request**:
+```
+GET /watch-api/67759a9c00231b0dea36/1
+```
+```json
+POST /watch-api/67759a9c00231b0dea36/1
+{
+  "key": "your_session_key",
+  "secret": "your_secret"
+}
+```
+
+**Sample Response**:
+```json
+{
+  "success": true,
+  "episode_links": [
+    {
+      "$id": "677d68d5001251172503",
+      "continue": false,
+      "serverId": 1,
+      "serverName": "StreamWish",
+      "episodeNumber": 1,
+      "dataType": "sub",
+      "dataLink": "https://hlswish.com/e/tcay002grd1q"
+    },
+    {
+      "$id": "677d62ed0002f30f7835",
+      "serverId": 1000,
+      "continue": true,
+      "serverName": "Hianime",
+      "episodeNumber": 1,
+      "dataType": "sub",
+      "dataLink": "https://kuudere.to/player/Hianime/unnamed-memory-season-2-19440?ep=131525&server=hd-1&category=sub&episode=677d62ed001b25ef0fe7&anime=67759a9c00231b0dea36&vide=Hianime&api=http://127.0.0.1:5000"
+    },
+    {
+      "$id": "jvjvh",
+      "serverId": 10001,
+      "continue": true,
+      "serverName": "Hianime-2",
+      "episodeNumber": 1,
+      "dataType": "sub",
+      "dataLink": "https://kuudere.to/player2/Hianime/unnamed-memory-season-2-19440?ep=131525&server=hd-1&category=sub&episode=677d62ed001b25ef0fe7&anime=67759a9c00231b0dea36&vide=Hianime-2&api=http://127.0.0.1:5000"
+    }
+  ],
+  "episode_id": "677d62ed001b25ef0fe7",
+  "duration": 1440,
+  "current": 0,
+  "intro_start": 0,
+  "intro_end": 0,
+  "outro_start": 0,
+  "outro_end": 0
 }
 ```
 
@@ -387,7 +546,7 @@ For each endpoint:
 | [`/add-to-watchlist/<folder>/<animeid>`](#watchlist) | GET/POST | Add anime to watchlist | `folder` and `animeid` in URL path | `key`, `secret` |
 | `/processx` | POST | Process file uploads | None | `key`, `secret`<br>`file`: File to upload |
 | `/search-api` | GET | Search API for anime | `keyword`: Search term | `key`, `secret` |
-| `/watch-api/<anime_id>/<ep_number>` | GET/POST | Get episode information | `anime_id` and `ep_number` in URL path | `key`, `secret` |
+| [`/watch-api/<anime_id>/<ep_number>`](#episode-streaming) | GET/POST | Get episode information | `anime_id` and `ep_number` in URL path | `key`, `secret` |
 | `/api/anime/comments/<anime_id>/<ep_number>` | GET/POST | Get episode comments | `anime_id` and `ep_number` in URL path | `key`, `secret`<br>`page`: Page number (optional) |
 | [`/community`](#community) | GET/POST | Get community posts | `page`: Page number (optional)<br>`sort`: Sort order (optional) | `key`, `secret` |
 | `/api/posts` | GET/POST | Get list of posts | `page`: Page number (optional)<br>`sort`: Sort order (optional) | `key`, `secret` |
@@ -424,6 +583,8 @@ For each endpoint:
 | `/get_all_rooms` | POST | Get list of all rooms | None | `key`, `secret`<br>`page`: Page number (optional) |
 | `/get_room` | POST | Get specific room information | None | `key`, `secret`<br>`room_id`: Room ID |
 | [`/send_chat`](#watch-rooms) | POST | Send a chat message in a room | None | `key`, `secret`<br>`room_id`: Room ID<br>`message`: Chat message content |
+| [`/register`](#creating-new-users) | POST | Register a new user | None | `email`: User's email<br>`username`: Desired username<br>`password`: User's password |
+| [`/login`](#authentication-flow) | POST | Log in to account | None | `email`: User's email<br>`password`: User's password |
 
 ## Notes
 - Always include both `key` and `secret` in your requests
@@ -437,4 +598,3 @@ For each endpoint:
 ## Contributing
 - Found an issue? Please open a GitHub issue
 - Have improvements? Submit a pull request
-

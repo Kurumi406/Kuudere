@@ -1,10 +1,11 @@
+from unittest import result
 import uuid
 import eventlet
 eventlet.monkey_patch()
 
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import hashlib
-from flask import Blueprint, Flask, request, jsonify, session, render_template,make_response,redirect,send_from_directory,url_for,abort, copy_current_request_context
+from flask import Blueprint, Flask, request, jsonify, session, render_template,make_response,redirect,send_from_directory, stream_with_context,url_for,abort, copy_current_request_context
 from appwrite.services.databases import Databases
 from flask_limiter.util import get_remote_address
 from flask import Response
@@ -55,6 +56,8 @@ import xml.etree.ElementTree as ET
 from threading import Thread
 from queue import Queue
 import random
+from werkzeug.utils import secure_filename
+import jwt
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -65,7 +68,7 @@ def is_valid_url(url):
         return all([result.scheme, result.netloc])
     except ValueError:
         return False
-ALLOWED_DOMAINS = {"https://kuudere.to"}
+ALLOWED_DOMAINS = {"https://kuudere.to","http://127.0.0.1:5000"}
 os.environ['no_proxy'] = 'localhost,127.0.0.1'
 POINTS_LIKES = 25
 
@@ -113,7 +116,7 @@ ext = Sitemap(app)
 cache = Cache(app, config={'CACHE_TYPE': 'simple'})
 def get_client(header=None,session_id=None, secret=None, jwt=None):
     client = Client()
-    client.set_endpoint(os.getenv('PROJECT_ENDPOINT'))
+    client.set_endpoint(os.getenv('PROJECT_ENDPOINT') )
     client.set_project(os.getenv('PROJECT_ID') )
 
     if header:
@@ -218,50 +221,46 @@ def verify_api_request(request):
     referrer_domain = f"{parsed_referrer.scheme}://{parsed_referrer.netloc}"
 
     # Check if JSON request but missing referrer (possible direct request)
-    if request.is_json and not base_url:
-        data = request.get_json(silent=True) or {}
+    data = request.get_json(silent=True) or {}
 
-        key = data.get('key')
-        secret = data.get('secret')
+    key = data.get('key')
+    secret = data.get('secret')
 
-        if not key or not secret:
-            print("Missing key or secret in JSON request")
+    if not key or not secret:
+        print("Missing key or secret in JSON request")
+        if referrer_domain not in ALLOWED_DOMAINS and any(sub in request.path for sub in ['/api', '/save','/watch-api','/anime/comment/']):
+            print(f"Unauthorized referrer '{referrer_domain}' trying to access API")
             return True, None, None, None, None
+        return False, None, None, None, None
         
-        secret = decrypt(secret)
-        key = decrypt(key)
+    secret = decrypt(secret)
+    key = decrypt(key)
 
-        try:
-            client = get_client(None,key, None)
-            account = Account(client)
+    try:
+        client = get_client(None,key, None)
+        account = Account(client)
 
-            acc = account.get()
-            if not acc:
-                print("Invalid account")
-                return True, None, secret, None, None
+        acc = account.get()
+        if not acc:
+            print("Invalid account")
+            return True, None, secret, None, None
 
-            userInfo = {
-                "userId": acc.get("$id"),
-                "username": acc.get("name"),
-                "email": acc.get("email"),
-            }
-            print("Authenticated successfully")
-            client = get_client(None,None, secret)
-            users = Users(client)
+        userInfo = {
+            "userId": acc.get("$id"),
+            "username": acc.get("name"),
+            "email": acc.get("email"),
+        }
+        print("Authenticated successfully")
+        client = get_client(None,None, secret)
+        users = Users(client)
 
-            result = users.get(user_id=acc.get("$id"))
-            return True, key, secret, userInfo, acc  # Authentication successful
-        
-        except Exception as e:
+        result = users.get(user_id=acc.get("$id"))
+        return True, key, secret, userInfo, acc  # Authentication successful
+    
+    except Exception as e:
             print(f"Authentication error: {e}")
             return True, None, None, None, None
 
-    # Check if request referrer (only domain) is allowed
-    elif referrer_domain not in ALLOWED_DOMAINS and any(sub in request.path for sub in ['/api', '/save','/watch-api','/anime/comment/']):
-        print(f"Unauthorized referrer '{referrer_domain}' trying to access API")
-        return True, None, None, None, None
-
-    return False, None, None, None, None  # Valid request, proceed
 
 def encrypt(data):
     # Get keys from the environment variables
@@ -986,7 +985,8 @@ def load_home():
                 Query.equal("public",True),
                 Query.equal("year",[2025,2024]),
                 Query.select(["mainId", "english", "romaji", "native", "ageRating", "malScore", "averageScore", "duration", "genres", "season", "startDate", "status", "synonyms", "type", "year", "description","subbed","dubbed"]),
-                Query.equal("status","RELEASING"),
+                Query.or_queries([Query.equal("status","RELEASING"),Query.equal("status","NOT_YET_RELEASED")]),
+                Query.greater_than_equal("subbed",1),
                 Query.order_desc("lastUpdated"),
                 Query.limit(12)
             ] # optional
@@ -1021,6 +1021,8 @@ def load_home():
                 Query.not_equal('animeId','Duel-Masters-2002'),
                 Query.not_equal('animeId','Digimon-Frontier-2002'),
                 Query.not_equal('animeId','Kekkaishi-2006'),
+                Query.not_equal('animeId','Zhu-Zhu-Xia-Mo-Huan-Zhu-Luo-Ji-2006'),
+                Query.not_equal('animeId','Amagamisan-Chi-no-Enmusubi-2024'),
                 Query.order_desc("aired"),
                 Query.limit(50),
             ] # optional
@@ -1396,7 +1398,14 @@ def filter_results():
                 if result['total'] > 0:
                     break
             except Exception as e:
-                    print(f"Error occurred during query: {e}")    
+                if isKey:
+                    return jsonify({
+                        "total": 0,
+                        "documents": []
+                    })
+                else:
+                    return render_template('search.html',userInfo=userInfo)
+               
     except:
         if isKey:
             return jsonify({
@@ -1467,7 +1476,7 @@ def filter_results():
 
     # Prepare response
     data = {
-        "total": len(filtered_documents),
+        "total": result['total'],
         "data": filtered_documents,
         "success": True,
         "total_pages": math.ceil(result['total'] / results_per_page)
@@ -2311,7 +2320,7 @@ def like_anime(id):
         else:
             return jsonify({"message": "Type is required!"}), 400
     else:
-        return jsonify({"message": "Post Not Found!"}), 404
+        return jsonify({"message": "Anime Not Found!"}), 404
 
 @app.route("/api/anime/comment/respond/<id>", methods=['POST'])
 def like_anime_comment(id):
@@ -3651,7 +3660,13 @@ def fetch_episode_info(anime_id,ep_number):
                 # Validate URL
                 if not is_valid_url(full_url):
                     raise ValueError("Invalid URL format")
-                names  = ["Kumi","HD-0"]
+                names  = ["Kumi","HD-0",'Kumi-v2','Kumi-v3','Kumi-v4']
+                ssub = ['Kumi']
+
+                if links.get("serverName") in ssub:
+                    sub = True
+                else:
+                    sub = False
 
                 if links.get("serverName") in names:
                     full_url =f"{full_url}&api=all"
@@ -3667,6 +3682,7 @@ def fetch_episode_info(anime_id,ep_number):
                 link_info = {
                     "$id": links.get("$id"),
                     "continue":cwatching,
+                    'softsub':sub,
                     "serverId": links.get("serverId"),
                     "serverName": links.get("serverName"),
                     "episodeNumber": links.get("episodeNumber"),
@@ -6972,7 +6988,18 @@ def countdowns():
             "url":f"/anime/{anii.get("mainId")}",
         })
 
-    return render_template('countdowns.html', animes=animes, userInfo=userInfo)
+    if isApi:
+            data = {
+                "data": animes,
+                "success": True,
+            }
+
+            response = make_response(json.dumps(data, indent=4, sort_keys=False))
+            response.headers["Content-Type"] = "application/json"
+
+            return response
+    else:
+        return render_template('countdowns.html', animes=animes, userInfo=userInfo)
 
 @app.route('/api/schedule', methods=['GET','POST'])
 def get_schedule():
@@ -8480,6 +8507,752 @@ def anime_hover_data(anime_id):
     else:
         return jsonify({'error': 'Anime not found or API error occurred'}), 404
     
+@app.route('/torrents', methods=['GET'])
+def torrents():
+    return render_template('torrents.html')
+
+
+class SpreadAPI:
+    UPLOAD_FOLDER = "uploads"
+    ALLOWED_EXTENSIONS = {'mp4', 'mkv'}
+
+    def __init__(self):
+        os.makedirs(self.UPLOAD_FOLDER, exist_ok=True)
+        self.spread_bp = Blueprint("spread", __name__, url_prefix="/spread")
+        self.register_routes()
+
+        # Allow large file uploads (2GB)
+        app.config["MAX_CONTENT_LENGTH"] = 10240 * 1024 * 1024
+
+    def allowed_file(self, filename):
+        return '.' in filename and filename.rsplit('.', 1)[1].lower() in self.ALLOWED_EXTENSIONS
+
+    def authenticate_request(self):
+        token = request.headers.get("Authorization")
+        if not token:
+            return None
+        try:
+            if token.startswith("Bearer "):
+                token = token[7:]
+            
+            decoded = jwt.decode(token, os.getenv('FLASK_SECRET_KEY'), algorithms=["HS256"])
+            return decoded["user"]
+        except jwt.ExpiredSignatureError:
+            return None
+        except jwt.InvalidTokenError:
+            return None
+
+    def upload_file(self):
+        user = self.authenticate_request()
+        if not user:
+            return jsonify({"error": "Unauthorized"}), 401
+
+        name = request.form.get("name")
+        anilist_id = request.form.get("anilist_id")
+        mal_id = request.form.get("mal_id")
+        episode = request.form.get("episode")
+        lang_type = request.form.get("lang_type")  # sub or dub
+
+        if not all([anilist_id, mal_id, episode, lang_type,name]):
+            return jsonify({"error": "Missing required fields"}), 400
+
+        if "file" not in request.files:
+            return jsonify({"error": "No file uploaded"}), 400
+
+        file = request.files["file"]
+
+        if file and self.allowed_file(file.filename):
+            # Ensure unique filenames using UUID
+            unique_id = str(uuid.uuid4())[:8]
+            filename = f"{secure_filename(name)}_ep{secure_filename(episode)}_{secure_filename(lang_type)}_{unique_id}.mp4"
+            file_path = os.path.join(self.UPLOAD_FOLDER, filename)
+
+            # Write in chunks (streamed upload)
+            with open(file_path, "wb") as f:
+                for chunk in file.stream:
+                    f.write(chunk)
+
+            stream_url = f"https://kuudere.to/spread/stream/{filename}"
+            return jsonify({"message": "Upload successful", "stream_url": stream_url})
+
+        return jsonify({"error": "Invalid file type"}), 400
+
+    def stream_file(self, filename):
+        return send_from_directory(self.UPLOAD_FOLDER, filename)
+
+    def login(self):
+        username = request.json.get("username")
+        password = request.json.get("password")
+
+        if username == os.getenv('UP_USER') and password == os.getenv('UP_PASS'):
+            expiration_time = datetime.now(timezone.utc) + timedelta(hours=2)
+            
+            payload = {
+                "user": username, 
+                "exp": expiration_time
+            }
+            
+            token = jwt.encode(
+                payload,
+                os.getenv('FLASK_SECRET_KEY'),
+                algorithm="HS256"
+            )
+
+            if isinstance(token, bytes):
+                token = token.decode('utf-8')
+                
+            return jsonify({"token": token})
+
+        return jsonify({"error": "Invalid credentials"}), 401
+
+    def register_routes(self):
+        self.spread_bp.route("/upload", methods=["POST"])(self.upload_file)
+        self.spread_bp.route("/stream/<filename>")(self.stream_file)
+        self.spread_bp.route("/login", methods=["POST"])(self.login)
+
+spread_api = SpreadAPI()
+app.register_blueprint(spread_api.spread_bp)
+
+
+@app.route('/create_room', methods=['POST'])
+def create_room():
+
+    secret = None
+    key = None
+
+    isApi, key, secret, userInfo, acc = verify_api_request(request)
+
+    data = request.json
+
+    if isApi:
+        if not key or not secret:  # Ensures both key and secret are valid
+            return jsonify({'success': False, 'message': "Unauthorized"}), 401
+        
+    isKey = bool(secret)
+    if secret:
+        isKey = True
+        print("Key exists: ", secret)
+    else:
+        isKey = False
+        secret = os.getenv('SECRET')  # Default value
+        print("Key is missing or empty, setting default secret.")
+
+    if 'session_secret' in session:
+        try:
+            
+
+            client = get_client(None,session["session_secret"],None)
+            account = Account(client)
+
+            acc = account.get()
+            
+            userInfo = get_acc_info(acc)
+
+        except Exception as e:
+            userInfo = None      
+    elif bool(key):
+        try:
+            client = get_client(None,key,None)
+            account = Account(client)
+
+            acc = account.get()
+            
+            userInfo = get_acc_info(acc)
+
+        except Exception as e:
+            userInfo = None  
+    else:
+        userInfo = None
+
+    if not data.get('animeId') or not data.get('episodeId') or not data.get('isPublic') or not data.get('startTime') or not data.get('isPaused') or not data.get('currentTime'):
+        required_fields = ['animeId', 'episodeId', 'isPublic', 'startTime', 'isPaused', 'currentTime']
+        missing_fields = [field for field in required_fields if not data.get(field)]
+        if missing_fields:
+            return jsonify({
+                'success': False, 
+                'message': f"Missing required fields: {', '.join(missing_fields)}"
+            }), 400
+
+    client = get_client(None,key,None,None)
+    databases = Databases(client)
+
+    rid = ID.unique()
+
+    if data.get('startTime') == "now":
+        data['startTime'] = datetime.now(timezone.utc).isoformat()
+    else:
+        data['startTime'] = data.get('startTime')
+
+    if data.get('startTime') == "now":
+        status = "Live"
+    else:
+        status = "Waiting"
+
+    databases.create_document(
+        database_id=os.getenv('DATABASE_ID'),
+        collection_id=os.getenv('W2G'),
+        document_id=rid,
+        permissions=[
+                    "read(\"any\")",
+                    f"update(\"user:{userInfo.get('userId')}\")",
+                    f"write(\"user:{userInfo.get('userId')}\")",
+                    f"delete(\"user:{userInfo.get('userId')}\")",
+                ],
+        data={
+            "streamId": rid,
+            "userId": userInfo.get('userId'),
+            "animeId": data.get('animeId'),
+            "episodeId": data.get('episodeId'),
+            "isPublic": data.get('isPublic'),
+            "startTime": data.get('startTime'),
+            "isPaused": data.get('isPaused'),
+            "lastAction": data.get('lastAction'),
+            "lastActionId": data.get('lastActionId'),
+            "currentTime": data.get('currentTime'),
+            "status": status
+        }
+    )
+
+    results = databases.get_document(
+        database_id=os.getenv('DATABASE_ID'),
+        collection_id=os.getenv('Anime'),
+        document_id=data.get('animeId'),
+        queries=[
+            Query.select(['mainId','english','native','romaji','subbed','dubbed','animeId'])
+        ]
+    )
+
+    imageR = databases.list_documents(
+        database_id=os.getenv('DATABASE_ID'),
+        collection_id=os.getenv('ANIME_IMGS'),
+        queries=[
+            Query.equal("animeId", results.get('animeId')),
+            Query.select(['cover','banner'])
+        ]
+    )
+
+    imageR = imageR.get('documents')[0]
+
+    epiosdes = databases.get_document(
+        database_id=os.getenv('DATABASE_ID'),
+        collection_id=os.getenv('Anime_Episodes'),
+        document_id=data.get('episodeId'),
+        queries=[
+            Query.select(['number','titles'])
+        ]
+    )
+
+
+    all_epiosdes = databases.list_documents(
+        database_id=os.getenv('DATABASE_ID'),
+        collection_id=os.getenv('Anime_Episodes'),
+        queries=[
+            Query.equal("animeId", results.get('animeId')),
+            Query.select(['number','titles','$id'])
+        ]
+    )
+
+    all_epiosdes_total = all_epiosdes.get('total')
+    all_epiosdes = all_epiosdes.get('documents')
+
+    eps_data = []
+
+    for episode in all_epiosdes:
+        eps_data.append({
+            "number": episode.get('number'),
+            "titles": episode.get('titles'),
+            "episodeId": episode.get('$id')
+        })
+
+    data = {
+        "streamId": rid,
+        "host": userInfo.get('userId'),
+        "animeId": data.get('animeId'),
+        "episodeId": data.get('episodeId'),
+        "isPublic": data.get('isPublic'),
+        "startTime": data.get('startTime'),
+        "isPaused": data.get('isPaused'),
+        "lastAction": data.get('lastAction'),
+        "lastActionId": data.get('lastActionId'),
+        "currentTime": data.get('currentTime'), 
+        "animeInfo": {
+            "english": results.get('english'),
+            "japanese": results.get('japanese'),
+            "romaji": results.get('romaji'),
+            "subbed": results.get('subbed'),
+            "dubbed": results.get('dubbed'),
+            "images":{
+                "cover": imageR.get('cover'),
+                "banner": imageR.get('banner')
+            },
+            "epiosde_info": {
+                "number": epiosdes.get('number'),
+                "titles": epiosdes.get('titles')
+            },
+            "allEpisodes":{
+                "total": all_epiosdes_total,
+                "episodes": eps_data
+            }
+        }
+    }
+
+    return jsonify({"success": True, "message": "Room created successfully", "data": data})
+
+@app.route("/get_all_rooms", methods=['POST'])
+def get_all_rooms():
+
+    queries = []
+
+    try:
+        page = request.args.get('page', 1)
+        page = int(page)
+        status = request.args.get('status', "All")
+        
+
+        data = request.json
+        
+        isApi, key, secret, userInfo, acc = verify_api_request(request)
+
+        if isApi:
+            if not key or not secret:  # Ensures both key and secret are valid
+                return jsonify({'success': False, 'message': "Unauthorized"}), 401
+            
+        isKey = bool(secret)
+        if secret:
+            isKey = True
+            print("Key exists: ", secret)
+        else:
+            isKey = False
+            secret = os.getenv('SECRET')  # Default value
+            print("Key is missing or empty, setting default secret.")
+
+        if 'session_secret' in session:
+            try:
+                client = get_client(None,session["session_secret"],None)
+                account = Account(client)
+
+                acc = account.get()
+                
+                userInfo = get_acc_info(acc)
+
+            except Exception as e:
+                userInfo = None      
+        elif bool(key):
+            try:
+                client = get_client(None,key,None)
+                account = Account(client)
+
+                acc = account.get()
+                
+                userInfo = get_acc_info(acc)
+
+            except Exception as e:
+                userInfo = None  
+        else:
+            userInfo = None
+
+        client = get_client(None,None,secret,None)
+        databases = Databases(client)
+
+        offset = page
+
+        if status == "All":
+            status = []
+        elif status == "Live" or status == "Waiting" or status == "Ended":
+            queries.append(Query.equal("status", status))
+        elif status ==  "Mine":
+            queries.append(Query.equal("host",userInfo.get('userId')))
+
+        queries.append(
+            Query.equal("isPublic", True),
+        )
+
+        queries.append(
+            Query.select(['streamId','userId','animeId','episodeId','isPublic','startTime','isPaused','lastAction','lastActionId','currentTime','$updatedAt','status']),
+        )
+
+        queries.append(
+            Query.limit(18),
+        )
+
+        queries.append(
+            Query.offset((offset - 1) * 18)
+        )
+
+        roomz= databases.list_documents(
+            database_id=os.getenv('DATABASE_ID'),
+            collection_id=os.getenv('W2G'),
+            queries=queries
+        )
+
+        room = roomz.get('documents')
+        room_data = []
+
+        for i in room:
+            results = databases.get_document(
+                database_id=os.getenv('DATABASE_ID'),
+                collection_id=os.getenv('Anime'),
+                document_id=i.get('animeId'),
+                queries=[
+                    Query.select(['mainId','english','native','romaji','subbed','dubbed','animeId'])
+                ]
+            )
+
+            imageR = databases.list_documents(
+                database_id=os.getenv('DATABASE_ID'),
+                collection_id=os.getenv('ANIME_IMGS'),
+                queries=[
+                    Query.equal("animeId", results.get('animeId')),
+                    Query.select(['cover','banner'])
+                ]
+            )
+
+            imageR = imageR.get('documents')[0]
+
+            epiosdes = databases.list_documents(
+                database_id=os.getenv('DATABASE_ID'),
+                collection_id=os.getenv('Anime_Episodes'),
+                queries=[
+                    Query.equal("animeId", results.get('animeId')),
+                    Query.select(['number','titles'])
+                ]
+            )
+
+            episode = databases.get_document(
+                database_id=os.getenv('DATABASE_ID'),
+                collection_id=os.getenv('Anime_Episodes'),
+                document_id=i.get('episodeId'),
+                queries=[
+                    Query.select(['number','titles'])
+                ]
+            )
+
+            users = databases.get_document(
+                database_id=os.getenv('DATABASE_ID'),
+                collection_id=os.getenv('Users'),
+                document_id=i.get('userId'),
+                queries=[
+                    Query.select(['userId','username','pfp'])
+                ]
+            )
+
+            data = {
+                "streamId": i.get('streamId'),
+                "host": {
+                    "userId": users.get('userId'),
+                    "username": users.get('username'),
+                    "avatar": users.get('pfp')
+                },
+                "animeId": i.get('animeId'),
+                "episodeId": i.get('episodeId'),
+                "isPublic": i.get('isPublic'),
+                "startTime": i.get('startTime'),
+                "isPaused": i.get('isPaused'),
+                "lastAction": i.get('lastAction'),
+                "lastActionId": i.get('lastActionId'),
+                "lastUpdated": format_relative_time(i.get('$updatedAt')),
+                "currentTime": i.get('currentTime'), 
+                "currentEpisode": episode.get('number'),
+                "status": i.get('status'),
+                "animeInfo": {
+                    "english": results.get('english'),
+                    "japanese": results.get('japanese'),
+                    "romaji": results.get('romaji'),
+                    "subbed": results.get('subbed'),
+                    "dubbed": results.get('dubbed'),
+                    "images":{
+                        "cover": imageR.get('cover'),
+                        "banner": imageR.get('banner')
+                    }
+                },
+                "total_episodes": epiosdes.get('total'),
+            }
+            room_data.append(data)
+
+        final_data = {
+            "rooms": room_data,
+            "total": roomz.get('total'),
+            "page": page,
+            "total_pages": math.ceil(roomz.get('total') / 18)
+        }
+
+        return jsonify({"success": True, "message": "Room fetched successfully", "data": final_data})
+
+    except Exception as e:
+        return jsonify({"success": False, "message": "Room fetched failed", "error": str(e)}), 500
+
+@app.route('/get_room', methods=['POST'])
+def get_room():
+    data = request.json
+    
+    isApi, key, secret, userInfo, acc = verify_api_request(request)
+
+    if isApi:
+        if not key or not secret:  # Ensures both key and secret are valid
+            return jsonify({'success': False, 'message': "Unauthorized"}), 401
+        
+    isKey = bool(secret)
+    if secret:
+        isKey = True
+        print("Key exists: ", secret)
+    else:
+        isKey = False
+        secret = os.getenv('SECRET')  # Default value
+        print("Key is missing or empty, setting default secret.")
+
+    if 'session_secret' in session:
+        try:
+            client = get_client(None,session["session_secret"],None)
+            account = Account(client)
+
+            acc = account.get()
+            
+            userInfo = get_acc_info(acc)
+
+        except Exception as e:
+            userInfo = None      
+    elif bool(key):
+        try:
+            client = get_client(None,key,None)
+            account = Account(client)
+
+            acc = account.get()
+            
+            userInfo = get_acc_info(acc)
+
+        except Exception as e:
+            userInfo = None  
+    else:
+        userInfo = None
+
+    client = get_client(None,key,None,None)
+    databases = Databases(client)
+
+    room = databases.get_document(
+        database_id=os.getenv('DATABASE_ID'),
+        collection_id=os.getenv('W2G'),
+        document_id=data.get('streamId'),
+        queries=[
+            Query.equal("streamId", data.get('streamId')),
+            Query.select(['streamId','userId','animeId','episodeId','isPublic','startTime','isPaused','lastAction','lastActionId','currentTime','status'])
+        ]
+    )
+
+    room = room.get('document')
+
+    results = databases.get_document(
+        database_id=os.getenv('DATABASE_ID'),
+        collection_id=os.getenv('Anime'),
+        document_id=room.get('animeId'),
+        queries=[
+            Query.equal("mainId", room.get('animeId')),
+            Query.select(['mainId','english','japanese','romaji','subbed','dubbed','animeId'])
+        ]
+    )
+
+    imageR = databases.list_documents(
+        database_id=os.getenv('DATABASE_ID'),
+        collection_id=os.getenv('ANIME_IMGS'),
+        queries=[
+            Query.equal("animeId", results.get('animeId')),
+            Query.select(['cover','banner'])
+        ]
+    )
+
+    imageR = imageR.get('documents')[0]
+
+    epiosdes = databases.get_document(
+        database_id=os.getenv('DATABASE_ID'),
+        collection_id=os.getenv('Anime_Episodes'),
+        document_id=room.get('episodeId'),
+        queries=[
+            Query.select(['number','titles'])
+        ]
+    )
+
+
+    all_epiosdes = databases.list_documents(
+        database_id=os.getenv('DATABASE_ID'),
+        collection_id=os.getenv('Anime_Episodes'),
+        queries=[
+            Query.select(['number','titles','$id'])
+        ]
+    )
+
+    all_epiosdes_total = all_epiosdes.get('total')
+    all_epiosdes = all_epiosdes.get('documents')
+    all_eps = []
+
+    for episode in all_epiosdes:
+        all_eps.append({
+            "number": episode.get('number'),
+            "titles": episode.get('titles'),
+            "episodeId": episode.get('$id')
+        })
+
+    chats = databases.list_documents(
+        database_id=os.getenv('DATABASE_ID'),
+        collection_id=os.getenv('W2G_Chatroom'),
+        queries=[
+            Query.equal("streamId", rid),
+            Query.select(['chatId','userId','message','time'])
+        ]
+    )
+
+    users = databases.get_document(
+        database_id=os.getenv('DATABASE_ID'),
+        collection_id=os.getenv('Users'),
+        document_id=room.get('userId'),
+        queries=[
+            Query.select(['userId','username','pfp'])
+        ]
+    )
+
+    data = {
+        "streamId": rid,
+        "host": {
+            "userId": users.get('userId'),
+            "username": users.get('username'),
+            "avatar": users.get('pfp')
+        },
+        "animeId": data.get('animeId'),
+        "episodeId": data.get('episodeId'),
+        "isPublic": data.get('isPublic'),
+        "startTime": data.get('startTime'),
+        "isPaused": data.get('isPaused'),
+        "lastAction": data.get('lastAction'),
+        "lastActionId": data.get('lastActionId'),
+        "currentTime": data.get('currentTime'), 
+        "status": data.get('status'),
+        "animeInfo": {
+            "english": results.get('english'),
+            "japanese": results.get('japanese'),
+            "romaji": results.get('romaji'),
+            "subbed": results.get('subbed'),
+            "dubbed": results.get('dubbed'),
+            "images":{
+                "cover": imageR.get('cover'),
+                "banner": imageR.get('banner')
+            },
+            "epiosde_info": {
+                "number": epiosdes.get('number'),
+                "titles": epiosdes.get('titles')
+            },
+            "allEpisodes":{
+                "total": all_epiosdes_total,
+                "episodes": all_eps
+            },
+            "chats": {
+                "total": chats.get('total'),
+                "chats": {
+                    "chatId": chats.get('documents')[0].get('chatId'),
+                    "userId": chats.get('documents')[0].get('userId'),
+                    "message": chats.get('documents')[0].get('message'),
+                    "time": format_relative_time(chats.get('documents')[0].get('time'))
+                }
+            }
+        }
+    }
+    
+
+    return jsonify({"success": True, "message": "Room found successfully", "data": data})
+
+@app.route('/send_chat', methods=['POST'])
+def send_chat():
+    try:
+        data = request.json
+        isApi, key, secret, userInfo, acc = verify_api_request(request)
+
+        if isApi:
+            if not key or not secret:  # Ensures both key and secret are valid
+                return jsonify({'success': False, 'message': "Unauthorized"}), 401
+            
+        isKey = bool(secret)
+        if secret:
+            isKey = True
+            print("Key exists: ", secret)
+        else:
+            isKey = False
+            secret = os.getenv('SECRET')  # Default value
+            print("Key is missing or empty, setting default secret.")
+
+        if 'session_secret' in session:
+            try:
+                client = get_client(None,session["session_secret"],None)
+                account = Account(client)
+
+                acc = account.get()
+                
+                userInfo = get_acc_info(acc)
+
+            except Exception as e:
+                userInfo = None      
+        elif bool(key):
+            try:
+                client = get_client(None,key,None)
+                account = Account(client)
+
+                acc = account.get()
+                
+                userInfo = get_acc_info(acc)
+
+            except Exception as e:
+                userInfo = None  
+        else:
+            userInfo = None
+
+        client = get_client(None,key,None,None)
+        databases = Databases(client)
+        
+        # Required fields
+        chat_id = ID.unique()
+        user_id = userInfo.get('userId')
+        stream_id = data.get('streamId')
+        message = data.get('message')
+        
+        if not all([chat_id, user_id, stream_id, message]):
+            return jsonify({'success': False, 'message': 'Missing required fields'}), 400
+        
+        # Create document structure
+        document = {
+            'chatId': chat_id,
+            'userId': user_id,
+            'streamId': stream_id,
+            'message': message,
+            'removed': False,
+            'time': datetime.utcnow().isoformat()
+        }
+        
+        # Create the message in Appwrite
+        result = databases.create_document(
+            database_id=os.getenv('DATABASE_ID'),
+            collection_id=os.getenv('W2G_Chatroom'),
+            document_id=chat_id,
+            data=document
+        )
+
+        data = {
+            "chatId": chat_id,
+            "user": {
+                "userId": user_id,
+                "username": userInfo.get('username'),
+                "avatar": userInfo.get('avatar')
+            },
+            "streamId": stream_id,
+            "message": message,
+            "removed": False,
+            "time": format_relative_time(datetime.utcnow().isoformat())
+        }
+        
+        # Emit the message to all connected clients
+        socketio.emit('new_message', document, room=chat_id)
+        
+        return jsonify({'success': True, 'message': 'Message sent successfully', 'data': result})
+    
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
 # Custom error handler for 404 errors
 @app.errorhandler(404)
 def not_found_error(error):

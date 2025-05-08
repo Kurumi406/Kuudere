@@ -1,4 +1,4 @@
-<a href="/anime/{{ anime.id }}" class="anime-card relative aspect-[3/4] overflow-visible rounded-lg group" 
+<a href="{{ anime.url if anime.url else '/anime/' ~ anime.id }}"  class="anime-card relative aspect-[3/4] overflow-visible rounded-lg group" 
    x-data="animeCard('{{ anime.id }}')" 
    @mouseenter="handleMouseEnter()" 
    @mouseleave="handleMouseLeave()" 

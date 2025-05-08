@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aura Shop - Digital Content Store</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#fef2f2',
+                            100: '#fee2e2',
+                            200: '#fecaca',
+                            300: '#fca5a5',
+                            400: '#f87171',
+                            500: '#ef4444',
+                            600: '#dc2626',
+                            700: '#b91c1c',
+                            800: '#991b1b',
+                            900: '#7f1d1d',
+                        },
+                        dark: {
+                            400: '#4b5563',
+                            500: '#374151',
+                            600: '#1f2937',
+                            700: '#111827',
+                            800: '#0f172a',
+                            900: '#030712',
+                        }
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #000000;
+            color: #ffffff;
+        }
+        
+        .card-hover {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px -5px rgba(255, 0, 0, 0.2), 0 10px 10px -5px rgba(255, 0, 0, 0.1);
+        }
+        
+        .badge-pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.7;
+            }
+        }
+        
+        .shine-effect {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .shine-effect::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(
+                to right,
+                rgba(255, 255, 255, 0) 0%,
+                rgba(255, 255, 255, 0.3) 50%,
+                rgba(255, 255, 255, 0) 100%
+            );
+            transform: rotate(30deg);
+            animation: shine 3s infinite;
+        }
+        
+        @keyframes shine {
+            0% {
+                transform: scale(0) rotate(45deg);
+                opacity: 0;
+            }
+            80% {
+                transform: scale(0) rotate(45deg);
+                opacity: 0.5;
+            }
+            81% {
+                transform: scale(4) rotate(45deg);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(50) rotate(45deg);
+                opacity: 0;
+            }
+        }
+        
+        /* Countdown timer animation */
+        .countdown-pulse {
+            animation: countdownPulse 1s ease-in-out infinite alternate;
+        }
+        
+        @keyframes countdownPulse {
+            from {
+                transform: scale(1);
+            }
+            to {
+                transform: scale(1.05);
+            }
+        }
+        
+        /* Floating animation for badges */
+        .float {
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0% {
+                transform: translateY(0px);
+            }
+            50% {
+                transform: translateY(-5px);
+            }
+            100% {
+                transform: translateY(0px);
+            }
+        }
+        
+        /* Glow effect for important elements */
+        .glow-effect {
+            box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+            transition: box-shadow 0.3s ease;
+        }
+        
+        .glow-effect:hover {
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.8);
+        }
+        
+        /* Custom scrollbar for better UX */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #000000;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #ef4444;
+            border-radius: 3px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #b91c1c;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-black">
+    <div x-data="{
+        userPoints: 5000,
+        cart: [],
+        showCart: false,
+        categories: ['All', 'Manga', 'Light Novels', 'Visual Novels', 'Gift Cards'],
+        activeCategory: 'All',
+        notification: '',
+        showNotification: false,
+        specialOfferEnds: new Date().getTime() + 3600000, // 1 hour from now
+        currentTime: new Date().getTime(),
+        products: [
+            { id: 1, name: 'One Piece Vol. 100', category: 'Manga', price: 450, image: '/placeholder.svg?height=300&width=200', stock: 15, rating: 4.9, reviews: 128, featured: true, popular: true, recentBuyers: 24 },
+            { id: 2, name: 'Demon Slayer Complete Box', category: 'Manga', price: 1200, image: '/placeholder.svg?height=300&width=200', stock: 5, rating: 4.8, reviews: 94, featured: true, popular: true, recentBuyers: 17, discount: 15 },
+            { id: 3, name: 'Re:Zero Light Novel', category: 'Light Novels', price: 350, image: '/placeholder.svg?height=300&width=200', stock: 20, rating: 4.7, reviews: 76, featured: false, recentBuyers: 8 },
+            { id: 4, name: 'Steins;Gate Visual Novel', category: 'Visual Novels', price: 800, image: '/placeholder.svg?height=300&width=200', stock: 8, rating: 4.9, reviews: 112, featured: true, popular: true, recentBuyers: 13 },
+            { id: 5, name: '$20 Gift Card', category: 'Gift Cards', price: 600, image: '/placeholder.svg?height=300&width=200', stock: 50, rating: 4.5, reviews: 42, featured: false, recentBuyers: 31 },
+            { id: 6, name: 'Jujutsu Kaisen Vol. 0', category: 'Manga', price: 400, image: '/placeholder.svg?height=300&width=200', stock: 12, rating: 4.8, reviews: 87, featured: false, recentBuyers: 19 },
+            { id: 7, name: 'Sword Art Online', category: 'Light Novels', price: 380, image: '/placeholder.svg?height=300&width=200', stock: 18, rating: 4.6, reviews: 65, featured: false, recentBuyers: 7 },
+            { id: 8, name: 'Fate/Stay Night VN', category: 'Visual Novels', price: 950, image: '/placeholder.svg?height=300&width=200', stock: 3, rating: 4.9, reviews: 103, featured: true, popular: true, recentBuyers: 5, exclusive: true },
+            { id: 9, name: '$50 Gift Card', category: 'Gift Cards', price: 1500, image: '/placeholder.svg?height=300&width=200', stock: 25, rating: 4.7, reviews: 38, featured: true, recentBuyers: 12, bonus: '+ 100 Bonus Aura' },
+            { id: 10, name: 'Attack on Titan Box Set', category: 'Manga', price: 1100, image: '/placeholder.svg?height=300&width=200', stock: 7, rating: 4.9, reviews: 156, featured: true, popular: true, recentBuyers: 9, discount: 10 },
+            { id: 11, name: 'Overlord Light Novel', category: 'Light Novels', price: 370, image: '/placeholder.svg?height=300&width=200', stock: 22, rating: 4.7, reviews: 81, featured: false, recentBuyers: 6 },
+            { id: 12, name: 'Danganronpa VN', category: 'Visual Novels', price: 750, image: '/placeholder.svg?height=300&width=200', stock: 9, rating: 4.8, reviews: 97, featured: false, recentBuyers: 11, exclusive: true }
+        ],
+        
+        filteredProducts() {
+            return this.activeCategory === 'All' 
+                ? this.products 
+                : this.products.filter(p => p.category === this.activeCategory);
+        },
+        
+        featuredProducts() {
+            return this.products.filter(p => p.featured);
+        },
+        
+        popularProducts() {
+            return this.products.filter(p => p.popular).slice(0, 4);
+        },
+        
+        addToCart(product) {
+            const existingItem = this.cart.find(item => item.id === product.id);
+            
+            if (existingItem) {
+                existingItem.quantity += 1;
+            } else {
+                this.cart.push({...product, quantity: 1});
+            }
+            
+            this.notification = `${product.name} added to cart!`;
+            this.showNotification = true;
+            
+            setTimeout(() => {
+                this.showNotification = false;
+            }, 3000);
+            
+            // Animate the cart icon
+            anime({
+                targets: '.cart-icon',
+                scale: [1, 1.3, 1],
+                duration: 500,
+                easing: 'easeInOutQuad'
+            });
+        },
+        
+        removeFromCart(productId) {
+            this.cart = this.cart.filter(item => item.id !== productId);
+        },
+        
+        increaseQuantity(productId) {
+            const item = this.cart.find(item => item.id === productId);
+            if (item) item.quantity += 1;
+        },
+        
+        decreaseQuantity(productId) {
+            const item = this.cart.find(item => item.id === productId);
+            if (item && item.quantity > 1) {
+                item.quantity -= 1;
+            } else {
+                this.removeFromCart(productId);
+            }
+        },
+        
+        cartTotal() {
+            return this.cart.reduce((total, item) => total + (item.price * item.quantity), 0);
+        },
+        
+        checkout() {
+            if (this.cartTotal() > this.userPoints) {
+                this.notification = 'Not enough Aura points!';
+                this.showNotification = true;
+                
+                setTimeout(() => {
+                    this.showNotification = false;
+                }, 3000);
+                return;
+            }
+            
+            this.userPoints -= this.cartTotal();
+            this.notification = 'Purchase successful! Thank you for shopping with us.';
+            this.showNotification = true;
+            this.cart = [];
+            
+            setTimeout(() => {
+                this.showNotification = false;
+            }, 3000);
+            
+            // Celebrate with animation
+            anime({
+                targets: '.header-title',
+                translateY: [-20, 0],
+                opacity: [0, 1],
+                duration: 800,
+                easing: 'easeInOutQuad'
+            });
+        },
+        
+        formatTime(ms) {
+            const minutes = Math.floor(ms / 60000);
+            const seconds = Math.floor((ms % 60000) / 1000);
+            return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+        },
+        
+        updateCountdown() {
+            this.currentTime = new Date().getTime();
+            setTimeout(() => this.updateCountdown(), 1000);
+        },
+        
+        timeRemaining() {
+            return Math.max(0, this.specialOfferEnds - this.currentTime);
+        },
+        
+        calculateDiscount(price, discount) {
+            if (!discount) return price;
+            return Math.round(price * (1 - discount/100));
+        }
+    }" 
+    x-init="updateCountdown()"
+    class="bg-black">
+        <!-- Header -->
+        <header class="bg-black border-b border-gray-800 sticky top-0 z-40">
+            <div class="container mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center">
+                <div class="flex items-center mb-4 md:mb-0">
+                    <div class="shine-effect rounded-full bg-primary-600 w-10 h-10 flex items-center justify-center mr-3">
+                        <span class="text-white font-bold">A</span>
+                    </div>
+                    <h1 class="header-title text-2xl font-bold text-white">Aura Shop</h1>
+                </div>
+                
+                <div class="flex items-center space-x-6">
+                    <div class="flex items-center bg-gray-900 text-white px-4 py-2 rounded-full border border-gray-800 glow-effect">
+                        <span class="mr-2">💎</span>
+                        <span class="font-semibold text-white" x-text="userPoints + ' Aura'"></span>
+                    </div>
+                    
+                    <button @click="showCart = !showCart" class="relative">
+                        <svg class="cart-icon w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                        </svg>
+                        <span x-show="cart.length > 0" x-text="cart.length" class="absolute -top-2 -right-2 bg-primary-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center badge-pulse"></span>
+                    </button>
+                </div>
+            </div>
+        </header>
+        
+        <!-- Special Offer Banner -->
+        <div class="bg-gradient-to-r from-primary-900 via-primary-700 to-primary-900 text-white py-2 px-4 text-center relative overflow-hidden">
+            <div class="relative z-10 flex flex-col sm:flex-row items-center justify-center space-y-2 sm:space-y-0 sm:space-x-4">
+                <div class="font-bold">🔥 SPECIAL OFFER: 15% OFF SELECTED ITEMS</div>
+                <div class="flex items-center">
+                    <span class="mr-2">Ends in:</span>
+                    <span x-text="formatTime(timeRemaining())" class="bg-black px-2 py-1 rounded font-mono font-bold countdown-pulse"></span>
+                </div>
+            </div>
+            <!-- Animated background elements -->
+            <div class="absolute top-0 left-0 w-full h-full opacity-10">
+                <div class="absolute top-1/4 left-1/4 w-20 h-20 rounded-full bg-white animate-ping" style="animation-duration: 3s;"></div>
+                <div class="absolute top-1/3 right-1/4 w-16 h-16 rounded-full bg-white animate-ping" style="animation-duration: 4s;"></div>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <main class="container mx-auto px-4 py-8">
+            <!-- Popular Now Section -->
+            <section class="mb-12">
+                <div class="flex items-center mb-6">
+                    <h2 class="text-2xl font-bold text-white">Popular Now</h2>
+                    <div class="ml-3 px-2 py-1 bg-primary-600 text-white text-xs font-bold rounded-full float">🔥 Trending</div>
+                </div>
+                
+                <div class="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+                    <template x-for="product in popularProducts()" :key="product.id">
+                        <div class="card-hover bg-gray-900 rounded-lg overflow-hidden shadow-md border border-gray-800 relative">
+                            <!-- Discount tag -->
+                            <div x-show="product.discount" class="absolute top-0 left-0 bg-primary-600 text-white text-xs font-bold px-2 py-1 rounded-br z-10">
+                                <span x-text="product.discount + '% OFF'" class=""></span>
+                            </div>
+                            
+                            <div class="relative">
+                                <img :src="product.image" :alt="product.name" class="w-full h-36 sm:h-48 object-cover">
+                                <div x-show="product.popular" class="absolute top-2 right-2 bg-primary-600 text-white text-xs font-bold px-2 py-1 rounded badge-pulse flex items-center">
+                                    <span class="mr-1">🔥</span>
+                                    <span>Hot</span>
+                                </div>
+                                <div x-show="product.stock < 10" class="absolute bottom-2 left-2 bg-black text-white text-xs font-bold px-2 py-1 rounded border border-primary-600 flex items-center">
+                                    <span class="mr-1">⚠️</span>
+                                    <span>Only <span x-text="product.stock"></span> left!</span>
+                                </div>
+                                <div x-show="product.exclusive" class="absolute bottom-2 right-2 bg-black text-white text-xs font-bold px-2 py-1 rounded border border-yellow-500 flex items-center">
+                                    <span class="mr-1">⭐</span>
+                                    <span>Exclusive</span>
+                                </div>
+                            </div>
+                            
+                            <div class="p-3 sm:p-4">
+                                <h3 class="text-base sm:text-lg font-semibold text-white mb-1 sm:mb-2 line-clamp-1" x-text="product.name"></h3>
+                                
+                                <div class="flex items-center mb-1 sm:mb-2">
+                                    <div class="flex text-primary-500">
+                                        <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                                            <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"></path>
+                                        </svg>
+                                    </div>
+                                    <span class="text-xs sm:text-sm text-gray-400 ml-1" x-text="product.rating + ' (' + product.reviews + ' reviews)'"></span>
+                                </div>
+                                
+                                <div x-show="product.recentBuyers" class="text-xs text-gray-400 mb-2">
+                                    <span x-text="product.recentBuyers + ' people bought this recently'"></span>
+                                </div>
+                                
+                                <div class="flex justify-between items-center mt-2 sm:mt-3">
+                                    <div class="flex flex-col">
+                                        <div x-show="product.discount" class="text-xs text-gray-500 line-through" x-text="product.price + ' Aura'"></div>
+                                        <span class="text-base sm:text-xl font-bold text-primary-500" x-text="(product.discount ? calculateDiscount(product.price, product.discount) : product.price) + ' Aura'"></span>
+                                        <span x-show="product.bonus" class="text-xs text-primary-300" x-text="product.bonus"></span>
+                                    </div>
+                                    <button @click="addToCart(product)" class="bg-primary-600 hover:bg-primary-700 text-white px-3 py-1 rounded-full text-xs sm:text-sm transition duration-200 glow-effect">Add to Cart</button>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </section>
+            
+            <!-- Category Tabs -->
+            <section class="mb-6">
+                <div class="flex overflow-x-auto space-x-2 pb-2 hide-scrollbar">
+                    <template x-for="category in categories" :key="category">
+                        <button 
+                            @click="activeCategory = category" 
+                            :class="{'bg-primary-600 text-white glow-effect': activeCategory === category, 'bg-gray-900 text-white hover:bg-gray-800 border border-gray-800': activeCategory !== category}"
+                            class="px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition duration-200 flex-shrink-0">
+                            <span x-text="category"></span>
+                        </button>
+                    </template>
+                </div>
+            </section>
+            
+            <!-- Products Grid -->
+            <section>
+                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+                    <template x-for="product in filteredProducts()" :key="product.id">
+                        <div class="card-hover bg-gray-900 rounded-lg overflow-hidden shadow-md border border-gray-800 relative">
+                            <!-- Discount tag -->
+                            <div x-show="product.discount" class="absolute top-0 left-0 bg-primary-600 text-white text-xs font-bold px-2 py-1 rounded-br z-10">
+                                <span x-text="product.discount + '% OFF'" class=""></span>
+                            </div>
+                            
+                            <div class="relative">
+                                <img :src="product.image" :alt="product.name" class="w-full h-36 sm:h-48 object-cover">
+                                <div x-show="product.popular" class="absolute top-2 right-2 bg-primary-600 text-white text-xs font-bold px-2 py-1 rounded badge-pulse flex items-center">
+                                    <span class="mr-1">🔥</span>
+                                    <span>Hot</span>
+                                </div>
+                                <div x-show="product.stock < 10" class="absolute bottom-2 left-2 bg-black text-white text-xs font-bold px-2 py-1 rounded border border-primary-600 flex items-center">
+                                    <span class="mr-1">⚠️</span>
+                                    <span>Only <span x-text="product.stock"></span> left!</span>
+                                </div>
+                                <div x-show="product.exclusive" class="absolute bottom-2 right-2 bg-black text-white text-xs font-bold px-2 py-1 rounded border border-yellow-500 flex items-center">
+                                    <span class="mr-1">⭐</span>
+                                    <span>Exclusive</span>
+                                </div>
+                            </div>
+                            
+                            <div class="p-3 sm:p-4">
+                                <div class="flex justify-between items-start mb-1 sm:mb-2">
+                                    <h3 class="text-base sm:text-lg font-semibold text-white line-clamp-1" x-text="product.name"></h3>
+                                    <span class="text-xs font-medium text-gray-400 bg-gray-800 px-1.5 py-0.5 rounded" x-text="product.category"></span>
+                                </div>
+                                
+                                <div class="flex items-center mb-1 sm:mb-2">
+                                    <div class="flex text-primary-500">
+                                        <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                                            <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"></path>
+                                        </svg>
+                                    </div>
+                                    <span class="text-xs sm:text-sm text-gray-400 ml-1" x-text="product.rating + ' (' + product.reviews + ' reviews)'"></span>
+                                </div>
+                                
+                                <div x-show="product.recentBuyers" class="text-xs text-gray-400 mb-2">
+                                    <span x-text="product.recentBuyers + ' people bought this recently'"></span>
+                                </div>
+                                
+                                <div class="flex justify-between items-center mt-2 sm:mt-3">
+                                    <div class="flex flex-col">
+                                        <div x-show="product.discount" class="text-xs text-gray-500 line-through" x-text="product.price + ' Aura'"></div>
+                                        <span class="text-base sm:text-xl font-bold text-primary-500" x-text="(product.discount ? calculateDiscount(product.price, product.discount) : product.price) + ' Aura'"></span>
+                                        <span x-show="product.bonus" class="text-xs text-primary-300" x-text="product.bonus"></span>
+                                    </div>
+                                    <button @click="addToCart(product)" class="bg-primary-600 hover:bg-primary-700 text-white px-3 py-1 rounded-full text-xs sm:text-sm transition duration-200 glow-effect">Add to Cart</button>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </section>
+            
+            <!-- Free Bonus Section -->
+            <section class="mt-12 bg-gradient-to-r from-gray-900 to-black rounded-lg border border-gray-800 p-4 sm:p-6">
+                <div class="flex flex-col sm:flex-row items-center">
+                    <div class="mb-4 sm:mb-0 sm:mr-6">
+                        <div class="bg-primary-600 rounded-full w-16 h-16 flex items-center justify-center shine-effect">
+                            <span class="text-2xl">🎁</span>
+                        </div>
+                    </div>
+                    <div class="flex-1 text-center sm:text-left">
+                        <h3 class="text-xl font-bold text-white mb-2">Free Bonus with Every Purchase!</h3>
+                        <p class="text-gray-300 mb-4">Get 50 Aura points for free with any purchase over 1000 Aura. Limited time offer!</p>
+                        <button class="bg-primary-600 hover:bg-primary-700 text-white px-6 py-2 rounded-full text-sm font-medium transition duration-200 glow-effect">
+                            Learn More
+                        </button>
+                    </div>
+                </div>
+            </section>
+        </main>
+        
+        <!-- Shopping Cart Sidebar -->
+        <div x-show="showCart" @click.away="showCart = false" class="fixed inset-y-0 right-0 max-w-xs w-full bg-gray-900 shadow-lg transform transition-transform duration-300 z-50 border-l border-gray-800" :class="showCart ? 'translate-x-0' : 'translate-x-full'">
+            <div class="h-full flex flex-  :class="showCart ? 'translate-x-0' : 'translate-x-full'">
+            <div class="h-full flex flex-col">
+                <div class="p-4 border-b border-gray-800 flex justify-between items-center bg-black">
+                    <h2 class="text-xl font-bold text-white">Your Cart</h2>
+                    <button @click="showCart = false" class="text-white hover:text-gray-300">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                
+                <div class="flex-1 overflow-y-auto p-4">
+                    <div x-show="cart.length === 0" class="text-center py-8">
+                        <svg class="w-16 h-16 mx-auto text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                        </svg>
+                        <p class="mt-4 text-gray-500">Your cart is empty</p>
+                    </div>
+                    
+                    <template x-for="item in cart" :key="item.id">
+                        <div class="flex items-center py-4 border-b border-gray-800">
+                            <img :src="item.image" :alt="item.name" class="w-16 h-16 object-cover rounded">
+                            <div class="ml-4 flex-1">
+                                <h3 class="text-sm font-medium text-white" x-text="item.name"></h3>
+                                <p class="text-sm text-gray-400" x-text="(item.discount ? calculateDiscount(item.price, item.discount) : item.price) + ' Aura'"></p>
+                                <div class="flex items-center mt-2">
+                                    <button @click="decreaseQuantity(item.id)" class="text-gray-400 hover:text-white">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path>
+                                        </svg>
+                                    </button>
+                                    <span class="mx-2 text-gray-300" x-text="item.quantity"></span>
+                                    <button @click="increaseQuantity(item.id)" class="text-gray-400 hover:text-white">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="ml-4">
+                                <span class="text-sm font-medium text-white" x-text="(item.discount ? calculateDiscount(item.price, item.discount) : item.price) * item.quantity + ' Aura'"></span>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+                
+                <div class="p-4 border-t border-gray-800">
+                    <div class="flex justify-between mb-4">
+                        <span class="text-gray-400">Total:</span>
+                        <span class="text-xl font-bold text-white" x-text="cartTotal() + ' Aura'"></span>
+                    </div>
+                    <button 
+                        @click="checkout()" 
+                        :class="{'bg-primary-600 hover:bg-primary-700 glow-effect': cartTotal() <= userPoints, 'bg-gray-700 cursor-not-allowed': cartTotal() > userPoints}"
+                        class="w-full py-3 text-white rounded-lg text-center font-medium">
+                        Checkout
+                    </button>
+                    <div x-show="cartTotal() > userPoints" class="mt-2 text-xs text-primary-500 text-center">
+                        You need <span x-text="cartTotal() - userPoints"></span> more Aura points
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Notification Toast -->
+        <div x-show="showNotification" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-y-2" x-transition:enter-end="opacity-100 transform translate-y-0" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100 transform translate-y-0" x-transition:leave-end="opacity-0 transform translate-y-2" class="fixed bottom-4 right-4 bg-primary-600 text-white px-4 py-2 rounded-lg shadow-lg z-50">
+            <span x-text="notification"></span>
+        </div>
+    </div>
+    
+    <script>
+        // Initialize animations when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            // Animate featured items on page load
+            anime({
+                targets: '.card-hover',
+                opacity: [0, 1],
+                translateY: [20, 0],
+                delay: anime.stagger(100),
+                easing: 'easeOutQuad'
+            });
+            
+            // Add scroll animations
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        anime({
+                            targets: entry.target,
+                            opacity: [0, 1],
+                            translateY: [20, 0],
+                            duration: 600,
+                            easing: 'easeOutQuad'
+                        });
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.1 });
+            
+            document.querySelectorAll('section').forEach(section => {
+                observer.observe(section);
+            });
+        });
+    </script>
+</body>
+</html>

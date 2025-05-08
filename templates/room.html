@@ -1,452 +1,1890 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Anime Stream - Room</title>
-    <script src="https://unpkg.com/alpinejs" defer></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-    <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
-    <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        navy: {
-                            DEFAULT: '#1a1b2e',
-                            dark: '#13141f',
-                            light: '#2a2b3d'
-                        },
-                        accent: {
-                            cyan: '#0ff',
-                            pink: '#ff69b4'
-                        }
-                    }
-                }
-            }
-        }
-    </script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Anime Stream - Room</title>
+<script src="https://unpkg.com/alpinejs" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+<script src="https://cdn.jsdelivr.net/npm/artplayer/dist/artplayer.js"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap">
+<script>
+  tailwind.config = {
+      theme: {
+          extend: {
+              colors: {
+                  yt: {
+                      red: '#FF0000',
+                      dark: '#0F0F0F',
+                      darker: '#0A0A0A',
+                      gray: '#272727',
+                      lightgray: '#717171',
+                      hover: '#3F3F3F'
+                  }
+              },
+              fontFamily: {
+                  roboto: ['Roboto', 'sans-serif']
+              }
+          }
+      }
+  }
+</script>
+<style>
+  /* Fix for ArtPlayer positioning */
+  .art-video-player {
+      width: 100% !important;
+      height: 100% !important;
+      background-color: #000;
+  }
+  
+  #videoContainer {
+      position: relative;
+      width: 100%;
+      height: 0;
+      padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
+      overflow: hidden;
+  }
+  
+  #artplayer-app {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+  }
+
+  /* Chat container with improved scrolling */
+  .chat-container {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      max-height: 100%;
+      overflow: hidden;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+      background-color: #0F0F0F;
+      transition: all 0.3s ease;
+  }
+  
+  .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      scroll-behavior: smooth;
+  }
+  
+  /* Enhanced scrollbar - YouTube style */
+  ::-webkit-scrollbar {
+      width: 8px;
+  }
+  
+  ::-webkit-scrollbar-track {
+      background: #0F0F0F;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+      background: #3F3F3F;
+      border-radius: 4px;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+      background: #555;
+  }
+
+  /* Transfer host modal with improved styling */
+  .modal-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(3px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+  }
+  
+  .modal-content {
+      background-color: #272727;
+      border-radius: 12px;
+      width: 100%;
+      max-width: 500px;
+      padding: 1.5rem;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+  }
+  
+  /* Enhanced YouTube-style chat message */
+  .yt-chat-message {
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      transition: all 0.2s ease;
+  }
+  
+  .yt-chat-message:hover {
+      background-color: rgba(255, 255, 255, 0.03);
+  }
+  
+  /* Improved YouTube-style buttons */
+  .yt-button {
+      transition: all 0.2s;
+      position: relative;
+      overflow: hidden;
+  }
+  
+  .yt-button:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+      transform: translateY(-1px);
+  }
+  
+  .yt-button:active {
+      transform: translateY(1px);
+  }
+  
+  /* Enhanced animations */
+  @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+  }
+  
+  .fade-in {
+      animation: fadeIn 0.3s ease-in-out;
+  }
+  
+  @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+  }
+  
+  .pulse {
+      animation: pulse 2s infinite;
+  }
+  
+  /* Improved YouTube-style live badge */
+  .live-badge {
+      background-color: #FF0000;
+      color: white;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 12px;
+      font-weight: 500;
+      text-transform: uppercase;
+      box-shadow: 0 2px 4px rgba(255, 0, 0, 0.3);
+  }
+  
+  /* Enhanced mobile chat toggle button */
+  .mobile-chat-toggle {
+      position: fixed;
+      bottom: 16px;
+      right: 16px;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background-color: #FF0000;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 12px rgba(255, 0, 0, 0.4);
+      z-index: 50;
+      transition: all 0.3s ease;
+  }
+  
+  .mobile-chat-toggle:hover {
+      transform: scale(1.05);
+      box-shadow: 0 6px 16px rgba(255, 0, 0, 0.5);
+  }
+  
+  .mobile-chat-toggle:active {
+      transform: scale(0.95);
+  }
+  
+  /* Improved online status indicator */
+  .status-indicator {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-right: 6px;
+  }
+  
+  .status-online {
+      background-color: #44b700;
+      box-shadow: 0 0 0 2px #44b700;
+      animation: pulse 2s infinite;
+  }
+  
+  .status-offline {
+      background-color: #ff5252;
+  }
+  
+  @keyframes pulse {
+      0% {
+          box-shadow: 0 0 0 0 rgba(68, 183, 0, 0.4);
+      }
+      70% {
+          box-shadow: 0 0 0 6px rgba(68, 183, 0, 0);
+      }
+      100% {
+          box-shadow: 0 0 0 0 rgba(68, 183, 0, 0);
+      }
+  }
+  
+  /* Enhanced system message styling */
+  .system-message {
+      background-color: rgba(255, 255, 255, 0.05);
+      border-radius: 8px;
+      padding: 8px;
+      font-style: italic;
+      color: #aaa;
+      text-align: center;
+      margin: 8px 0;
+      border-left: 3px solid #FF0000;
+  }
+  
+  /* Chat message animations */
+  .message-enter {
+      opacity: 0;
+      transform: translateX(-20px);
+  }
+  
+  .message-enter-active {
+      opacity: 1;
+      transform: translateX(0);
+      transition: opacity 300ms, transform 300ms;
+  }
+  
+  /* User avatar styling */
+  .user-avatar {
+      position: relative;
+      border-radius: 50%;
+      overflow: hidden;
+      transition: all 0.3s ease;
+  }
+  
+  .user-avatar:hover {
+      transform: scale(1.1);
+  }
+  
+  /* Notification styling */
+  .notification {
+      position: fixed;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: #272727;
+      color: white;
+      padding: 8px 16px;
+      border-radius: 20px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      z-index: 1000;
+      opacity: 0;
+      animation: fadeInOut 3s ease forwards;
+  }
+  
+  @keyframes fadeInOut {
+      0% { opacity: 0; transform: translate(-50%, -20px); }
+      10% { opacity: 1; transform: translate(-50%, 0); }
+      90% { opacity: 1; transform: translate(-50%, 0); }
+      100% { opacity: 0; transform: translate(-50%, -20px); }
+  }
+  
+  /* Chat input styling */
+  .chat-input {
+      position: relative;
+      transition: all 0.3s ease;
+  }
+  
+  .chat-input:focus-within {
+      transform: translateY(-2px);
+  }
+  
+  .chat-input input {
+      transition: all 0.3s ease;
+      border: 2px solid transparent;
+  }
+  
+  .chat-input input:focus {
+      border-color: #FF0000;
+      box-shadow: 0 0 0 2px rgba(255, 0, 0, 0.2);
+  }
+  
+  /* Host controls styling */
+  .host-controls {
+      border-radius: 12px;
+      overflow: hidden;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  }
+  
+  .host-controls:hover {
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+  }
+  
+  /* Video player controls */
+  .video-controls {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+  }
+  
+  .control-button {
+      background-color: #272727;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 16px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+  }
+  
+  .control-button:hover {
+      background-color: #3F3F3F;
+      transform: translateY(-2px);
+  }
+  
+  .control-button:active {
+      transform: translateY(1px);
+  }
+  
+  .primary-button {
+      background-color: #FF0000;
+  }
+  
+  .primary-button:hover {
+      background-color: #cc0000;
+  }
+  
+  /* Viewer count animation */
+  .viewer-count {
+      transition: all 0.3s ease;
+  }
+  
+  .viewer-count.pulse {
+      animation: pulse 0.5s ease;
+  }
+  
+  /* Chat message highlight effect */
+  .highlight-message {
+      position: relative;
+      overflow: hidden;
+  }
+  
+  .highlight-message::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+      transform: translateX(-100%);
+  }
+  
+  .highlight-message.animate::after {
+      animation: highlight 1.5s ease;
+  }
+  
+  @keyframes highlight {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+  }
+
+  /* MOBILE OPTIMIZATIONS */
+  
+  /* Mobile chat container */
+  @media (max-width: 768px) {
+      .mobile-chat-container {
+          position: fixed;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          height: 70vh;
+          max-height: 70vh;
+          border-radius: 16px 16px 0 0;
+          z-index: 90;
+          box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+          transform: translateY(0);
+          transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+      
+      .mobile-chat-container.hidden {
+          transform: translateY(100%);
+      }
+      
+      .chat-header-mobile {
+          padding: 12px 16px;
+          border-bottom: 1px solid #272727;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          background-color: #0F0F0F;
+          border-radius: 16px 16px 0 0;
+      }
+      
+      .chat-drag-handle {
+          width: 40px;
+          height: 4px;
+          background-color: #3F3F3F;
+          border-radius: 4px;
+          margin: 0 auto 8px;
+      }
+      
+      .mobile-chat-toggle {
+          bottom: 24px;
+          right: 24px;
+          width: 60px;
+          height: 60px;
+          box-shadow: 0 4px 16px rgba(255, 0, 0, 0.5);
+          z-index: 91;
+      }
+      
+      .mobile-chat-toggle i {
+          width: 28px;
+          height: 28px;
+      }
+      
+      /* Improved mobile chat input */
+      .mobile-chat-input {
+          padding: 12px;
+          background-color: #0F0F0F;
+          border-top: 1px solid #272727;
+      }
+      
+      .mobile-chat-input form {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+      }
+      
+      .mobile-chat-input input {
+          flex: 1;
+          height: 44px;
+          padding: 0 16px;
+          border-radius: 22px;
+          background-color: #272727;
+          color: white;
+          border: none;
+          outline: none;
+      }
+      
+      .mobile-chat-input button {
+          width: 44px;
+          height: 44px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background-color: #FF0000;
+          color: white;
+          border: none;
+      }
+      
+      /* Mobile emoji picker */
+      .mobile-emoji-picker {
+          position: absolute;
+          bottom: 60px;
+          left: 0;
+          right: 0;
+          background-color: #272727;
+          padding: 16px;
+          border-top: 1px solid #3F3F3F;
+          z-index: 92;
+      }
+      
+      /* Mobile message styling */
+      .mobile-message {
+          padding: 8px 12px;
+          margin-bottom: 4px;
+          border-radius: 8px;
+      }
+      
+      .mobile-message:hover {
+          background-color: rgba(255, 255, 255, 0.05);
+      }
+      
+      .mobile-message .user-avatar {
+          width: 32px;
+          height: 32px;
+      }
+      
+      .mobile-message .message-content {
+          flex: 1;
+          min-width: 0;
+      }
+      
+      .mobile-message .message-text {
+          word-break: break-word;
+          white-space: normal;
+      }
+  }
+
+  /* Typing indicator animation */
+  .typing-indicator {
+      display: flex;
+      align-items: center;
+      margin: 8px 0;
+      padding: 8px 12px;
+      background-color: rgba(255, 255, 255, 0.03);
+      border-radius: 8px;
+      animation: fadeIn 0.3s ease-in-out;
+  }
+
+  .typing-indicator .dots {
+      display: flex;
+      margin-left: 8px;
+  }
+
+  .typing-indicator .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background-color: #aaa;
+      margin-right: 3px;
+  }
+
+  .typing-indicator .dot:nth-child(1) {
+      animation: bounce 1.2s infinite 0s;
+  }
+
+  .typing-indicator .dot:nth-child(2) {
+      animation: bounce 1.2s infinite 0.2s;
+  }
+
+  .typing-indicator .dot:nth-child(3) {
+      animation: bounce 1.2s infinite 0.4s;
+  }
+
+  @keyframes bounce {
+      0%, 80%, 100% { transform: translateY(0); }
+      40% { transform: translateY(-6px); }
+  }
+
+  .typing-name {
+      font-weight: 500;
+      color: #ddd;
+  }
+</style>
 </head>
-<body class="bg-navy-dark text-white min-h-screen" x-data="{
-    videoUrl: '',
-    messages: [],
-    newMessage: '',
-    searchQuery: '',
-    showSearch: false,
-    currentVideo: null,
-    isHost: false,
-    socket: null,
-    rooms: { host: null },
-    hls: null,
-    player: null,
-    syncInterval: null,
-    lastUpdateTime: 0,
-    showChat: true,
-    episodeTitle: 'Re:ZERO -Starting Life in Another World- Season 3',
-    episodeNumber: 'Episode 1',
-    viewerCount: 0,
-    username: 'User_' + Math.floor(Math.random() * 1000),
-    roomId: '{{ room_id }}',
-    
-    init() {
-        this.socket = io({query: 'room=' + this.roomId});
-        
-        this.socket.on('connect', () => {
-            console.log('Connected to server');
-            this.socket.emit('sync_request', { room: this.roomId });
-        });
-        
-        this.socket.on('video_control', async (data) => {
-            if (!this.player) return;
-            
-            if (data.action === 'seek' && Math.abs(this.player.currentTime - data.currentTime) > 1) {
-                this.player.currentTime = data.currentTime;
-            } else if (data.action === 'play') {
-                if (this.player.paused) {
-                    try {
-                        await this.player.play();
-                    } catch (error) {
-                        console.log('Force play failed:', error);
-                    }
-                }
-            } else if (data.action === 'pause') {
-                this.player.pause();
-            }
-        });
-        
-        this.socket.on('new_video', (data) => {
-            this.videoUrl = data.url;
-            this.initVideo();
-        });
-        
-        this.socket.on('chat_message', (data) => {
-            this.messages.push(data);
-            this.animateNewMessage();
-            this.$nextTick(() => {
-                const chatMessages = this.$refs.chatMessages;
-                chatMessages.scrollTop = chatMessages.scrollHeight;
-            });
-        });
-        
-        this.socket.on('user_list', (data) => {
-            this.viewerCount = data.users.length;
-        });
+<body class="bg-yt-dark text-white min-h-screen font-roboto" x-data="{
+videoUrl: '',
+messages: [],
+newMessage: '',
+searchQuery: '',
+showSearch: false,
+currentVideo: null,
+isHost: false,
+isCreator: false,
+socket: null,
+rooms: { host: null },
+hls: null,
+player: null,
+syncInterval: null,
+lastUpdateTime: 0,
+showChat: true,
+episodeTitle: 'Re:ZERO -Starting Life in Another World- Season 3',
+episodeNumber: 'Episode 1',
+viewerCount: 0,
+username: '{{ username }}',
+roomId: '{{ room_id }}',
+hostUsername: 'Waiting for host...',
+hostOnline: false,
+roomCreator: 'Unknown',
+showTransferModal: false,
+transferUsername: '',
+users: [],
+debugMode: false,
+chatExpanded: true,
+showEmojiPicker: false,
+emojis: ['😀', '😂', '❤️', '👍', '🔥', '😍', '🎉', '🤔', '😢', '😎'],
+recentEmojis: [],
+isMobile: window.innerWidth < 768,
+typingUsers: {},
+typingTimeout: null,
 
-        this.socket.on('host_updated', (data) => {
-            this.rooms.host = data.host;
-            this.isHost = this.socket.id === data.host;
-        });
+init() {
+  // Save room ID to recent rooms in local storage
+  const storedRooms = localStorage.getItem('recentRooms');
+  let recentRooms = [];
+  if (storedRooms) {
+      try {
+          recentRooms = JSON.parse(storedRooms);
+      } catch (e) {
+          console.error('Error parsing recent rooms:', e);
+      }
+  }
+  
+  if (!recentRooms.includes(this.roomId)) {
+      recentRooms.unshift(this.roomId);
+      // Keep only the 5 most recent rooms
+      if (recentRooms.length > 5) {
+          recentRooms = recentRooms.slice(0, 5);
+      }
+      localStorage.setItem('recentRooms', JSON.stringify(recentRooms));
+  }
+  
+  // Load recent emojis from local storage
+  const storedEmojis = localStorage.getItem('recentEmojis');
+  if (storedEmojis) {
+      try {
+          this.recentEmojis = JSON.parse(storedEmojis);
+      } catch (e) {
+          console.error('Error parsing recent emojis:', e);
+      }
+  }
+  
+  // Save username to local storage
+  localStorage.setItem('username', this.username);
+  
+  // Connect to socket.io server
+  this.socket = io();
+  
+  this.socket.on('connect', () => {
+      console.log('Connected to server');
+      // Join the room
+      this.socket.emit('join', { 
+          room: this.roomId,
+          username: this.username
+      });
+      this.showNotification('Connected to room');
+  });
+  
+  this.socket.on('room_info', (data) => {
+      console.log('Room info received:', data);
+      this.roomCreator = data.creator;
+      this.isCreator = data.isCreator;
+      this.isHost = data.isHost;
+      
+      if (data.isHost) {
+          this.hostUsername = this.username;
+          this.hostOnline = true;
+      }
+      
+      if (this.debugMode) {
+          this.showNotification(`Room info: Creator=${data.creator}, IsCreator=${data.isCreator}, IsHost=${data.isHost}`);
+      }
+  });
+  
+  this.socket.on('chat_history', (data) => {
+      console.log('Chat history received:', data);
+      this.messages = data.messages;
+      this.$nextTick(() => {
+          const chatMessages = this.$refs.chatMessages;
+          if (chatMessages) {
+              chatMessages.scrollTop = chatMessages.scrollHeight;
+          }
+      });
+  });
+  
+  this.socket.on('video_control', async (data) => {
+      console.log('Video control received:', data);
+      if (!this.player) return;
+      
+      if (data.action === 'seek' && Math.abs(this.player.currentTime - data.currentTime) > 1) {
+          this.player.seek = data.currentTime;
+          this.showNotification('Synced with host');
+      } else if (data.action === 'play') {
+          if (this.player.pause) {
+              try {
+                  await this.player.play();
+                  this.showNotification('Video playing');
+              } catch (error) {
+                  console.log('Force play failed:', error);
+              }
+          }
+      } else if (data.action === 'pause') {
+          this.player.pause();
+          this.showNotification('Video paused');
+      } else if (data.action === 'mute') {
+          this.player.muted = true;
+          this.showNotification('Video muted by host');
+      } else if (data.action === 'unmute') {
+          this.player.muted = false;
+          this.showNotification('Video unmuted by host');
+      }
+  });
+  
+  this.socket.on('new_video', (data) => {
+      console.log('New video received:', data);
+      this.videoUrl = data.url;
+      this.initVideo();
+      this.showNotification('New video loaded');
+  });
+  
+  this.socket.on('chat_message', (data) => {
+      console.log('Chat message received:', data);
+      this.messages.push(data);
+      this.animateNewMessage();
+      
+      // Remove typing indicator for this user when they send a message
+      if (data.username && this.typingUsers[data.username]) {
+          delete this.typingUsers[data.username];
+      }
+      
+      this.$nextTick(() => {
+          const chatMessages = this.$refs.chatMessages;
+          if (chatMessages) {
+              chatMessages.scrollTop = chatMessages.scrollHeight;
+          }
+      });
+  });
+  
+  this.socket.on('user_list', (data) => {
+      console.log('User list received:', data);
+      this.viewerCount = data.users.length;
+      this.users = data.users;
+      this.animateViewerCount();
+  });
 
-        this.socket.on('sync_response', async (data) => {
-            if (!this.isHost && data.videoState && this.player) {
-                if (Math.abs(this.player.currentTime - data.videoState.currentTime) > 1) {
-                    this.player.currentTime = data.videoState.currentTime;
-                }
-                
-                if (data.videoState.isPlaying && this.player.paused) {
-                    try {
-                        await this.player.play();
-                    } catch (error) {
-                        console.log('Force play failed:', error);
-                    }
-                } else if (!data.videoState.isPlaying && !this.player.paused) {
-                    this.player.pause();
-                }
-            }
-        });
+  this.socket.on('host_updated', (data) => {
+      console.log('Host updated received:', data);
+      this.rooms.host = data.host;
+      this.hostUsername = data.hostUsername || 'Unknown';
+      
+      const wasHost = this.isHost;
+      this.isHost = data.host === this.socket.id;
+      this.hostOnline = !!data.host;
+      
+      if (!wasHost && this.isHost) {
+          this.showNotification('You are now the host');
+      } else if (wasHost && !this.isHost) {
+          this.showNotification('Host privileges transferred');
+      }
+      
+      if (this.debugMode) {
+          this.showNotification(`Host updated: Host=${data.host}, HostUsername=${data.hostUsername}, IsHost=${this.isHost}`);
+      }
+  });
 
-        this.$watch('viewerCount', () => {
-            anime({
-                targets: '#viewerCount',
-                scale: [1.2, 1],
-                duration: 300,
-                easing: 'easeOutElastic'
-            });
-        });
-    },
+  this.socket.on('sync_request', () => {
+      console.log('Sync request received');
+      if (this.isHost && this.player) {
+          this.socket.emit('sync_response', {
+              room: this.roomId,
+              videoState: {
+                  currentTime: this.player.currentTime,
+                  isPlaying: !this.player.pause,
+                  isMuted: this.player.muted,
+                  videoUrl: this.videoUrl
+              }
+          });
+      }
+  });
 
-    initVideo() {
-        if (this.videoUrl) {
-            if (this.player) {
-                this.player.destroy();
-            }
-            
-            const videoElement = document.createElement('video');
-            videoElement.className = 'plyr__video-embed';
-            document.getElementById('videoContainer').innerHTML = '';
-            document.getElementById('videoContainer').appendChild(videoElement);
-            
-            this.player = new Plyr(videoElement, {
-                controls: ['play-large', 'play', 'progress', 'current-time', 'mute', 'volume', 'captions', 'settings', 'pip', 'airplay', 'fullscreen'],
-                settings: ['captions', 'quality', 'speed'],
-                quality: { default: 1080, options: [4320, 2880, 2160, 1440, 1080, 720, 480, 360, 240] }
-            });
+  this.socket.on('sync_response', async (data) => {
+      console.log('Sync response received:', data);
+      if (!this.isHost && data.videoState) {
+          // Update video URL if different
+          if (data.videoState.videoUrl && data.videoState.videoUrl !== this.videoUrl) {
+              this.videoUrl = data.videoState.videoUrl;
+              this.initVideo();
+              return; // The player will be reinitialized, so we'll sync again after that
+          }
+          
+          if (!this.player) return;
+          
+          // Sync time if difference is significant
+          if (Math.abs(this.player.currentTime - data.videoState.currentTime) > 1) {
+              this.player.seek = data.videoState.currentTime;
+          }
+          
+          // Sync play/pause state
+          if (data.videoState.isPlaying && this.player.pause) {
+              try {
+                  await this.player.play();
+              } catch (error) {
+                  console.log('Force play failed:', error);
+              }
+          } else if (!data.videoState.isPlaying && !this.player.pause) {
+              this.player.pause();
+          }
+          
+          // Sync mute state
+          this.player.muted = data.videoState.isMuted;
+      }
+  });
+  
+  // Listen for typing events
+  this.socket.on('user_typing', (data) => {
+      console.log('User typing received:', data);
+      if (data.username && data.username !== this.username) {
+          // Add or update typing status
+          this.typingUsers[data.username] = Date.now();
+          
+          // Auto-remove typing status after 3 seconds of inactivity
+          setTimeout(() => {
+              if (this.typingUsers[data.username] && Date.now() - this.typingUsers[data.username] > 3000) {
+                  delete this.typingUsers[data.username];
+              }
+          }, 3000);
+          
+          // Scroll to bottom to show typing indicator
+          this.$nextTick(() => {
+              const chatMessages = this.$refs.chatMessages;
+              if (chatMessages) {
+                  chatMessages.scrollTop = chatMessages.scrollHeight;
+              }
+          });
+      }
+  });
+  
+  this.socket.on('user_stopped_typing', (data) => {
+      console.log('User stopped typing received:', data);
+      if (data.username && this.typingUsers[data.username]) {
+          delete this.typingUsers[data.username];
+      }
+  });
 
-            this.player.muted = true;
-            this.player.toggleMute();
-            
-            if (Hls.isSupported() && this.videoUrl.includes('.m3u8')) {
-                this.hls = new Hls({
-                    enableWorker: true,
-                    lowLatencyMode: true,
-                    backBufferLength: 90
-                });
-                this.hls.loadSource(this.videoUrl);
-                this.hls.attachMedia(videoElement);
-                this.hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                    this.setupSyncInterval();
-                    if (!this.isHost) {
-                        this.socket.emit('sync_request', { room: this.roomId });
-                    }
-                });
-            } else if (videoElement.canPlayType('application/vnd.apple.mpegurl')) {
-                videoElement.src = this.videoUrl;
-                videoElement.addEventListener('loadedmetadata', () => {
-                    this.setupSyncInterval();
-                    if (!this.isHost) {
-                        this.socket.emit('sync_request', { room: this.roomId });
-                    }
-                });
-            } else {
-                videoElement.src = this.videoUrl;
-                this.setupSyncInterval();
-                if (!this.isHost) {
-                    this.socket.emit('sync_request', { room: this.roomId });
-                }
-            }
+  // Initialize Lucide icons
+  this.$nextTick(() => {
+      lucide.createIcons();
+      
+      // Create the container first
+      const container = document.createElement('div');
+      container.id = 'artplayer-app';
+      document.getElementById('videoContainer').appendChild(container);
+      
+      // Then initialize the video
+      this.initVideo();
+      
+      // Request initial sync
+      setTimeout(() => {
+          this.socket.emit('sync_request', { room: this.roomId });
+      }, 1000);
+      
+      // Check screen size and adjust chat visibility
+      this.adjustChatVisibility();
+      window.addEventListener('resize', () => {
+          this.isMobile = window.innerWidth < 768;
+          this.adjustChatVisibility();
+      });
+  });
+},
 
-            this.player.on('timeupdate', () => {
-                if (this.isHost && Math.abs(this.player.currentTime - this.lastUpdateTime) > 1) {
-                    this.handleSeek();
-                    this.lastUpdateTime = this.player.currentTime;
-                }
-            });
+adjustChatVisibility() {
+  // On mobile, hide chat by default
+  if (this.isMobile) {
+      this.showChat = false;
+      this.chatExpanded = false;
+  } else {
+      this.showChat = true;
+  }
+},
 
-            this.player.on('play', () => {
-                if (this.isHost) {
-                    this.socket.emit('video_control', { 
-                        action: 'play',
-                        currentTime: this.player.currentTime,
-                        room: this.roomId 
-                    });
-                }
-            });
+initVideo() {
+  if (this.player) {
+      this.player.destroy();
+  }
+  
+  const videoUrl = this.videoUrl || 'https://artplayer.org/assets/sample/video.mp4';
+  console.log('Initializing video with URL:', videoUrl);
+  
+  this.player = new Artplayer({
+      container: '#artplayer-app',
+      url: videoUrl,
+      volume: 0.5,
+      isLive: videoUrl.includes('.m3u8'),
+      muted: false,
+      autoplay: false,
+      pip: true,
+      autoSize: false, // Set to false to use container size
+      autoMini: true,
+      screenshot: true,
+      setting: true,
+      hotkey: true,
+      fullscreen: true,
+      fullscreenWeb: true,
+      subtitleOffset: true,
+      miniProgressBar: true,
+      mutex: true,
+      backdrop: true,
+      playsInline: true,
+      autoPlayback: true,
+      theme: '#FF0000',
+      customType: {
+          m3u8: function (video, url) {
+              if (Hls.isSupported()) {
+                  const hls = new Hls({
+                      enableWorker: true,
+                      lowLatencyMode: true,
+                      backBufferLength: 90
+                  });
+                  hls.loadSource(url);
+                  hls.attachMedia(video);
+              } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                  video.src = url;
+              } else {
+                  this.notice.show = 'HLS is not supported in your browser';
+              }
+          },
+      },
+  });
 
-            this.player.on('pause', () => {
-                if (this.isHost) {
-                    this.socket.emit('video_control', { 
-                        action: 'pause',
-                        currentTime: this.player.currentTime,
-                        room: this.roomId 
-                    });
-                }
-            });
-        }
-    },
-    
-    setupSyncInterval() {
-        if (this.syncInterval) {
-            clearInterval(this.syncInterval);
-        }
-        this.syncInterval = setInterval(() => {
-            if (!this.isHost) {
-                this.socket.emit('sync_request', { room: this.roomId });
-            }
-        }, 5000);
-    },
-    
-    sendMessage() {
-        if (this.newMessage.trim()) {
-            const messageData = {
-                text: this.newMessage,
-                timestamp: new Date().toLocaleTimeString(),
-                username: this.username,
-                room: this.roomId
-            };
-            this.socket.emit('chat_message', messageData);
-            this.newMessage = '';
-        }
-    },
-    
-    animateNewMessage() {
-        anime({
-            targets: '.chat-message:last-child',
-            translateX: [-20, 0],
-            opacity: [0, 1],
-            duration: 800,
-            easing: 'easeOutElastic'
-        });
-    },
-    
-    controlVideo(action, time = null) {
-        if (this.isHost && this.player) {
-            if (action === 'play') {
-                this.player.play().then(() => {
-                    this.socket.emit('video_control', { 
-                        action: 'play',
-                        currentTime: this.player.currentTime,
-                        room: this.roomId 
-                    });
-                }).catch(error => console.log('Play error:', error));
-            } else if (action === 'pause') {
-                this.player.pause();
-                this.socket.emit('video_control', { 
-                    action: 'pause',
-                    currentTime: this.player.currentTime,
-                    room: this.roomId 
-                });
-            } else if (action === 'seek' && time !== null) {
-                this.player.currentTime = time;
-                this.socket.emit('video_control', { 
-                    action: 'seek',
-                    currentTime: time,
-                    room: this.roomId 
-                });
-            }
-        }
-    },
+  this.player.on('ready', () => {
+      console.log('Player ready');
+      if (!this.isHost) {
+          this.socket.emit('sync_request', { room: this.roomId });
+          
+          // Disable seeking for non-hosts
+          if (!this.isHost) {
+              this.player.controls.forEach(item => {
+                  if (item.name === 'progress') {
+                      item.disable = true;
+                  }
+              });
+          }
+      }
+      this.setupSyncInterval();
+  });
 
-    handleSeek() {
-        if (this.isHost && this.player) {
-            this.socket.emit('video_control', { 
-                action: 'seek',
-                currentTime: this.player.currentTime,
-                room: this.roomId 
-            });
-        }
-    },
-    
-    loadVideo() {
-        if (this.isHost && this.searchQuery.trim()) {
-            this.socket.emit('new_video', { url: this.searchQuery, room: this.roomId });
-            this.videoUrl = this.searchQuery;
-            this.initVideo();
-            this.searchQuery = '';
-        }
-    },
+  this.player.on('play', () => {
+      console.log('Player play event');
+      if (this.isHost) {
+          this.socket.emit('video_control', { 
+              action: 'play',
+              currentTime: this.player.currentTime,
+              room: this.roomId 
+          });
+      }
+  });
 
-    claimHost() {
-        this.socket.emit('claim_host', { room: this.roomId });
-    },
+  this.player.on('pause', () => {
+      console.log('Player pause event');
+      if (this.isHost) {
+          this.socket.emit('video_control', { 
+              action: 'pause',
+              currentTime: this.player.currentTime,
+              room: this.roomId 
+          });
+      }
+  });
 
-    transferHost() {
-        const newHost = prompt('Enter the user ID to transfer host to:');
-        if (newHost) {
-            this.socket.emit('transfer_host', { newHost, room: this.roomId });
-        }
-    }
+  this.player.on('seek', () => {
+      console.log('Player seek event');
+      if (this.isHost) {
+          this.handleSeek();
+      }
+  });
+
+  this.player.on('video:timeupdate', () => {
+      if (this.isHost && Math.abs(this.player.currentTime - this.lastUpdateTime) > 1) {
+          console.log('Player timeupdate event (significant change)');
+          this.handleSeek();
+          this.lastUpdateTime = this.player.currentTime;
+      }
+  });
+  
+  this.player.on('volumechange', () => {
+      console.log('Player volumechange event');
+      if (this.isHost) {
+          this.socket.emit('video_control', { 
+              action: this.player.muted ? 'mute' : 'unmute',
+              room: this.roomId 
+          });
+      }
+  });
+},
+
+setupSyncInterval() {
+  if (this.syncInterval) {
+      clearInterval(this.syncInterval);
+  }
+  this.syncInterval = setInterval(() => {
+      if (!this.isHost) {
+          this.socket.emit('sync_request', { room: this.roomId });
+      }
+  }, 5000);
+},
+
+sendMessage() {
+  if (this.newMessage.trim()) {
+      const messageData = {
+          text: this.newMessage,
+          timestamp: new Date().toLocaleTimeString(),
+          username: this.username,
+          room: this.roomId
+      };
+      this.socket.emit('chat_message', messageData);
+      this.newMessage = '';
+      
+      // Close emoji picker if open
+      this.showEmojiPicker = false;
+      
+      // Send stopped typing event
+      this.sendStoppedTyping();
+  }
+},
+
+addEmoji(emoji) {
+  this.newMessage += emoji;
+  
+  // Add to recent emojis
+  if (!this.recentEmojis.includes(emoji)) {
+      this.recentEmojis.unshift(emoji);
+      if (this.recentEmojis.length > 5) {
+          this.recentEmojis.pop();
+      }
+      localStorage.setItem('recentEmojis', JSON.stringify(this.recentEmojis));
+  }
+  
+  // Focus back on input
+  this.$nextTick(() => {
+      this.$refs.messageInput.focus();
+  });
+  
+  // Send typing event when adding emoji
+  this.sendTyping();
+},
+
+animateNewMessage() {
+  // Find the last message element
+  this.$nextTick(() => {
+      const lastMessage = document.querySelector('.chat-messages .yt-chat-message:last-child');
+      if (lastMessage) {
+          lastMessage.classList.add('highlight-message', 'animate');
+          
+          anime({
+              targets: lastMessage,
+              translateX: [-20, 0],
+              opacity: [0, 1],
+              duration: 300,
+              easing: 'easeOutQuad'
+          });
+          
+          // Remove animation class after it completes
+          setTimeout(() => {
+              lastMessage.classList.remove('animate');
+          }, 1500);
+      }
+  });
+},
+
+animateViewerCount() {
+  const viewerCountEl = document.getElementById('viewerCount');
+  if (viewerCountEl) {
+      viewerCountEl.classList.add('pulse');
+      setTimeout(() => {
+          viewerCountEl.classList.remove('pulse');
+      }, 500);
+  }
+},
+
+showNotification(message) {
+  const notification = document.createElement('div');
+  notification.className = 'notification';
+  notification.textContent = message;
+  document.body.appendChild(notification);
+  
+  // Remove notification after animation completes
+  setTimeout(() => {
+      document.body.removeChild(notification);
+  }, 3000);
+},
+
+controlVideo(action, time = null) {
+  if (this.isHost && this.player) {
+      if (action === 'play') {
+          this.player.play();
+          this.socket.emit('video_control', { 
+              action: 'play',
+              currentTime: this.player.currentTime,
+              room: this.roomId 
+          });
+      } else if (action === 'pause') {
+          this.player.pause();
+          this.socket.emit('video_control', { 
+              action: 'pause',
+              currentTime: this.player.currentTime,
+              room: this.roomId 
+          });
+      } else if (action === 'seek' && time !== null) {
+          this.player.seek = time;
+          this.socket.emit('video_control', { 
+              action: 'seek',
+              currentTime: time,
+              room: this.roomId 
+          });
+      }
+  }
+},
+
+handleSeek() {
+  if (this.isHost && this.player) {
+      this.socket.emit('video_control', { 
+          action: 'seek',
+          currentTime: this.player.currentTime,
+          room: this.roomId 
+      });
+  }
+},
+
+loadVideo() {
+  if (this.isHost && this.searchQuery.trim()) {
+      this.socket.emit('new_video', { 
+          url: this.searchQuery, 
+          room: this.roomId 
+      });
+      this.videoUrl = this.searchQuery;
+      this.initVideo();
+      this.searchQuery = '';
+      this.showNotification('New video loaded');
+  }
+},
+
+claimHost() {
+  this.socket.emit('claim_host', { room: this.roomId });
+  this.showNotification('Claiming host privileges...');
+},
+
+transferHost() {
+  if (this.transferUsername.trim()) {
+      this.socket.emit('transfer_host', { 
+          newHost: this.transferUsername, 
+          room: this.roomId 
+      });
+      this.showTransferModal = false;
+      this.transferUsername = '';
+      this.showNotification('Host privileges transferred');
+  }
+},
+
+formatNumber(num) {
+  if (num >= 1000000) {
+      return (num / 1000000).toFixed(1) + 'M';
+  } else if (num >= 1000) {
+      return (num / 1000).toFixed(1) + 'K';
+  }
+  return num;
+},
+
+formatTime(seconds) {
+  if (!seconds) return '0:00';
+  const hrs = Math.floor(seconds / 3600);
+  const mins = Math.floor((seconds % 3600) / 60);
+  const secs = Math.floor(seconds % 60);
+  
+  if (hrs > 0) {
+      return `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  } else {
+      return `${mins}:${secs.toString().padStart(2, '0')}`;
+  }
+},
+
+toggleDebugMode() {
+  this.debugMode = !this.debugMode;
+  this.showNotification(this.debugMode ? 'Debug mode enabled' : 'Debug mode disabled');
+},
+
+toggleChatExpanded() {
+  this.chatExpanded = !this.chatExpanded;
+  
+  // Animate the transition
+  const chatContainer = document.querySelector('.chat-container');
+  if (chatContainer) {
+      anime({
+          targets: chatContainer,
+          width: this.chatExpanded ? ['320px', '100%'] : ['100%', '320px'],
+          duration: 300,
+          easing: 'easeInOutQuad'
+      });
+  }
+},
+
+// Typing indicator functions
+sendTyping() {
+  // Only send typing event if we haven't sent one recently
+  if (!this.typingTimeout) {
+      this.socket.emit('user_typing', {
+          username: this.username,
+          room: this.roomId
+      });
+      
+      // Set a timeout to prevent sending too many typing events
+      this.typingTimeout = setTimeout(() => {
+          this.typingTimeout = null;
+      }, 1000);
+  }
+},
+
+sendStoppedTyping() {
+  this.socket.emit('user_stopped_typing', {
+      username: this.username,
+      room: this.roomId
+  });
+  
+  if (this.typingTimeout) {
+      clearTimeout(this.typingTimeout);
+      this.typingTimeout = null;
+  }
+},
+
+handleInputChange() {
+  if (this.newMessage.trim().length > 0) {
+      this.sendTyping();
+  } else {
+      this.sendStoppedTyping();
+  }
+}
 }">
 
-    <!-- Top Navigation -->
-    <nav class="bg-navy p-4 border-b border-navy-light">
-        <div class="container mx-auto flex items-center justify-between">
-            <div class="flex items-center space-x-4">
-                <h1 class="text-xl font-semibold" x-text="episodeTitle"></h1>
-                <span class="px-2 py-1 bg-green-500 text-xs rounded">SUB</span>
-                <span class="text-gray-400" x-text="episodeNumber"></span>
-            </div>
-            <div class="flex items-center space-x-4">
-                <span class="text-accent-cyan">Room: <span x-text="roomId"></span></span>
-                <a href="/" class="px-4 py-2 bg-accent-pink rounded-lg hover:bg-opacity-75 transition-colors">
-                    Return to Home
-                </a>
-                <button 
-                    @click="showChat = !showChat"
-                    class="px-4 py-2 bg-navy-light rounded-lg hover:bg-opacity-75 transition-colors"
-                >
-                    Toggle Chat
-                </button>
-            </div>
-        </div>
-    </nav>
+<!-- Top Navigation Bar (YouTube Style) -->
+<header class="bg-yt-darker py-2 px-4 flex items-center justify-between border-b border-yt-gray sticky top-0 z-50 h-14">
+  <div class="flex items-center gap-4">
+      <i data-lucide="menu" class="w-6 h-6 text-white cursor-pointer hover:bg-yt-hover p-1 rounded-full"></i>
+      <a href="/" class="flex items-center gap-1">
+          <svg class="w-8 h-8 text-yt-red" viewBox="0 0 90 20" preserveAspectRatio="xMidYMid meet" focusable="false">
+              <g viewBox="0 0 90 20" preserveAspectRatio="xMidYMid meet">
+                  <g>
+                      <path d="M27.9727 3.12324C27.6435 1.89323 26.6768 0.926623 25.4468 0.597366C23.2197 2.24288e-07 14.285 0 14.285 0C14.285 0 5.35042 2.24288e-07 3.12323 0.597366C1.89323 0.926623 0.926623 1.89323 0.597366 3.12324C2.24288e-07 5.35042 0 10 0 10C0 10 2.24288e-07 14.6496 0.597366 16.8768C0.926623 18.1068 1.89323 19.0734 3.12323 19.4026C5.35042 20 14.285 20 14.285 20C14.285 20 23.2197 20 25.4468 19.4026C26.6768 19.0734 27.6435 18.1068 27.9727 16.8768C28.5701 14.6496 28.5701 10 28.5701 10C28.5701 10 28.5677 5.35042 27.9727 3.12324Z" fill="#FF0000"></path>
+                      <path d="M11.4253 14.2854L18.8477 10.0004L11.4253 5.71533V14.2854Z" fill="white"></path>
+                  </g>
+              </g>
+          </svg>
+          <span class="font-medium hidden sm:inline">AnimeStream</span>
+      </a>
+  </div>
+  <div class="flex-1 max-w-xl mx-4 hidden md:block">
+      <div class="relative">
+          <input 
+              type="text" 
+              placeholder="Search" 
+              class="w-full bg-yt-darker border border-yt-gray rounded-l-full py-2 px-4 focus:outline-none focus:border-blue-500"
+          >
+          <button class="absolute right-0 top-0 h-full bg-yt-gray px-4 rounded-r-full flex items-center justify-center hover:bg-yt-hover transition-colors">
+              <i data-lucide="search" class="w-5 h-5"></i>
+          </button>
+      </div>
+  </div>
+  <div class="flex items-center gap-4">
+      <div class="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold user-avatar">
+          <span x-text="username.charAt(0).toUpperCase()"></span>
+      </div>
+  </div>
+</header>
 
-    <div class="container mx-auto p-4 flex flex-col lg:flex-row gap-4">
-        <!-- Main Content -->
-        <div class="flex-1">
-            <!-- Search Bar for Host -->
-            <div class="mb-4" x-show="isHost">
-                <div class="relative">
-                    <input 
-                        type="text" 
-                        x-model="searchQuery"
-                        placeholder="Enter video URL..."
-                        class="w-full px-4 py-2 bg-navy rounded-lg border border-navy-light focus:border-accent-cyan focus:ring-1 focus:ring-accent-cyan outline-none"
-                    >
-                    <button 
-                        @click="loadVideo()"
-                        class="absolute right-2 top-1/2 transform -translate-y-1/2 px-4 py-1 bg-accent-cyan text-navy rounded hover:bg-opacity-75 transition-colors"
-                    >
-                        Load
-                    </button>
-                </div>
-            </div>
+<div class="flex flex-col lg:flex-row h-[calc(100vh-3.5rem)]">
+  <!-- Main Content -->
+  <div class="flex-1 p-4 overflow-y-auto">
+      <!-- Video Player -->
+      <div id="videoContainer" class="bg-black rounded-lg overflow-hidden shadow-lg"></div>
 
-            <!-- Video Player -->
-            <div id="videoContainer" class="relative aspect-video bg-black rounded-lg overflow-hidden shadow-xl"></div>
+      <!-- Video Info -->
+      <div class="mt-4">
+          <div class="flex flex-col">
+              <div class="flex items-center gap-2">
+                  <h1 class="text-xl font-bold" x-text="episodeTitle + ' - ' + episodeNumber"></h1>
+                  <span class="live-badge pulse">LIVE</span>
+              </div>
+              <div class="flex items-center justify-between mt-2">
+                  <div class="flex items-center gap-4">
+                      <span id="viewerCount" class="text-yt-lightgray flex items-center gap-1">
+                          <i data-lucide="eye" class="w-4 h-4"></i>
+                          <span x-text="viewerCount + ' watching now'"></span>
+                      </span>
+                      <span class="text-yt-lightgray" x-text="new Date().toLocaleDateString()"></span>
+                  </div>
+              </div>
+          </div>
 
-            <!-- Host Controls -->
-            <div class="mt-4 flex justify-center gap-4" x-show="isHost">
-                <button 
-                    @click="controlVideo('play')"
-                    class="px-6 py-2 bg-accent-cyan text-navy rounded-lg hover:bg-opacity-75 transition-colors font-medium"
-                >
-                    Play
-                </button>
-                <button 
-                    @click="controlVideo('pause')"
-                    class="px-6 py-2 bg-accent-cyan text-navy rounded-lg hover:bg-opacity-75 transition-colors font-medium"
-                >
-                    Pause
-                </button>
-            </div>
+          <!-- Room Info -->
+          <div class="mt-4 p-4 bg-yt-gray rounded-lg host-controls">
+              <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-3">
+                      <div class="w-10 h-10 rounded-full bg-gradient-to-r from-purple-600 to-blue-500 flex items-center justify-center text-white font-bold user-avatar">
+                          <span x-text="hostUsername.charAt(0).toUpperCase()"></span>
+                      </div>
+                      <div>
+                          <h3 class="font-medium" x-text="hostUsername"></h3>
+                          <p class="text-sm flex items-center">
+                              <span 
+                                  class="status-indicator" 
+                                  :class="hostOnline ? 'status-online' : 'status-offline'"
+                              ></span>
+                              <span x-text="hostOnline ? 'Online (Host)' : 'Offline'"></span>
+                          </p>
+                      </div>
+                  </div>
+                  <div class="text-right text-sm text-yt-lightgray">
+                      <p>Room created by: <span x-text="roomCreator" class="font-medium"></span></p>
+                      <p>Room ID: <span x-text="roomId" class="text-yt-red"></span></p>
+                  </div>
+              </div>
+              
+              <div class="mt-4" x-data="{ expanded: false }">
+                  <div 
+                      :class="{ 'line-clamp-2': !expanded }"
+                      class="text-sm text-gray-300"
+                  >
+                      <p class="mb-2">Current Video: <span x-text="videoUrl || 'No video loaded'" class="break-all"></span></p>
+                      <p>Join this room to watch anime together with friends! The host can control playback for everyone in the room.</p>
+                  </div>
+                  <button 
+                      @click="expanded = !expanded"
+                      class="text-yt-lightgray text-sm mt-1 hover:text-white transition-colors"
+                      x-text="expanded ? 'Show less' : 'Show more'"
+                  ></button>
+              </div>
+          </div>
 
-            <!-- Video Info -->
-            <div class="mt-4 p-4 bg-navy rounded-lg border border-navy-light">
-                <div class="flex items-center justify-between mb-4">
-                    <h2 class="text-lg font-semibold">Stream Info</h2>
-                    <div class="flex items-center space-x-2">
-                        <span class="text-sm text-gray-400">Viewers:</span>
-                        <span id="viewerCount" class="text-accent-cyan font-medium" x-text="viewerCount"></span>
-                    </div>
-                </div>
-                <p class="text-gray-400 break-all" x-text="videoUrl || 'No video loaded'"></p>
-                <div class="mt-4 flex justify-center gap-4">
-                    <button 
-                        x-show="!isHost && !rooms.host"
-                        @click="claimHost()"
-                        class="px-6 py-2 bg-accent-pink rounded-lg hover:bg-opacity-75 transition-colors font-medium"
-                    >
-                        Claim Host
-                    </button>
-                    <button 
-                        x-show="isHost"
-                        @click="transferHost()"
-                        class="px-6 py-2 bg-accent-pink rounded-lg hover:bg-opacity-75 transition-colors font-medium"
-                    >
-                        Transfer Host
-                    </button>
-                </div>
-            </div>
-        </div>
+          <!-- Host Controls -->
+          <div class="mt-4" x-show="isHost">
+              <div class="p-4 bg-yt-gray rounded-lg host-controls">
+                  <h3 class="font-medium mb-3 flex items-center gap-2">
+                      <i data-lucide="crown" class="w-5 h-5 text-yellow-500"></i>
+                      Host Controls
+                  </h3>
+                  <div class="relative mb-4 chat-input">
+                      <input 
+                          type="text" 
+                          x-model="searchQuery"
+                          placeholder="Enter video URL..."
+                          class="w-full px-4 py-2 bg-yt-darker rounded-lg border border-yt-hover focus:border-yt-red focus:ring-1 focus:ring-yt-red outline-none"
+                      >
+                      <button 
+                          @click="loadVideo()"
+                          class="absolute right-2 top-1/2 transform -translate-y-1/2 px-4 py-1 bg-yt-red text-white rounded hover:bg-red-700 transition-colors"
+                      >
+                          Load
+                      </button>
+                  </div>
+                  
+                  <!-- Host Note -->
+                  <div class="mb-4 p-3 bg-yt-darker rounded-lg border border-yt-hover">
+                      <div class="flex items-start gap-2">
+                          <i data-lucide="info" class="w-5 h-5 text-yt-red flex-shrink-0 mt-0.5"></i>
+                          <p class="text-sm text-gray-300">
+                              As the host, you can directly use the video player's seek bar to navigate through the video. All viewers will automatically sync to your position.
+                          </p>
+                      </div>
+                  </div>
+                  
+                  <div class="flex flex-wrap justify-center gap-4">
+                      <button 
+                          @click="controlVideo('play')"
+                          class="px-6 py-2 bg-yt-red text-white rounded-lg hover:bg-red-700 transition-colors font-medium flex items-center gap-2 control-button primary-button"
+                      >
+                          <i data-lucide="play" class="w-5 h-5"></i>
+                          Play
+                      </button>
+                      <button 
+                          @click="controlVideo('pause')"
+                          class="px-6 py-2 bg-yt-gray text-white rounded-lg hover:bg-yt-hover transition-colors font-medium border border-yt-hover flex items-center gap-2 control-button"
+                      >
+                          <i data-lucide="pause" class="w-5 h-5"></i>
+                          Pause
+                      </button>
+                      <button 
+                          @click="showTransferModal = true"
+                          class="px-6 py-2 bg-yt-gray text-white rounded-lg hover:bg-yt-hover transition-colors font-medium border border-yt-hover flex items-center gap-2 control-button"
+                      >
+                          <i data-lucide="users" class="w-5 h-5"></i>
+                          Transfer Host
+                      </button>
+                  </div>
+              </div>
+          </div>
 
-        <!-- Chat Sidebar -->
-        <div 
-            class="w-full lg:w-96 flex flex-col bg-navy rounded-lg border border-navy-light overflow-hidden transition-all duration-300"
-            x-show="showChat"
-            x-transition:enter="transition ease-out duration-300"
-            x-transition:enter-start="opacity-0 transform translate-x-full"
-            x-transition:enter-end="opacity-100 transform translate-x-0"
-            x-transition:leave="transition ease-in duration-300"
-            x-transition:leave-start="opacity-100 transform translate-x-0"
-            x-transition:leave-end="opacity-0 transform translate-x-full"
-        >
-            <!-- Chat Header -->
-            <div class="p-4 border-b border-navy-light bg-navy-light">
-                <div class="flex items-center justify-between">
-                    <h2 class="text-lg font-semibold">Live Chat</h2>
-                    <span class="text-sm text-gray-400" x-text="username"></span>
-                </div>
-            </div>
+          <!-- No Host Available (for non-hosts when no host exists) -->
+          <div class="mt-4" x-show="!isHost && !rooms.host && !isCreator">
+              <div class="p-4 bg-yt-gray rounded-lg host-controls">
+                  <h3 class="font-medium mb-3 flex items-center gap-2">
+                      <i data-lucide="alert-circle" class="w-5 h-5 text-yt-red"></i>
+                      No Host Available
+                  </h3>
+                  <p class="text-sm text-gray-300 mb-3">This room currently has no host. The room creator is automatically assigned as the host, but they appear to be offline.</p>
+                  <p class="text-sm text-gray-300">Wait for the room creator to return or contact them to transfer host privileges.</p>
+              </div>
+          </div>
+          
+          <!-- Creator Notice (when creator is not host) -->
+          <div class="mt-4" x-show="isCreator && !isHost">
+              <div class="p-4 bg-yt-gray rounded-lg host-controls">
+                  <h3 class="font-medium mb-3 flex items-center gap-2">
+                      <i data-lucide="crown" class="w-5 h-5 text-yellow-500"></i>
+                      Room Creator
+                  </h3>
+                  <p class="text-sm text-gray-300 mb-3">You created this room but are not currently the host. As the creator, you can reclaim host privileges.</p>
+                  <button 
+                      @click="claimHost()"
+                      class="w-full px-6 py-2 bg-yt-red text-white rounded-lg hover:bg-red-700 transition-colors font-medium flex items-center justify-center gap-2 control-button primary-button"
+                  >
+                      <i data-lucide="crown" class="w-5 h-5"></i>
+                      Reclaim Host
+                  </button>
+              </div>
+          </div>
+          
+          <!-- Debug Mode Toggle (hidden by default) -->
+          <div class="mt-4 text-center">
+              <button 
+                  @click="toggleDebugMode()"
+                  class="text-xs text-yt-lightgray hover:text-white transition-colors"
+              >
+                  Toggle Debug Mode
+              </button>
+          </div>
+      </div>
+  </div>
 
-            <!-- Chat Messages -->
-            <div 
-                x-ref="chatMessages"
-                class="flex-1 overflow-y-auto p-4 space-y-4"
-                style="height: calc(100vh - 400px);"
-            >
-                <template x-for="message in messages" :key="message.timestamp">
-                    <div class="chat-message bg-navy-light rounded-lg p-3 transform transition-all duration-300">
-                        <div class="flex items-center gap-2">
-                            <span class="font-bold text-accent-cyan" x-text="message.username"></span>
-                            <span class="text-xs text-gray-500" x-text="message.timestamp"></span>
+  <!-- Desktop Chat Sidebar (YouTube Style) -->
+  <div 
+      class="w-full lg:w-80 flex flex-col bg-yt-dark border-l border-yt-gray overflow-hidden transition-all duration-300 chat-container hidden lg:flex"
+      x-show="showChat"
+      x-transition:enter="transition ease-out duration-300"
+      x-transition:enter-start="opacity-0 transform translate-x-full"
+      x-transition:enter-end="opacity-100 transform translate-x-0"
+      x-transition:leave="transition ease-in duration-300"
+      x-transition:leave-start="opacity-100 transform translate-x-0"
+      x-transition:leave-end="opacity-0 transform translate-x-full"
+  >
+      <!-- Chat Header -->
+      <div class="p-3 border-b border-yt-gray bg-yt-dark sticky top-0 z-10">
+          <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                  <h2 class="font-semibold">Live Chat</h2>
+                  <span class="text-xs text-yt-lightgray flex items-center gap-1">
+                      <i data-lucide="users" class="w-4 h-4"></i>
+                      <span x-text="viewerCount + ' viewers'"></span>
+                  </span>
+              </div>
+              <div class="flex items-center gap-2">
+                  <button @click="toggleChatExpanded()" class="p-1 hover:bg-yt-hover rounded-full hidden lg:block">
+                      <i data-lucide="maximize-2" class="w-5 h-5" x-show="!chatExpanded"></i>
+                      <i data-lucide="minimize-2" class="w-5 h-5" x-show="chatExpanded"></i>
+                  </button>
+                  <button @click="showChat = false" class="p-1 hover:bg-yt-hover rounded-full lg:hidden">
+                      <i data-lucide="x" class="w-5 h-5"></i>
+                  </button>
+              </div>
+          </div>
+      </div>
+
+      <!-- Chat Messages -->
+      <div 
+          x-ref="chatMessages"
+          class="chat-messages"
+      >
+          <!-- Regular chat messages -->
+            <template x-for="(message, index) in messages" :key="index">
+                <div :class="{'system-message fade-in': message.isSystem, 'yt-chat-message': !message.isSystem}">
+                    <div class="flex items-start gap-2" x-show="!message.isSystem">
+                        <div class="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold flex-shrink-0 user-avatar">
+                            <span x-text="message.username.charAt(0).toUpperCase()"></span>
                         </div>
-                        <p class="mt-1 text-sm" x-text="message.text"></p>
+                        <div class="message-content flex-1">
+                            <div class="flex items-center gap-2">
+                                <span class="font-bold text-white" x-text="message.username"></span>
+                                <span class="text-xs text-yt-lightgray" x-text="message.timestamp"></span>
+                            </div>
+                            <p class="mt-1 text-sm text-gray-200 break-words" x-text="message.text"></p>
+                        </div>
                     </div>
-                </template>
-            </div>
+                    <p class="text-center" x-show="message.isSystem" x-text="message.text"></p>
+                </div>
+            </template>
+          
+          <!-- Typing indicators -->
+          <template x-for="(timestamp, username) in typingUsers" :key="username">
+              <div class="typing-indicator">
+                  <div class="flex items-center gap-2">
+                      <div class="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold flex-shrink-0 user-avatar">
+                          <span x-text="username.charAt(0).toUpperCase()"></span>
+                      </div>
+                      <span class="typing-name" x-text="username"></span>
+                      <div class="dots">
+                          <div class="dot"></div>
+                          <div class="dot"></div>
+                          <div class="dot"></div>
+                      </div>
+                  </div>
+              </div>
+          </template>
+      </div>
 
-            <!-- Chat Input -->
-            <div class="p-4 border-t border-navy-light bg-navy-light">
-                <form @submit.prevent="sendMessage" class="flex gap-2">
-                    <input 
-                        type="text" 
-                        x-model="newMessage"
-                        placeholder="Send a message..."
-                        class="flex-1 px-4 py-2 bg-navy rounded-lg border border-navy-light focus:border-accent-cyan focus:ring-1 focus:ring-accent-cyan outline-none"
-                    >
-                    <button 
-                        type="submit"
-                        class="px-6 py-2 bg-accent-pink rounded-lg hover:bg-opacity-75 transition-colors font-medium whitespace-nowrap"
-                    >
-                        Send
-                    </button>
-                </form>
-            </div>
-        </div>
-    </div>
+      <!-- Chat Input -->
+      <div class="p-3 border-t border-yt-gray bg-yt-dark sticky bottom-0">
+          <form @submit.prevent="sendMessage" class="flex gap-2 chat-input">
+              <div class="relative flex-1">
+                  <input 
+                      x-ref="messageInput"
+                      type="text" 
+                      x-model="newMessage"
+                      @input="handleInputChange"
+                      placeholder="Chat..."
+                      class="w-full px-3 py-2 bg-yt-gray rounded-full border border-yt-hover focus:border-yt-red focus:ring-1 focus:ring-yt-red outline-none text-sm pr-10"
+                  >
+                  <button 
+                      type="button"
+                      @click="showEmojiPicker = !showEmojiPicker"
+                      class="absolute right-2 top-1/2 transform -translate-y-1/2 text-yt-lightgray hover:text-white transition-colors"
+                  >
+                      <i data-lucide="smile" class="w-5 h-5"></i>
+                  </button>
+                  
+                  <!-- Emoji Picker -->
+                  <div 
+                      x-show="showEmojiPicker" 
+                      @click.away="showEmojiPicker = false"
+                      class="absolute bottom-full right-0 mb-2 bg-yt-gray rounded-lg p-2 shadow-lg border border-yt-hover fade-in"
+                  >
+                      <div class="grid grid-cols-5 gap-2">
+                          <template x-if="recentEmojis.length > 0">
+                              <div class="col-span-5 mb-2">
+                                  <p class="text-xs text-yt-lightgray mb-1">Recent</p>
+                                  <div class="flex gap-2">
+                                      <template x-for="emoji in recentEmojis" :key="emoji">
+                                          <button 
+                                              type="button" 
+                                              @click="addEmoji(emoji)" 
+                                              class="w-8 h-8 flex items-center justify-center hover:bg-yt-hover rounded-lg transition-colors"
+                                              x-text="emoji"
+                                          ></button>
+                                      </template>
+                                  </div>
+                              </div>
+                          </template>
+                          <template x-for="emoji in emojis" :key="emoji">
+                              <button 
+                                  type="button" 
+                                  @click="addEmoji(emoji)" 
+                                  class="w-8 h-8 flex items-center justify-center hover:bg-yt-hover rounded-lg transition-colors"
+                                  x-text="emoji"
+                              ></button>
+                          </template>
+                      </div>
+                  </div>
+              </div>
+              <button 
+                  type="submit"
+                  class="p-2 bg-yt-red rounded-full hover:bg-red-700 transition-colors"
+              >
+                  <i data-lucide="send" class="w-5 h-5"></i>
+              </button>
+          </form>
+      </div>
+  </div>
+  
+  <!-- Mobile Chat Container (YouTube Style) -->
+  <div 
+      class="mobile-chat-container lg:hidden"
+      :class="{ 'hidden': !showChat }"
+      x-show="showChat && isMobile"
+      x-transition:enter="transition ease-out duration-300"
+      x-transition:enter-start="transform translate-y-full"
+      x-transition:enter-end="transform translate-y-0"
+      x-transition:leave="transition ease-in duration-300"
+      x-transition:leave-start="transform translate-y-0"
+      x-transition:leave-end="transform translate-y-full"
+  >
+      <!-- Mobile Chat Header -->
+      <div class="chat-header-mobile">
+          <div class="chat-drag-handle"></div>
+          <div class="flex items-center justify-between w-full">
+              <div class="flex items-center gap-2">
+                  <h2 class="font-semibold">Live Chat</h2>
+                  <span class="text-xs text-yt-lightgray flex items-center gap-1">
+                      <i data-lucide="users" class="w-4 h-4"></i>
+                      <span x-text="viewerCount + ' viewers'"></span>
+                  </span>
+              </div>
+              <button @click="showChat = false" class="p-2 hover:bg-yt-hover rounded-full">
+                  <i data-lucide="x" class="w-5 h-5"></i>
+              </button>
+          </div>
+      </div>
+      
+      <!-- Mobile Chat Messages -->
+      <div 
+          x-ref="mobileChatMessages"
+          class="flex-1 overflow-y-auto p-3 bg-yt-dark"
+          style="height: calc(70vh - 120px);"
+      >
+          <!-- Regular chat messages -->
+          <template x-for="(message, index) in messages" :key="index">
+              <div :class="message.isSystem ? 'system-message fade-in' : 'mobile-message highlight-message'">
+                  <template x-if="!message.isSystem">
+                      <div class="flex items-start gap-2">
+                          <div class="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold flex-shrink-0 user-avatar">
+                              <span x-text="message.username.charAt(0).toUpperCase()"></span>
+                          </div>
+                          <div class="message-content">
+                              <div class="flex items-center gap-2 flex-wrap">
+                                  <span class="font-bold text-white" x-text="message.username"></span>
+                                  <span class="text-xs text-yt-lightgray" x-text="message.timestamp"></span>
+                              </div>
+                              <p class="mt-1 text-sm text-gray-200 message-text" x-text="message.text"></p>
+                          </div>
+                      </div>
+                  </template>
+                  <template x-if="message.isSystem">
+                      <p x-text="message.text"></p>
+                  </template>
+              </div>
+          </template>
+          
+          <!-- Mobile Typing indicators -->
+          <template x-for="(timestamp, username) in typingUsers" :key="username">
+              <div class="typing-indicator">
+                  <div class="flex items-center gap-2">
+                      <div class="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold flex-shrink-0 user-avatar">
+                          <span x-text="username.charAt(0).toUpperCase()"></span>
+                      </div>
+                      <span class="typing-name" x-text="username"></span>
+                      <div class="dots">
+                          <div class="dot"></div>
+                          <div class="dot"></div>
+                          <div class="dot"></div>
+                      </div>
+                  </div>
+              </div>
+          </template>
+      </div>
+      
+      <!-- Mobile Chat Input -->
+      <div class="mobile-chat-input">
+          <form @submit.prevent="sendMessage" class="flex gap-2">
+              <div class="relative flex-1">
+                  <input 
+                      x-ref="mobileMessageInput"
+                      type="text" 
+                      x-model="newMessage"
+                      @input="handleInputChange"
+                      placeholder="Chat..."
+                      class="w-full px-4 py-2 bg-yt-gray rounded-full border border-yt-hover focus:border-yt-red focus:ring-1 focus:ring-yt-red outline-none text-sm pr-10"
+                  >
+                  <button 
+                      type="button"
+                      @click="showEmojiPicker = !showEmojiPicker"
+                      class="absolute right-3 top-1/2 transform -translate-y-1/2 text-yt-lightgray hover:text-white transition-colors"
+                  >
+                      <i data-lucide="smile" class="w-5 h-5"></i>
+                  </button>
+                  
+                  <!-- Mobile Emoji Picker -->
+                  <div 
+                      x-show="showEmojiPicker" 
+                      @click.away="showEmojiPicker = false"
+                      class="mobile-emoji-picker"
+                  >
+                      <div class="grid grid-cols-5 gap-3">
+                          <template x-if="recentEmojis.length > 0">
+                              <div class="col-span-5 mb-2">
+                                  <p class="text-xs text-yt-lightgray mb-1">Recent</p>
+                                  <div class="flex gap-2">
+                                      <template x-for="emoji in recentEmojis" :key="emoji">
+                                          <button 
+                                              type="button" 
+                                              @click="addEmoji(emoji)" 
+                                              class="w-8 h-8 flex items-center justify-center hover:bg-yt-hover rounded-lg transition-colors"
+                                              x-text="emoji"
+                                          ></button>
+                                      </template>
+                                  </div>
+                              </div>
+                          </template>
+                          <template x-for="emoji in emojis" :key="emoji">
+                              <button 
+                                  type="button" 
+                                  @click="addEmoji(emoji)" 
+                                  class="w-8 h-8 flex items-center justify-center hover:bg-yt-hover rounded-lg transition-colors"
+                                  x-text="emoji"
+                              ></button>
+                          </template>
+                      </div>
+                  </div>
+              </div>
+              <button 
+                  type="submit"
+                  class="p-2 bg-yt-red rounded-full hover:bg-red-700 transition-colors"
+              >
+                  <i data-lucide="send" class="w-5 h-5"></i>
+              </button>
+          </form>
+      </div>
+  </div>
+</div>
+
+<!-- Mobile Chat Toggle Button (YouTube Style) -->
+<button 
+  @click="showChat = !showChat"
+  x-show="!showChat && isMobile" 
+  class="mobile-chat-toggle"
+>
+  <i data-lucide="message-circle" class="w-6 h-6"></i>
+  <span class="absolute top-0 right-0 bg-white text-yt-red text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center" x-show="messages.length > 0" x-text="messages.length > 99 ? '99+' : messages.length"></span>
+</button>
+
+<!-- Transfer Host Modal -->
+<div 
+  x-show="showTransferModal" 
+  class="modal-backdrop"
+  x-transition:enter="transition ease-out duration-300"
+  x-transition:enter-start="opacity-0"
+  x-transition:enter-end="opacity-100"
+  x-transition:leave="transition ease-in duration-300"
+  x-transition:leave-start="opacity-100"
+  x-transition:leave-end="opacity-0"
+>
+  <div 
+      class="modal-content"
+      @click.away="showTransferModal = false"
+      x-transition:enter="transition ease-out duration-300"
+      x-transition:enter-start="opacity-0 transform scale-95"
+      x-transition:enter-end="opacity-100 transform scale-100"
+      x-transition:leave="transition ease-in duration-300"
+      x-transition:leave-start="opacity-100 transform scale-100"
+      x-transition:leave-end="opacity-0 transform scale-95"
+  >
+      <div class="flex justify-between items-center mb-4">
+          <h3 class="text-lg font-semibold">Transfer Host Privileges</h3>
+          <button @click="showTransferModal = false" class="p-1 hover:bg-yt-hover rounded-full">
+              <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+      </div>
+      
+      <div class="mb-4 chat-input">
+          <p class="text-sm text-gray-300 mb-2">Enter the username of the viewer you want to transfer host privileges to:</p>
+          <input 
+              type="text" 
+              x-model="transferUsername" 
+              class="w-full px-4 py-2 bg-yt-darker rounded-lg border border-yt-hover focus:border-yt-red focus:ring-1 focus:ring-yt-red outline-none"
+              placeholder="Username"
+          >
+      </div>
+      
+      <div class="mb-4" x-show="users.length > 0">
+          <h4 class="text-sm font-medium mb-2">Active viewers:</h4>
+          <div class="max-h-40 overflow-y-auto bg-yt-darker rounded-lg p-2">
+              <template x-for="user in users" :key="user.id">
+                  <div 
+                      class="p-2 hover:bg-yt-hover rounded cursor-pointer flex items-center space-x-2 transition-colors"
+                      @click="transferUsername = user.username"
+                  >
+                      <div class="w-6 h-6 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white text-xs font-bold user-avatar">
+                          <span x-text="user.username?.charAt(0).toUpperCase() || 'U'"></span>
+                      </div>
+                      <span x-text="user.username"></span>
+                  </div>
+              </template>
+          </div>
+      </div>
+      
+      <div class="flex justify-end space-x-2">
+          <button 
+              @click="showTransferModal = false"
+              class="px-4 py-2 bg-yt-gray text-white rounded-lg hover:bg-yt-hover transition-colors control-button"
+          >
+              Cancel
+          </button>
+          <button 
+              @click="transferHost()"
+              class="px-4 py-2 bg-yt-red text-white rounded-lg hover:bg-red-700 transition-colors control-button primary-button"
+              :disabled="!transferUsername.trim()"
+              :class="{'opacity-50 cursor-not-allowed': !transferUsername.trim()}"
+          >
+              Transfer
+          </button>
+      </div>
+  </div>
+</div>
+
+<!-- Script to fix Lucide icons rendering -->
+<script>
+  document.addEventListener('alpine:initialized', () => {
+      lucide.createIcons();
+  });
+  
+  // Add global animation observer
+  document.addEventListener('DOMContentLoaded', () => {
+      // Animate elements when they come into view
+      const observer = new IntersectionObserver((entries) => {
+          entries.forEach(entry => {
+              if (entry.isIntersecting) {
+                  entry.target.classList.add('fade-in');
+                  observer.unobserve(entry.target);
+              }
+          });
+      }, { threshold: 0.1 });
+      
+      // Observe all host control panels
+      document.querySelectorAll('.host-controls').forEach(el => {
+          observer.observe(el);
+      });
+      
+      // Add touch events for mobile chat dragging
+      const chatContainer = document.querySelector('.mobile-chat-container');
+      const dragHandle = document.querySelector('.chat-drag-handle');
+      
+      if (chatContainer && dragHandle) {
+          let startY = 0;
+          let currentY = 0;
+          let initialHeight = 0;
+          
+          dragHandle.addEventListener('touchstart', (e) => {
+              startY = e.touches[0].clientY;
+              initialHeight = chatContainer.offsetHeight;
+              document.body.style.overflow = 'hidden'; // Prevent body scrolling while dragging
+          });
+          
+          dragHandle.addEventListener('touchmove', (e) => {
+              currentY = e.touches[0].clientY;
+              const deltaY = currentY - startY;
+              
+              // Limit the height between 30% and 90% of viewport height
+              const newHeight = Math.max(30, Math.min(90, 70 - (deltaY / window.innerHeight * 100)));
+              chatContainer.style.height = `${newHeight}vh`;
+              chatContainer.style.maxHeight = `${newHeight}vh`;
+              
+              // Adjust the messages container height
+              const messagesContainer = document.querySelector('.mobile-chat-container .flex-1');
+              if (messagesContainer) {
+                  messagesContainer.style.height = `calc(${newHeight}vh - 120px)`;
+              }
+          });
+          
+          dragHandle.addEventListener('touchend', () => {
+              document.body.style.overflow = ''; // Restore body scrolling
+              
+              // Snap to predefined heights (50% or 70%)
+              const currentHeight = parseFloat(chatContainer.style.height);
+              let snapHeight = 70; // Default
+              
+              if (currentHeight < 50) {
+                  snapHeight = 30;
+              } else if (currentHeight < 60) {
+                  snapHeight = 50;
+              }
+              
+              chatContainer.style.height = `${snapHeight}vh`;
+              chatContainer.style.maxHeight = `${snapHeight}vh`;
+              
+              // Adjust the messages container height
+              const messagesContainer = document.querySelector('.mobile-chat-container .flex-1');
+              if (messagesContainer) {
+                  messagesContainer.style.height = `calc(${snapHeight}vh - 120px)`;
+              }
+              
+              // If dragged to very small height, close the chat
+              if (snapHeight === 30) {
+                  setTimeout(() => {
+                      Alpine.store('chat').showChat = false;
+                  }, 300);
+              }
+          });
+      }
+  });
+</script>
 </body>
 </html>

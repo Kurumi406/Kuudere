@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Join Room - Anime Stream</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        yt: {
+                            red: '#FF0000',
+                            dark: '#0F0F0F',
+                            darker: '#0A0A0A',
+                            gray: '#272727',
+                            lightgray: '#717171',
+                            hover: '#3F3F3F'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap">
+</head>
+<body class="bg-yt-dark text-white min-h-screen flex items-center justify-center font-[Roboto]">
+    <div class="w-full max-w-md p-6 bg-yt-gray rounded-lg shadow-lg">
+        <div class="text-center mb-6">
+            <h1 class="text-2xl font-bold">Join Room</h1>
+            <p class="text-yt-lightgray mt-2">Enter your username to join the room</p>
+        </div>
+        
+        <form action="/join/{{ room_id }}" method="POST" class="space-y-4">
+            <div>
+                <label for="username" class="block text-sm font-medium mb-1">Username</label>
+                <input 
+                    type="text" 
+                    id="username"
+                    name="username"
+                    placeholder="Enter your username"
+                    class="w-full px-4 py-2 bg-yt-darker rounded-lg border border-yt-hover focus:border-yt-red focus:ring-1 focus:ring-yt-red outline-none"
+                    required
+                >
+            </div>
+            
+            <div class="pt-2">
+                <button 
+                    type="submit"
+                    class="w-full px-4 py-2 bg-yt-red text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+                >
+                    Join Room
+                </button>
+            </div>
+            
+            <div class="text-center mt-4">
+                <a href="/" class="text-yt-lightgray hover:text-white text-sm">Back to Home</a>
+            </div>
+        </form>
+    </div>
+</body>
+</html>

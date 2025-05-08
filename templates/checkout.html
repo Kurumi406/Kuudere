@@ -1,0 +1,1103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout - Aura Shop</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#fef2f2',
+                            100: '#fee2e2',
+                            200: '#fecaca',
+                            300: '#fca5a5',
+                            400: '#f87171',
+                            500: '#ef4444',
+                            600: '#dc2626',
+                            700: '#b91c1c',
+                            800: '#991b1b',
+                            900: '#7f1d1d',
+                        },
+                        dark: {
+                            400: '#4b5563',
+                            500: '#374151',
+                            600: '#1f2937',
+                            700: '#111827',
+                            800: '#0f172a',
+                            900: '#030712',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #000000;
+            color: #ffffff;
+            overflow-x: hidden;
+        }
+        
+        /* Enhanced shine effect */
+        .shine-effect {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .shine-effect::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(
+                to right,
+                rgba(255, 255, 255, 0) 0%,
+                rgba(255, 255, 255, 0.4) 50%,
+                rgba(255, 255, 255, 0) 100%
+            );
+            transform: rotate(30deg);
+            animation: shine 3s infinite;
+        }
+        
+        @keyframes shine {
+            0% {
+                transform: scale(0) rotate(45deg);
+                opacity: 0;
+            }
+            80% {
+                transform: scale(0) rotate(45deg);
+                opacity: 0.5;
+            }
+            81% {
+                transform: scale(4) rotate(45deg);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(50) rotate(45deg);
+                opacity: 0;
+            }
+        }
+        
+        /* Enhanced glow effect */
+        .glow-effect {
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.6);
+            transition: all 0.3s ease;
+        }
+        
+        .glow-effect:hover {
+            box-shadow: 0 0 25px rgba(239, 68, 68, 0.9);
+            transform: translateY(-2px);
+        }
+        
+        /* Pulse animation */
+        .pulse-animation {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+            }
+            70% {
+                transform: scale(1.05);
+                box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+            }
+            100% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+            }
+        }
+        
+        /* Floating animation */
+        .float-animation {
+            animation: float 6s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0% {
+                transform: translateY(0px);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
+            100% {
+                transform: translateY(0px);
+            }
+        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #000000;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #ef4444;
+            border-radius: 3px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #b91c1c;
+        }
+        
+        /* Progress bar styling */
+        .progress-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .progress-bar-bg {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background-color: #374151;
+            transform: translateY(-50%);
+            z-index: 1;
+        }
+        
+        .progress-bar {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            height: 2px;
+            background-color: #ef4444;
+            transform: translateY(-50%);
+            z-index: 2;
+            transition: width 0.5s ease-in-out;
+        }
+        
+        .progress-steps {
+            display: flex;
+            justify-content: space-between;
+            position: relative;
+            z-index: 3;
+        }
+        
+        .progress-step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .step-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-bottom: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .step-active {
+            background-color: #ef4444;
+            color: white;
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.7);
+        }
+        
+        .step-inactive {
+            background-color: #374151;
+            color: #9ca3af;
+        }
+        
+        /* Card hover effect */
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px -5px rgba(239, 68, 68, 0.4);
+        }
+        
+        /* Gradient text */
+        .gradient-text {
+            background: linear-gradient(90deg, #ef4444, #f97316);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            animation: gradient-shift 3s ease infinite;
+        }
+        
+        @keyframes gradient-shift {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+        
+        /* Animated border */
+        .animated-border {
+            position: relative;
+            border-radius: 0.5rem;
+        }
+        
+        .animated-border::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, #ef4444, #000, #ef4444, #000);
+            background-size: 400%;
+            border-radius: 0.6rem;
+            z-index: -1;
+            animation: border-animate 10s linear infinite;
+        }
+        
+        @keyframes border-animate {
+            0% {
+                background-position: 0 0;
+            }
+            50% {
+                background-position: 300% 0;
+            }
+            100% {
+                background-position: 0 0;
+            }
+        }
+        
+        /* Countdown timer */
+        .countdown {
+            font-variant-numeric: tabular-nums;
+        }
+        
+        /* Confetti animation */
+        @keyframes confetti-fall {
+            0% {
+                transform: translateY(-100px) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(600px) rotate(360deg);
+                opacity: 0;
+            }
+        }
+        
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: #ef4444;
+            opacity: 0;
+        }
+        
+        .confetti-animation {
+            animation: confetti-fall 5s ease-out forwards;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-black">
+    <div x-data="{
+        userPoints: 5000,
+        cartItems: [
+            { id: 1, name: 'One Piece Vol. 100', category: 'Manga', price: 450, image: '/placeholder.svg?height=300&width=200', quantity: 1 },
+            { id: 4, name: 'Steins;Gate Visual Novel', category: 'Visual Novels', price: 800, image: '/placeholder.svg?height=300&width=200', quantity: 1 },
+            { id: 10, name: 'Attack on Titan Box Set', category: 'Manga', price: 1100, image: '/placeholder.svg?height=300&width=200', quantity: 1, discount: 10 }
+        ],
+        userProfile: {
+            username: 'AnimeEnthusiast',
+            avatar: '/placeholder.svg?height=100&width=100',
+            server: 'Streamwishh',
+            watchTime: 32, // hours
+            comments: 287,
+            posts: 42,
+            memberSince: 'Jan 2023',
+            level: 8
+        },
+        requirements: [
+            { name: 'Server', value: 'Streamwishh', required: 'Streamwishh or Kumi', met: true },
+            { name: 'Watch Time', value: '32h', required: '20h+', met: true },
+            { name: 'Comments', value: '287', required: '200+', met: true },
+            { name: 'Posts', value: '42', required: '30+', met: true }
+        ],
+        deliveryMethod: 'digital',
+        termsAccepted: false,
+        processingOrder: false,
+        orderComplete: false,
+        checkoutStep: 1,
+        timeLeft: 600, // 10 minutes in seconds
+        recentBuyers: [
+            { name: 'Manga_Lover', time: '2 minutes ago', item: 'One Piece Vol. 100' },
+            { name: 'OtakuQueen', time: '5 minutes ago', item: 'Attack on Titan Box Set' },
+            { name: 'SailorSenshi', time: '8 minutes ago', item: 'Steins;Gate Visual Novel' }
+        ],
+        showNotification: false,
+        notificationIndex: 0,
+        
+        calculateDiscount(price, discount) {
+            if (!discount) return price;
+            return Math.round(price * (1 - discount/100));
+        },
+        
+        cartTotal() {
+            return this.cartItems.reduce((total, item) => {
+                const price = item.discount ? this.calculateDiscount(item.price, item.discount) : item.price;
+                return total + (price * item.quantity);
+            }, 0);
+        },
+        
+        allRequirementsMet() {
+            return this.requirements.every(req => req.met);
+        },
+        
+        canCheckout() {
+            return this.cartTotal() <= this.userPoints && this.allRequirementsMet() && this.termsAccepted;
+        },
+        
+        processOrder() {
+            if (!this.canCheckout()) return;
+            
+            this.processingOrder = true;
+            this.checkoutStep = 2;
+            
+            // Simulate processing time
+            setTimeout(() => {
+                this.userPoints -= this.cartTotal();
+                this.orderComplete = true;
+                this.processingOrder = false;
+                this.checkoutStep = 3;
+                this.createConfetti();
+            }, 2000);
+        },
+        
+        getProgressWidth() {
+            if (this.checkoutStep === 1) return '33%';
+            if (this.checkoutStep === 2) return '66%';
+            return '100%';
+        },
+        
+        formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+        },
+        
+        startCountdown() {
+            const timer = setInterval(() => {
+                this.timeLeft--;
+                if (this.timeLeft <= 0) {
+                    clearInterval(timer);
+                }
+            }, 1000);
+        },
+        
+        showRandomNotification() {
+            setInterval(() => {
+                this.notificationIndex = Math.floor(Math.random() * this.recentBuyers.length);
+                this.showNotification = true;
+                setTimeout(() => {
+                    this.showNotification = false;
+                }, 5000);
+            }, 15000);
+        },
+        
+        createConfetti() {
+            const confettiCount = 100;
+            const container = document.querySelector('.confetti-container');
+            
+            for (let i = 0; i < confettiCount; i++) {
+                const confetti = document.createElement('div');
+                confetti.classList.add('confetti');
+                
+                // Random position
+                const posX = Math.random() * window.innerWidth;
+                confetti.style.left = `${posX}px`;
+                
+                // Random delay
+                const delay = Math.random() * 5;
+                confetti.style.animationDelay = `${delay}s`;
+                
+                // Random color
+                const colors = ['#ef4444', '#f97316', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6'];
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.backgroundColor = color;
+                
+                // Random size
+                const size = Math.random() * 10 + 5;
+                confetti.style.width = `${size}px`;
+                confetti.style.height = `${size}px`;
+                
+                // Random rotation
+                const rotation = Math.random() * 360;
+                confetti.style.transform = `rotate(${rotation}deg)`;
+                
+                // Add animation class
+                confetti.classList.add('confetti-animation');
+                
+                container.appendChild(confetti);
+                
+                // Remove after animation completes
+                setTimeout(() => {
+                    confetti.remove();
+                }, 5000);
+            }
+        }
+    }" 
+    x-init="startCountdown(); showRandomNotification()" 
+    class="bg-black relative">
+        <!-- Confetti container -->
+        <div class="confetti-container fixed inset-0 pointer-events-none z-50"></div>
+        
+        <!-- Social proof notification -->
+        <div 
+            x-show="showNotification" 
+            x-transition:enter="transition ease-out duration-300"
+            x-transition:enter-start="opacity-0 transform translate-x-full"
+            x-transition:enter-end="opacity-100 transform translate-x-0"
+            x-transition:leave="transition ease-in duration-300"
+            x-transition:leave-start="opacity-100 transform translate-x-0"
+            x-transition:leave-end="opacity-0 transform translate-x-full"
+            class="fixed bottom-4 right-4 bg-gray-900 border border-primary-600 rounded-lg p-4 shadow-lg z-50 max-w-xs"
+        >
+            <div class="flex items-start">
+                <div class="flex-shrink-0 mr-3">
+                    <div class="w-10 h-10 rounded-full bg-primary-600 flex items-center justify-center text-white">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                        </svg>
+                    </div>
+                </div>
+                <div>
+                    <p class="text-white text-sm font-medium" x-text="recentBuyers[notificationIndex].name + ' purchased'"></p>
+                    <p class="text-primary-400 text-sm font-bold" x-text="recentBuyers[notificationIndex].item"></p>
+                    <p class="text-gray-400 text-xs mt-1" x-text="recentBuyers[notificationIndex].time"></p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Header -->
+        <header class="bg-black border-b border-gray-800 sticky top-0 z-40">
+            <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+                <div class="flex items-center">
+                    <div class="shine-effect rounded-full bg-primary-600 w-10 h-10 flex items-center justify-center mr-3">
+                        <span class="text-white font-bold">A</span>
+                    </div>
+                    <h1 class="text-2xl font-bold text-white">Aura Shop</h1>
+                </div>
+                
+                <div class="flex items-center">
+                    <div class="flex items-center bg-gray-900 text-white px-4 py-2 rounded-full border border-gray-800 glow-effect">
+                        <span class="mr-2">💎</span>
+                        <span class="font-semibold text-white" x-text="userPoints + ' Aura'"></span>
+                    </div>
+                </div>
+            </div>
+        </header>
+        
+        <!-- Main Content -->
+        <main class="container mx-auto px-4 py-8">
+            <div class="text-center mb-8">
+                <h2 class="text-3xl font-bold gradient-text">Checkout</h2>
+                <p class="text-gray-400 mt-2">Complete your purchase with Aura points</p>
+            </div>
+            
+            <!-- Limited time offer banner -->
+            <div class="mb-8 bg-gradient-to-r from-primary-900 to-black p-4 rounded-lg border border-primary-700 animated-border">
+                <div class="flex flex-col md:flex-row items-center justify-between">
+                    <div class="flex items-center mb-4 md:mb-0">
+                        <div class="mr-4 pulse-animation">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-primary-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="text-white font-bold text-lg">Limited Time Offer!</h3>
+                            <p class="text-primary-300">Complete your purchase before the timer runs out to secure your items.</p>
+                        </div>
+                    </div>
+                    <div class="bg-black px-6 py-3 rounded-full border border-primary-600 flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-primary-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span class="text-white font-mono font-bold text-xl countdown" x-text="formatTime(timeLeft)"></span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Checkout Process Steps - Enhanced Version -->
+            <div class="mb-10">
+                <div class="progress-container">
+                    <!-- Background track -->
+                    <div class="progress-bar-bg"></div>
+                    
+                    <!-- Progress bar -->
+                    <div class="progress-bar" :style="`width: ${getProgressWidth()}`"></div>
+                    
+                    <!-- Step indicators -->
+                    <div class="progress-steps">
+                        <div class="progress-step">
+                            <div class="step-circle" :class="checkoutStep >= 1 ? 'step-active' : 'step-inactive'">1</div>
+                            <div class="text-sm" :class="checkoutStep >= 1 ? 'text-white' : 'text-gray-400'">Review</div>
+                        </div>
+                        
+                        <div class="progress-step">
+                            <div class="step-circle" :class="checkoutStep >= 2 ? 'step-active' : 'step-inactive'">2</div>
+                            <div class="text-sm" :class="checkoutStep >= 2 ? 'text-white' : 'text-gray-400'">Processing</div>
+                        </div>
+                        
+                        <div class="progress-step">
+                            <div class="step-circle" :class="checkoutStep >= 3 ? 'step-active' : 'step-inactive'">3</div>
+                            <div class="text-sm" :class="checkoutStep >= 3 ? 'text-white' : 'text-gray-400'">Complete</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div x-show="!orderComplete" class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Left Column - Order Summary -->
+                <div class="lg:col-span-2">
+                    <div class="bg-gray-900 rounded-lg border border-gray-800 overflow-hidden mb-6 card-hover">
+                        <div class="bg-black p-4 border-b border-gray-800">
+                            <h3 class="text-xl font-bold text-white">Order Summary</h3>
+                        </div>
+                        
+                        <div class="p-4">
+                            <div class="space-y-4">
+                                <template x-for="item in cartItems" :key="item.id">
+                                    <div class="flex items-center py-4 border-b border-gray-800 hover:bg-gray-800 transition-colors duration-200 rounded-lg p-2">
+                                        <img :src="item.image" :alt="item.name" class="w-16 h-16 object-cover rounded">
+                                        <div class="ml-4 flex-1">
+                                            <h4 class="text-white font-medium" x-text="item.name"></h4>
+                                            <p class="text-sm text-gray-400" x-text="item.category"></p>
+                                            <div class="flex items-center mt-1">
+                                                <span class="text-gray-400 text-sm">Qty:</span>
+                                                <span class="ml-2 text-white" x-text="item.quantity"></span>
+                                            </div>
+                                        </div>
+                                        <div class="text-right">
+                                            <div x-show="item.discount" class="text-xs text-gray-500 line-through" x-text="item.price + ' Aura'"></div>
+                                            <div class="text-primary-500 font-bold" x-text="(item.discount ? calculateDiscount(item.price, item.discount) : item.price) + ' Aura'"></div>
+                                            <div x-show="item.discount" class="text-xs bg-primary-900 text-primary-200 px-2 py-0.5 rounded-full inline-block mt-1">
+                                                Save <span x-text="item.discount + '%'"></span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                            
+                            <div class="mt-4 pt-4 border-t border-gray-800">
+                                <div class="flex justify-between mb-2">
+                                    <span class="text-gray-400">Subtotal</span>
+                                    <span class="text-white" x-text="cartTotal() + ' Aura'"></span>
+                                </div>
+                                <div class="flex justify-between font-bold text-lg mt-4">
+                                    <span class="text-white">Total</span>
+                                    <span class="text-primary-500 text-xl" x-text="cartTotal() + ' Aura'"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- User Profile & Requirements -->
+                    <div class="bg-gray-900 rounded-lg border border-gray-800 overflow-hidden mb-6 card-hover">
+                        <div class="bg-black p-4 border-b border-gray-800">
+                            <h3 class="text-xl font-bold text-white">Account Verification</h3>
+                        </div>
+                        
+                        <div class="p-4">
+                            <!-- User Profile -->
+                            <div class="flex items-center mb-6 bg-gray-800 p-4 rounded-lg">
+                                <img :src="userProfile.avatar" :alt="userProfile.username" class="w-16 h-16 rounded-full object-cover border-2 border-primary-600 glow-effect">
+                                <div class="ml-4">
+                                    <h4 class="text-white font-bold" x-text="userProfile.username"></h4>
+                                    <div class="flex items-center mt-1">
+                                        <span class="text-xs px-2 py-1 bg-primary-900 text-primary-300 rounded-full" x-text="'Level ' + userProfile.level"></span>
+                                        <span class="text-xs text-gray-400 ml-2" x-text="'Member since ' + userProfile.memberSince"></span>
+                                    </div>
+                                    <div class="mt-2 flex items-center">
+                                        <div class="flex">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                            </svg>
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                            </svg>
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                            </svg>
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                            </svg>
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                            </svg>
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                            </svg>
+                                        </div>
+                                        <span class="text-xs text-gray-400 ml-2">Trusted Member</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Requirements Check -->
+                            <div class="bg-black rounded-lg p-4 mb-4">
+                                <h4 class="text-white font-bold mb-3">Minimum Requirements</h4>
+                                <div class="space-y-3">
+                                    <template x-for="(req, index) in requirements" :key="index">
+                                        <div class="flex items-center justify-between bg-gray-800 p-3 rounded-lg transition-all duration-300 hover:bg-gray-700">
+                                            <div>
+                                                <span class="text-gray-400 text-sm" x-text="req.name + ':'"></span>
+                                                <span class="ml-2 text-white" x-text="req.value"></span>
+                                            </div>
+                                            <div class="flex items-center">
+                                                <span class="text-xs text-gray-400 mr-2" x-text="'Required: ' + req.required"></span>
+                                                <div x-show="req.met" class="text-green-500 pulse-animation">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                                                    </svg>
+                                                </div>
+                                                <div x-show="!req.met" class="text-primary-500">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                                                    </svg>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                            
+                            <!-- Delivery Method -->
+                            <div class="mb-4">
+                                <h4 class="text-white font-bold mb-3">Delivery Method</h4>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <label class="flex items-center justify-center p-4 border border-gray-800 rounded-lg cursor-pointer transition-all duration-300" :class="deliveryMethod === 'digital' ? 'bg-primary-900 border-primary-600 glow-effect' : 'bg-gray-800 hover:bg-gray-700'">
+                                        <input type="radio" name="deliveryMethod" value="digital" x-model="deliveryMethod" class="sr-only">
+                                        <div class="text-center">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mx-auto mb-2" :class="deliveryMethod === 'digital' ? 'text-primary-500' : 'text-gray-400'" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                            </svg>
+                                            <span class="text-white font-medium">Digital Download</span>
+                                            <span class="block text-xs text-primary-300 mt-1" x-show="deliveryMethod === 'digital'">Instant delivery</span>
+                                        </div>
+                                    </label>
+                                    
+                                    <label class="flex items-center justify-center p-4 border border-gray-800 rounded-lg cursor-pointer transition-all duration-300" :class="deliveryMethod === 'physical' ? 'bg-primary-900 border-primary-600 glow-effect' : 'bg-gray-800 hover:bg-gray-700'">
+                                        <input type="radio" name="deliveryMethod" value="physical" x-model="deliveryMethod" class="sr-only">
+                                        <div class="text-center">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mx-auto mb-2" :class="deliveryMethod === 'physical' ? 'text-primary-500' : 'text-gray-400'" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                            </svg>
+                                            <span class="text-white font-medium">Physical Delivery</span>
+                                            <span class="block text-xs text-primary-300 mt-1" x-show="deliveryMethod === 'physical'">2-3 business days</span>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <!-- Physical Address (conditional) -->
+                            <div x-show="deliveryMethod === 'physical'" class="mb-4 bg-black p-4 rounded-lg border border-gray-800 animated-border">
+                                <h4 class="text-white font-bold mb-3">Shipping Address</h4>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-gray-400 text-sm mb-1">Full Name</label>
+                                        <input type="text" class="w-full bg-gray-900 border border-gray-800 rounded-md px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-primary-600 transition-all duration-300">
+                                    </div>
+                                    <div>
+                                        <label class="block text-gray-400 text-sm mb-1">Phone Number</label>
+                                        <input type="text" class="w-full bg-gray-900 border border-gray-800 rounded-md px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-primary-600 transition-all duration-300">
+                                    </div>
+                                    <div class="md:col-span-2">
+                                        <label class="block text-gray-400 text-sm mb-1">Address</label>
+                                        <input type="text" class="w-full bg-gray-900 border border-gray-800 rounded-md px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-primary-600 transition-all duration-300">
+                                    </div>
+                                    <div>
+                                        <label class="block text-gray-400 text-sm mb-1">City</label>
+                                        <input type="text" class="w-full bg-gray-900 border border-gray-800 rounded-md px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-primary-600 transition-all duration-300">
+                                    </div>
+                                    <div>
+                                        <label class="block text-gray-400 text-sm mb-1">Postal Code</label>
+                                        <input type="text" class="w-full bg-gray-900 border border-gray-800 rounded-md px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-primary-600 transition-all duration-300">
+                                    </div>
+                                    <div class="md:col-span-2">
+                                        <label class="block text-gray-400 text-sm mb-1">Country</label>
+                                        <select class="w-full bg-gray-900 border border-gray-800 rounded-md px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-primary-600 transition-all duration-300">
+                                            <option>Select Country</option>
+                                            <option>United States</option>
+                                            <option>Canada</option>
+                                            <option>United Kingdom</option>
+                                            <option>Australia</option>
+                                            <option>Japan</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Digital Delivery (conditional) -->
+                            <div x-show="deliveryMethod === 'digital'" class="mb-4 bg-black p-4 rounded-lg border border-gray-800 animated-border">
+                                <h4 class="text-white font-bold mb-3">Digital Delivery</h4>
+                                <p class="text-gray-400 text-sm mb-3">Your digital items will be available in your library immediately after purchase.</p>
+                                <div class="flex items-center p-3 bg-gray-900 rounded-md border border-gray-800">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-primary-500 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                                    </svg>
+                                    <span class="text-white">Email delivery to: <span class="text-primary-300">anime.enthusiast@example.com</span></span>
+                                </div>
+                                
+                                <!-- Instant access benefit -->
+                                <div class="mt-4 bg-primary-900/30 p-3 rounded-md border border-primary-800">
+                                    <div class="flex items-start">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-primary-400 mr-2 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                                        </svg>
+                                        <div>
+                                            <h5 class="text-primary-300 font-medium text-sm">Instant Access Benefit</h5>
+                                            <p class="text-gray-400 text-xs mt-1">Get immediate access to your digital content. No waiting, no downloads - start enjoying your purchase right away!</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Terms and Conditions -->
+                            <div class="mt-6 bg-gray-800 p-4 rounded-lg">
+                                <label class="flex items-start cursor-pointer group">
+                                    <input type="checkbox" x-model="termsAccepted" class="mt-1 text-primary-600 focus:ring-primary-500 h-4 w-4 rounded border-gray-700 bg-gray-900">
+                                    <span class="ml-2 text-sm text-gray-400 group-hover:text-gray-300 transition-colors duration-200">
+                                        I agree to the <a href="#" class="text-primary-500 hover:text-primary-400 underline">Terms and Conditions</a> and <a href="#" class="text-primary-500 hover:text-primary-400 underline">Privacy Policy</a>
+                                    </span>
+                                </label>
+                                
+                                <!-- Trust badges -->
+                                <div class="mt-4 flex flex-wrap justify-center gap-4">
+                                    <div class="bg-gray-900 p-2 rounded-lg flex items-center">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-500 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                                        </svg>
+                                        <span class="text-xs text-white">Secure Payment</span>
+                                    </div>
+                                    <div class="bg-gray-900 p-2 rounded-lg flex items-center">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-500 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                                            <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
+                                        </svg>
+                                        <span class="text-xs text-white">24/7 Support</span>
+                                    </div>
+                                    <div class="bg-gray-900 p-2 rounded-lg flex items-center">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-yellow-500 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fill-rule="evenodd" d="M10 2a4 4 0 00-4 4v1H5a1 1 0 00-.994.89l-1 9A1 1 0 004 18h12a1 1 0 00.994-1.11l-1-9A1 1 0 0015 7h-1V6a4 4 0 00-4-4zm2 5V6a2 2 0 10-4 0v1h4zm-6 3a1 1 0 112 0 1 1 0 01-2 0zm7-1a1 1 0 100 2 1 1 0 000-2z" clip-rule="evenodd" />
+                                        </svg>
+                                        <span class="text-xs text-white">Money Back Guarantee</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Right Column - Payment Summary -->
+                <div class="lg:col-span-1">
+                    <div class="bg-gray-900 rounded-lg border border-gray-800 overflow-hidden sticky top-24 card-hover animated-border">
+                        <div class="bg-black p-4 border-b border-gray-800">
+                            <h3 class="text-xl font-bold gradient-text">Payment Summary</h3>
+                        </div>
+                        
+                        <div class="p-4">
+                            <!-- User points animation -->
+                            <div class="mb-6 bg-gradient-to-r from-gray-800 to-black p-4 rounded-lg border border-gray-700 float-animation">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <span class="text-gray-400 text-sm">Your Aura Balance</span>
+                                        <div class="text-white font-bold text-2xl mt-1" x-text="userPoints + ' Aura'"></div>
+                                    </div>
+                                    <div class="w-12 h-12 rounded-full bg-primary-900 flex items-center justify-center shine-effect">
+                                        <span class="text-2xl">💎</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <div class="flex justify-between mb-2">
+                                    <span class="text-gray-400">Order Total</span>
+                                    <span class="text-white" x-text="cartTotal() + ' Aura'"></span>
+                                </div>
+                                <div class="flex justify-between mb-2">
+                                    <span class="text-gray-400">Remaining Balance</span>
+                                    <span :class="userPoints - cartTotal() >= 0 ? 'text-green-500' : 'text-primary-500'" x-text="(userPoints - cartTotal()) + ' Aura'"></span>
+                                </div>
+                            </div>
+                            
+                            <!-- Savings callout -->
+                            <div class="mb-4 bg-primary-900/30 p-3 rounded-lg border border-primary-800">
+                                <div class="flex items-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-primary-400 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M5 2a2 2 0 00-2 2v14l3.5-2 3.5 2 3.5-2 3.5 2V4a2 2 0 00-2-2H5zm4.707 3.707a1 1 0 00-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L8.414 9H10a3 3 0 013 3v1a1 1 0 102 0v-1a5 5 0 00-5-5H8.414l1.293-1.293z" clip-rule="evenodd" />
+                                    </svg>
+                                    <span class="text-primary-300 font-medium">You're saving 110 Aura!</span>
+                                </div>
+                            </div>
+                            
+                            <div class="border-t border-gray-800 pt-4 mb-4">
+                                <h4 class="text-white font-bold mb-2">Requirements Check</h4>
+                                <div class="space-y-2">
+                                    <template x-for="(req, index) in requirements" :key="index">
+                                        <div class="flex items-center">
+                                            <div x-show="req.met" class="text-green-500 mr-2">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                                                </svg>
+                                            </div>
+                                            <div x-show="!req.met" class="text-primary-500 mr-2">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                                                </svg>
+                                            </div>
+                                            <span class="text-sm text-gray-400" x-text="req.name"></span>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                            
+                            <!-- Social proof -->
+                            <div class="mb-4 bg-gray-800 p-3 rounded-lg">
+                                <h5 class="text-white text-sm font-medium mb-2">Recent Purchases</h5>
+                                <div class="space-y-2">
+                                    <template x-for="(buyer, index) in recentBuyers" :key="index">
+                                        <div class="flex items-center text-xs">
+                                            <div class="w-6 h-6 rounded-full bg-primary-900 flex items-center justify-center text-white mr-2">
+                                                <span x-text="buyer.name.charAt(0)"></span>
+                                            </div>
+                                            <div class="flex-1">
+                                                <span class="text-white" x-text="buyer.name"></span>
+                                                <span class="text-gray-400"> purchased </span>
+                                                <span class="text-primary-400" x-text="buyer.item"></span>
+                                            </div>
+                                            <span class="text-gray-500" x-text="buyer.time"></span>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                            
+                            <!-- Error Messages -->
+                            <div x-show="!allRequirementsMet()" class="mb-4 p-3 bg-primary-900 text-primary-200 rounded-md text-sm">
+                                <div class="flex items-start">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                    </svg>
+                                    <span>You must meet all requirements to complete your purchase.</span>
+                                </div>
+                            </div>
+                            
+                            <div x-show="cartTotal() > userPoints" class="mb-4 p-3 bg-primary-900 text-primary-200 rounded-md text-sm">
+                                <div class="flex items-start">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                    </svg>
+                                    <span>You don't have enough Aura points for this purchase.</span>
+                                </div>
+                            </div>
+                            
+                            <div x-show="!termsAccepted" class="mb-4 p-3 bg-primary-900 text-primary-200 rounded-md text-sm">
+                                <div class="flex items-start">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                    </svg>
+                                    <span>Please accept the terms and conditions.</span>
+                                </div>
+                            </div>
+                            
+                            <!-- Complete Purchase Button -->
+                            <button 
+                                @click="processOrder()" 
+                                :disabled="!canCheckout() || processingOrder"
+                                :class="canCheckout() && !processingOrder ? 'bg-primary-600 hover:bg-primary-700 glow-effect pulse-animation' : 'bg-gray-700 cursor-not-allowed'"
+                                class="w-full py-3 text-white rounded-lg text-center font-medium flex items-center justify-center transition-all duration-300">
+                                <span x-show="!processingOrder" class="flex items-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" />
+                                    </svg>
+                                    Complete Purchase
+                                </span>
+                                <span x-show="processingOrder" class="flex items-center">
+                                    <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    Processing...
+                                </span>
+                            </button>
+                            
+                            <!-- Limited time offer reminder -->
+                            <div class="mt-4 text-center">
+                                <p class="text-gray-400 text-xs">Complete your purchase before the timer runs out!</p>
+                                <p class="text-primary-500 font-mono font-bold text-lg countdown mt-1" x-text="formatTime(timeLeft)"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Order Complete Screen -->
+            <div x-show="orderComplete" class="max-w-2xl mx-auto bg-gray-900 rounded-lg border border-gray-800 overflow-hidden animated-border">
+                <div class="bg-black p-6 text-center border-b border-gray-800">
+                    <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-green-100 mb-4 pulse-animation">
+                        <svg class="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                    </div>
+                    <h2 class="text-3xl font-bold gradient-text mb-2">Order Complete!</h2>
+                    <p class="text-gray-400">Thank you for your purchase. Your order has been processed successfully.</p>
+                </div>
+                
+                <div class="p-6">
+                    <div class="mb-6">
+                        <h3 class="text-lg font-bold text-white mb-3">Order Details</h3>
+                        <div class="bg-black rounded-lg p-4 card-hover">
+                            <div class="flex justify-between mb-2">
+                                <span class="text-gray-400">Order ID</span>
+                                <span class="text-white">AUR-2023-78945</span>
+                            </div>
+                            <div class="flex justify-between mb-2">
+                                <span class="text-gray-400">Date</span>
+                                <span class="text-white">March 18, 2025</span>
+                            </div>
+                            <div class="flex justify-between mb-2">
+                                <span class="text-gray-400">Total</span>
+                                <span class="text-primary-500 font-bold" x-text="cartTotal() + ' Aura'"></span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">Delivery Method</span>
+                                <span class="text-white" x-text="deliveryMethod === 'digital' ? 'Digital Download' : 'Physical Delivery'"></span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div x-show="deliveryMethod === 'digital'" class="mb-6">
+                        <h3 class="text-lg font-bold text-white mb-3">Download Your Items</h3>
+                        <div class="space-y-3">
+                            <template x-for="item in cartItems" :key="item.id">
+                                <div class="flex items-center justify-between bg-black p-4 rounded-lg card-hover">
+                                    <div class="flex items-center">
+                                        <img :src="item.image" :alt="item.name" class="w-12 h-12 object-cover rounded">
+                                        <span class="ml-3 text-white" x-text="item.name"></span>
+                                    </div>
+                                    <button class="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-full text-sm glow-effect flex items-center">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                        </svg>
+                                        Download
+                                    </button>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                    
+                    <div x-show="deliveryMethod === 'physical'" class="mb-6">
+                        <h3 class="text-lg font-bold text-white mb-3">Shipping Information</h3>
+                        <div class="bg-black rounded-lg p-4 card-hover">
+                            <p class="text-white mb-1">Your items will be shipped within 2-3 business days.</p>
+                            <p class="text-gray-400 text-sm">You will receive a shipping confirmation email with tracking information once your order has been shipped.</p>
+                            
+                            <div class="mt-4 bg-primary-900/30 p-3 rounded-md border border-primary-800">
+                                <div class="flex items-start">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-primary-400 mr-2 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                                    </svg>
+                                    <div>
+                                        <h5 class="text-primary-300 font-medium text-sm">Tracking Available</h5>
+                                        <p class="text-gray-400 text-xs mt-1">You'll be able to track your package once it's shipped. We'll send you updates every step of the way!</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Reward for purchase -->
+                    <div class="mb-6 bg-gradient-to-r from-primary-900 to-black p-4 rounded-lg border border-primary-700 animated-border">
+                        <h3 class="text-lg font-bold text-white mb-2">You've Earned a Reward!</h3>
+                        <p class="text-gray-400 text-sm mb-3">As a thank you for your purchase, we've added a special bonus to your account.</p>
+                        <div class="bg-black p-3 rounded-lg flex items-center justify-between">
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 rounded-full bg-primary-600 flex items-center justify-center mr-3 shine-effect">
+                                    <span class="text-xl">🎁</span>
+                                </div>
+                                <div>
+                                    <h4 class="text-white font-medium">100 Bonus Aura Points</h4>
+                                    <p class="text-xs text-gray-400">Added to your account</p>
+                                </div>
+                            </div>
+                            <div class="text-primary-500 font-bold">+100</div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-center mt-6">
+                        <a href="index.html" class="bg-primary-600 hover:bg-primary-700 text-white px-6 py-3 rounded-full text-sm font-medium transition duration-200 glow-effect flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
+                            </svg>
+                            Return to Shop
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </main>
+        
+        <!-- Footer -->
+        <footer class="bg-black border-t border-gray-800 mt-12 py-8">
+            <div class="container mx-auto px-4">
+                <div class="text-center text-gray-500 text-sm">
+                    &copy; 2025 Aura Shop. All rights reserved.
+                </div>
+            </div>
+        </footer>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Animate elements on page load
+            anime({
+                targets: '.card-hover',
+                opacity: [0, 1],
+                translateY: [20, 0],
+                delay: anime.stagger(100),
+                easing: 'easeOutQuad'
+            });
+            
+            // Animate progress bar
+            anime({
+                targets: '.progress-bar',
+                width: ['0%', '33%'],
+                duration: 800,
+                easing: 'easeInOutQuad'
+            });
+            
+            // Pulse animation for active step
+            anime({
+                targets: '.step-active',
+                scale: [1, 1.1, 1],
+                duration: 1500,
+                easing: 'easeInOutQuad',
+                loop: true
+            });
+        });
+    </script>
+</body>
+</html>

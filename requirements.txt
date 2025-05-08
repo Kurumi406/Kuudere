@@ -23,3 +23,7 @@ gunicorn
 eventlet
 flask-debugtoolbar
 PIL
+itsdangerous
+ipfshttpclient
+PyJWT
+python-socks

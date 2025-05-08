@@ -3,1037 +3,1047 @@
 
 
 <body class="bg-black scrollbar-ass text-gray-100 h-full">
-    <style>
-    @keyframes likeAnimation {
-        0% {
-            transform: scale(1);
-        }
-
-        50% {
-            transform: scale(1.2);
-        }
-
-        100% {
-            transform: scale(1);
-        }
+<!-- Existing styles remain unchanged -->
+<style>
+@keyframes likeAnimation {
+    0% {
+        transform: scale(1);
     }
 
-    .like-button.animate {
-        animation: likeAnimation 0.3s ease-in-out;
+    50% {
+        transform: scale(1.2);
     }
 
-    @keyframes dislikeAnimation {
-        0% {
-            transform: scale(1) rotate(0deg);
-        }
+    100% {
+        transform: scale(1);
+    }
+}
 
-        50% {
-            transform: scale(1.2) rotate(-20deg);
-        }
+.like-button.animate {
+    animation: likeAnimation 0.3s ease-in-out;
+}
 
-        100% {
-            transform: scale(1) rotate(0deg);
-        }
+@keyframes dislikeAnimation {
+    0% {
+        transform: scale(1) rotate(0deg);
     }
 
-    .dislike-button.animate {
-        animation: dislikeAnimation 0.3s ease-in-out;
+    50% {
+        transform: scale(1.2) rotate(-20deg);
     }
-    [x-cloak] { display: none !important; }
-        
-        .share-scroll::-webkit-scrollbar {
-            display: none;
-        }
-        
-        .share-scroll {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
-        
-        .share-button {
-            transition: transform 0.2s ease;
-        }
-        
-        .share-button:hover {
-            transform: scale(1.1);
-        }
 
-        .nav-arrow {
-            opacity: 0;
-            transition: opacity 0.2s ease;
-        }
+    100% {
+        transform: scale(1) rotate(0deg);
+    }
+}
 
-        .share-container:hover .nav-arrow {
-            opacity: 1;
-        }
+.dislike-button.animate {
+    animation: dislikeAnimation 0.3s ease-in-out;
+}
+[x-cloak] { display: none !important; }
+    
+    .share-scroll::-webkit-scrollbar {
+        display: none;
+    }
+    
+    .share-scroll {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+    
+    .share-button {
+        transition: transform 0.2s ease;
+    }
+    
+    .share-button:hover {
+        transform: scale(1.1);
+    }
 
-        .glass-input {
-            background-color: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(5px);
-        }
-        .episode-edit-modal {
-            backdrop-filter: blur(10px);
-            background: rgba(0, 0, 0, 0.8);
-        }
+    .nav-arrow {
+        opacity: 0;
+        transition: opacity 0.2s ease;
+    }
 
-        .episode-edit-input {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            transition: all 0.3s ease;
-        }
+    .share-container:hover .nav-arrow {
+        opacity: 1;
+    }
 
-        .episode-edit-input:focus {
-            border-color: #EF4444;
-            box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
-        }
+    .glass-input {
+        background-color: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(5px);
+    }
+    .episode-edit-modal {
+        backdrop-filter: blur(10px);
+        background: rgba(0, 0, 0, 0.8);
+    }
 
-        /* Highlight for current episode */
-        .episode.current-episode {
-            border-color: #FF0000 !important;
-            box-shadow: 0 0 8px rgba(255, 0, 0, 0.5);
-        }
+    .episode-edit-input {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        transition: all 0.3s ease;
+    }
 
-        /* Animation for episode highlight */
-        @keyframes episode-pulse {
-            0% { box-shadow: 0 0 0 rgba(255, 0, 0, 0.5); }
-            50% { box-shadow: 0 0 10px rgba(255, 0, 0, 0.8); }
-            100% { box-shadow: 0 0 5px rgba(255, 0, 0, 0.5); }
-        }
+    .episode-edit-input:focus {
+        border-color: #EF4444;
+        box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
+    }
 
-        /* Apply animation to current episode */
-        .episode.current-episode {
-            animation: episode-pulse 2s ease-in-out infinite;
-        }
+    /* Highlight for current episode */
+    .episode.current-episode {
+        border-color: #FF0000 !important;
+        box-shadow: 0 0 8px rgba(255, 0, 0, 0.5);
+    }
 
-        /* Ensure smooth scrolling in episode container */
-        #episode-container .scrollbar-thin {
-            scroll-behavior: smooth;
-        }
+    /* Animation for episode highlight */
+    @keyframes episode-pulse {
+        0% { box-shadow: 0 0 0 rgba(255, 0, 0, 0.5); }
+        50% { box-shadow: 0 0 10px rgba(255, 0, 0, 0.8); }
+        100% { box-shadow: 0 0 5px rgba(255, 0, 0, 0.5); }
+    }
 
-        /* Improve visibility of current episode */
-        .episode.current-episode .text-white {
-            color: #ffffff;
-            text-shadow: 0 0 2px rgba(255, 255, 255, 0.3);
-        }
+    /* Apply animation to current episode */
+    .episode.current-episode {
+        animation: episode-pulse 2s ease-in-out infinite;
+    }
+
+    /* Ensure smooth scrolling in episode container */
+    #episode-container .scrollbar-thin {
+        scroll-behavior: smooth;
+    }
+
+    /* Improve visibility of current episode */
+    .episode.current-episode .text-white {
+        color: #ffffff;
+        text-shadow: 0 0 2px rgba(255, 255, 255, 0.3);
+    }
 </style>
-    <div x-data="animePlayer()" x-init="fetchInitialData()" class="h-full">
-        <!-- Loading Overlay -->
-        <div x-show="isLoading" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
-            <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-red-600"></div>
-        </div>
+<div x-data="animePlayer()" x-init="fetchInitialData()" class="h-full">
+    <!-- Loading Overlay -->
+    <div x-show="isLoading" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+        <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-red-600"></div>
+    </div>
 
-        <div class="flex flex-col lg:flex-row h-full">
-            <!-- Main Content Area -->
-            <aside class="hidden xl:inline-block lg:w-3/12 space-y-6 p-4 scrollbar-ass scrollbar-thumb-[#FF0000] scrollbar-track-[#2a2a2a]" x-bind:style="'max-height: ' + mainContentHeight + 'px; overflow-y: auto;'">
-                {% include "infoCard.html" %}
-            </aside>
-            <div class="lg:w-9/12 space-y-6 p-4 main-content">
-                <div x-show="currentVideoLink" class="relative aspect-video rounded-lg overflow-hidden shadow-2xl">
-                    <!-- Video Loading Overlay -->
-                    <div x-show="isVideoLoading"
-                        class="absolute inset-0 bg-black bg-opacity-75 flex items-center justify-center z-10">
-                        <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-red-600"></div>
-                    </div>
-                
-                    <!-- Skip Buttons Container -->
-                    <div class="absolute bottom-16 sm:bottom-20 left-0 right-0 flex justify-between px-2 sm:px-4 z-20 pointer-events-none">
-                        <!-- Skip Intro Button (Left) -->
-                        <div class="pointer-events-auto">
-                            <button x-show="IsIntroPlaying" @click="skipIntro()" 
-                                class="border-2 font-semibold text-white text-sm sm:text-base px-2 py-1 sm:px-4 sm:py-2 rounded-lg hover:bg-white hover:text-black transition-colors
-                                       active:scale-95 transform transition-transform">
-                                Skip Intro
-                            </button>
-                        </div>
-                        
-                        <!-- Skip Outro Button (Right) -->
-                        <div class="pointer-events-auto ml-auto">
-                            <button x-show="IsOutroPlaying" @click="skipOutro()" 
-                                class="border-2 font-semibold text-white text-sm sm:text-base px-2 py-1 sm:px-4 sm:py-2 rounded-lg hover:bg-white hover:text-black transition-colors
-                                       active:scale-95 transform transition-transform">
-                                Skip Outro
-                            </button>
-                        </div>
-                    </div>
-                
-                    <iframe id="playerIframeId" x-ref="videoPlayer" :src="currentVideoLink" 
-                        class="w-full h-full" allowfullscreen x-on:load="isVideoLoading = false"></iframe>
+    <div class="flex flex-col lg:flex-row h-full">
+        <!-- Main Content Area -->
+        <aside class="hidden xl:inline-block lg:w-3/12 space-y-6 p-4 scrollbar-ass scrollbar-thumb-[#FF0000] scrollbar-track-[#2a2a2a]" x-bind:style="'max-height: ' + mainContentHeight + 'px; overflow-y: auto;'">
+            {% include "infoCard.html" %}
+        </aside>
+        <div class="lg:w-9/12 space-y-6 p-4 main-content">
+            <div x-show="currentVideoLink" class="relative aspect-video rounded-lg overflow-hidden shadow-2xl">
+                <!-- Video Loading Overlay -->
+                <div x-show="isVideoLoading"
+                    class="absolute inset-0 bg-black bg-opacity-75 flex items-center justify-center z-10">
+                    <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-red-600"></div>
                 </div>
-
-                <!-- Watching Status Bar -->
-                <style>
-                    /* YouTube-style colors */
-                    .bg-youtube-dark {
-                      background-color: #0f0f0f;
-                    }
-                    .bg-youtube-button {
-                      background-color: #272727;
-                    }
-                    .hover-youtube-button:hover {
-                      background-color: #3f3f3f;
-                    }
-                    
-                    /* Particle animation for like/dislike buttons */
-                    @keyframes particle-animation {
-                      0% {
-                        transform: translate(0, 0) scale(0);
-                        opacity: 1;
-                      }
-                      100% {
-                        transform: translate(var(--tx), var(--ty)) scale(1);
-                        opacity: 0;
-                      }
-                    }
-                    .particle {
-                      position: absolute;
-                      border-radius: 50%;
-                      pointer-events: none;
-                      animation: particle-animation 0.6s ease-out forwards;
-                    }
-                    .particle-like {
-                      background-color: rgb(239, 68, 68); /* Red */
-                    }
-                    .particle-dislike {
-                      background-color: rgb(59, 130, 246); /* Blue */
-                    }
-                    .particle-watchlist {
-                      background-color: rgb(16, 185, 129); /* Green */
-                    }
-                    
-                    /* Count animation */
-                    @keyframes count-up {
-                      0% { transform: translateY(-10px); opacity: 0; }
-                      100% { transform: translateY(0); opacity: 1; }
-                    }
-                    @keyframes count-down {
-                      0% { transform: translateY(10px); opacity: 0; }
-                      100% { transform: translateY(0); opacity: 1; }
-                    }
-                    .count-animate-up {
-                      animation: count-up 0.3s ease-out forwards;
-                    }
-                    .count-animate-down {
-                      animation: count-down 0.3s ease-out forwards;
-                    }
-                    
-                    /* Button animation */
-                    @keyframes button-pop {
-                      0% { transform: scale(1); }
-                      50% { transform: scale(1.2); }
-                      100% { transform: scale(1); }
-                    }
-                    .button-pop {
-                      animation: button-pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-                    }
-                  </style>
-                  
-                  <!-- YouTube-style video controls -->
-                  <div class="flex flex-col px-2 sm:px-4 py-2 gap-3 sm:gap-4 bg-youtube-dark text-white rounded-md">
-                    <!-- Video Controls -->
-                    <div class="flex items-center justify-between gap-2">
-                      <!-- Left side: Watching Count and Like/Dislike -->
-                      <div class="flex items-center gap-2 sm:gap-4">
-                        <!-- Watching Counter - First for psychological reasons -->
-                        <div 
-                          x-data="counter()" 
-                          x-init="initializeSocket()" 
-                          @join-room.window="joinRoom()"
-                          class="flex items-center gap-2 px-2 sm:px-4 py-1.5 sm:py-2 rounded-full bg-youtube-button"
-                        >
-                          <span x-text="formatCount(count)" class="number-animation inline-block text-xs sm:text-sm font-medium"
-                            :class="{'number-up': increasing, 'number-down': decreasing}">
-                          </span>
-                          <span class="text-red-500 text-xs">●</span>
-                          <span class="text-xs sm:text-sm">watching</span>
-                        </div>
-                        
-                        <!-- Like/Dislike - After watching count for better engagement flow -->
-                        <div 
-                          x-data="likeSystem()" 
-                          x-init="
-                            $watch('liked', value => {
-                              if (value && !isLoading) createParticles('like-button', 'particle-like');
-                            });
-                            $watch('disliked', value => {
-                              if (value && !isLoading) createParticles('dislike-button', 'particle-dislike');
-                            })
-                          "
-                          class="flex items-center rounded-full overflow-hidden bg-youtube-button"
-                        >
-                          <!-- Like Button -->
-                          <button 
-                            id="like-button"
-                            @click="like()" 
-                            :disabled="isLoading"
-                            class="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 hover-youtube-button transition-colors duration-200 relative"
-                            :class="{ 'text-red-500': liked, 'text-white': !liked }"
-                          >
-                            <!-- Loading spinner -->
-                            <div 
-                              x-show="isLoading" 
-                              class="absolute inset-0 flex items-center justify-center bg-youtube-button bg-opacity-80"
-                            >
-                              <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                              </svg>
-                            </div>
-                            
-                            <!-- Like icon - Outline version (when not liked) -->
-                            <svg 
-                              x-show="!liked"
-                              xmlns="http://www.w3.org/2000/svg" 
-                              width="18" 
-                              height="18" 
-                              viewBox="0 0 24 24" 
-                              fill="none" 
-                              stroke="currentColor" 
-                              stroke-width="2" 
-                              stroke-linecap="round" 
-                              stroke-linejoin="round"
-                            >
-                              <path d="M7 10v12"/>
-                              <path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2h0a3.13 3.13 0 0 1 3 3.88Z"/>
-                            </svg>
-                            
-                            <!-- Like icon - Filled version (when liked) -->
-                            <svg 
-                              x-show="liked"
-                              xmlns="http://www.w3.org/2000/svg" 
-                              width="18" 
-                              height="18" 
-                              viewBox="0 0 24 24" 
-                              fill="currentColor" 
-                              stroke="none"
-                            >
-                              <path d="M7 10v12M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2h0a3.13 3.13 0 0 1 3 3.88Z"/>
-                            </svg>
-                            
-                            <span 
-                              x-text="likes" 
-                              class="text-xs sm:text-sm font-medium transition-colors duration-200"
-                              :class="liked ? 'text-red-500' : 'text-white'"
-                              x-effect="
-                                if (!isLoading) {
-                                  $el.classList.remove('count-animate-up', 'count-animate-down');
-                                  void $el.offsetWidth;
-                                  $el.classList.add(liked ? 'count-animate-up' : 'count-animate-down');
-                                }
-                              "
-                            ></span>
-                          </button>
-                          
-                          <div class="w-px h-6 bg-zinc-700"></div>
-                          
-                          <!-- Dislike Button -->
-                          <button 
-                            id="dislike-button"
-                            @click="dislike()" 
-                            :disabled="isLoading"
-                            class="px-2 sm:px-4 py-1.5 sm:py-2 hover-youtube-button transition-colors duration-200 relative"
-                            :class="{ 'text-blue-500': disliked, 'text-white': !disliked }"
-                          >
-                            <!-- Loading spinner -->
-                            <div 
-                              x-show="isLoading" 
-                              class="absolute inset-0 flex items-center justify-center bg-youtube-button bg-opacity-80"
-                            >
-                              <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                              </svg>
-                            </div>
-                            
-                            <!-- Dislike icon - Outline version (when not disliked) -->
-                            <svg 
-                              x-show="!disliked"
-                              xmlns="http://www.w3.org/2000/svg" 
-                              width="18" 
-                              height="18" 
-                              viewBox="0 0 24 24" 
-                              fill="none" 
-                              stroke="currentColor" 
-                              stroke-width="2" 
-                              stroke-linecap="round" 
-                              stroke-linejoin="round"
-                            >
-                              <path d="M17 14V2"/>
-                              <path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22h0a3.13 3.13 0 0 1-3-3.88Z"/>
-                            </svg>
-                            
-                            <!-- Dislike icon - Filled version (when disliked) -->
-                            <svg 
-                              x-show="disliked"
-                              xmlns="http://www.w3.org/2000/svg" 
-                              width="18" 
-                              height="18" 
-                              viewBox="0 0 24 24" 
-                              fill="currentColor" 
-                              stroke="none"
-                            >
-                              <path d="M17 14V2M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22h0a3.13 3.13 0 0 1-3-3.88Z"/>
-                            </svg>
-                          </button>
-                        </div>
-                        
-                        <!-- Watchlist Button - Added next to Like/Dislike -->
-                        <div 
-                          x-data="watchlist()" 
-                          x-init="
-                            $watch('inWatchlist', value => {
-                              if (value && !isLoading) createParticles('watchlist-button', 'particle-watchlist');
-                            })
-                          "
-                          class="rounded-full bg-youtube-button relative"
-                        >
-                          <!-- Watchlist Button Trigger -->
-                           {% if userInfo %}
-                          <button 
-                          id="watchlist-button"
-                          @click="toggleDropdown()" 
-                          :disabled="isLoading"
-                          class="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 hover-youtube-button transition-colors duration-200 relative rounded-full"
-                          :class="{ 'text-green-500': inWatchlist, 'text-white': !inWatchlist }"
-                        >
-                          <!-- Loading spinner -->
-                          <div 
-                            x-show="isLoading" 
-                            class="absolute inset-0 flex items-center justify-center bg-youtube-button bg-opacity-80 rounded-full"
-                          >
-                            <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                          </div>
-                          
-                          <!-- Bookmark icon - Outline (not in watchlist) -->
-                          <svg 
-                            x-show="!inWatchlist"
-                            xmlns="http://www.w3.org/2000/svg" 
-                            width="18" 
-                            height="18" 
-                            viewBox="0 0 24 24" 
-                            fill="none" 
-                            stroke="currentColor" 
-                            stroke-width="2" 
-                            stroke-linecap="round" 
-                            stroke-linejoin="round"
-                          >
-                            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
-                          </svg>
-                          
-                          <!-- Bookmark icon - Filled (in watchlist) -->
-                          <svg 
-                            x-show="inWatchlist"
-                            xmlns="http://www.w3.org/2000/svg" 
-                            width="18" 
-                            height="18" 
-                            viewBox="0 0 24 24" 
-                            fill="currentColor" 
-                            stroke="none"
-                          >
-                            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
-                          </svg>
-                          
-                          <span 
-                            x-text="inWatchlist ? 'Added' : 'Add'" 
-                            class="text-xs sm:text-sm font-medium"
-                            :class="inWatchlist ? 'text-green-500' : 'text-white'"
-                          ></span>
+            
+                <!-- Skip Buttons Container -->
+                <div class="absolute bottom-16 sm:bottom-20 left-0 right-0 flex justify-between px-2 sm:px-4 z-20 pointer-events-none">
+                    <!-- Skip Intro Button (Left) -->
+                    <div class="pointer-events-auto">
+                        <button x-show="IsIntroPlaying" @click="skipIntro()" 
+                            class="border-2 font-semibold text-white text-sm sm:text-base px-2 py-1 sm:px-4 sm:py-2 rounded-lg hover:bg-white hover:text-black transition-colors
+                                   active:scale-95 transform transition-transform">
+                            Skip Intro
                         </button>
-                        {% else %}
-                          <button 
-                            id="watchlist-button"
-                            @click="isAuthOpen = true" 
-                            :disabled="isLoading"
-                            class="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 hover-youtube-button transition-colors duration-200 relative rounded-full"
-                            :class="{ 'text-green-500': inWatchlist, 'text-white': !inWatchlist }"
-                          >
-                            <!-- Loading spinner -->
-                            <div 
-                              x-show="isLoading" 
-                              class="absolute inset-0 flex items-center justify-center bg-youtube-button bg-opacity-80 rounded-full"
-                            >
-                              <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                              </svg>
-                            </div>
-                            
-                            <!-- Bookmark icon - Outline (not in watchlist) -->
-                            <svg 
-                              x-show="!inWatchlist"
-                              xmlns="http://www.w3.org/2000/svg" 
-                              width="18" 
-                              height="18" 
-                              viewBox="0 0 24 24" 
-                              fill="none" 
-                              stroke="currentColor" 
-                              stroke-width="2" 
-                              stroke-linecap="round" 
-                              stroke-linejoin="round"
-                            >
-                              <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
-                            </svg>
-                            
-                            <!-- Bookmark icon - Filled (in watchlist) -->
-                            <svg 
-                              x-show="inWatchlist"
-                              xmlns="http://www.w3.org/2000/svg" 
-                              width="18" 
-                              height="18" 
-                              viewBox="0 0 24 24" 
-                              fill="currentColor" 
-                              stroke="none"
-                            >
-                              <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
-                            </svg>
-                            
-                            <span 
-                              x-text="inWatchlist ? 'Added' : 'Add'" 
-                              class="text-xs sm:text-sm font-medium"
-                              :class="inWatchlist ? 'text-green-500' : 'text-white'"
-                            ></span>
-                          </button>
-                        {% endif %}
-                        <!-- Watchlist Dropdown Menu -->
-                        <div 
-                        x-show="dropdownOpen" 
-                        @click.away="dropdownOpen = false" 
-                        class="absolute left-0 top-full z-50 w-[180px] sm:w-[200px] mt-3 bg-youtube-dark border border-zinc-600 rounded-lg shadow-lg overflow-hidden"
-                        style="display: none;">
-                        <div class="py-2">
-                            <template x-for="folder in folders" :key="folder">
-                            <div class="relative px-2">
-                                <a 
-                                href="#" 
-                                @click.prevent="addToWatchlist(folder)" 
-                                class="block px-4 py-3 my-1 text-sm text-white hover:bg-youtube-button transition-colors flex items-center justify-between rounded-md"
-                                :class="{'bg-youtube-button': currentFolder === folder}"
-                                >
-                                <span x-text="folder" class="font-medium truncate mr-4"></span>
-                                <span class="relative flex-shrink-0 flex items-center">
-                                    <!-- Loading Circle -->
-                                    <svg 
-                                    x-show="loading === folder" 
-                                    class="animate-spin h-5 w-5 text-white" 
-                                    xmlns="http://www.w3.org/2000/svg" 
-                                    fill="none" 
-                                    viewBox="0 0 24 24"
-                                    >
-                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                    </svg>
-                                    <!-- Green Tick -->
-                                    <svg 
-                                    x-show="success === folder || (inWatchlist && currentFolder === folder)" 
-                                    class="h-5 w-5 text-green-500" 
-                                    xmlns="http://www.w3.org/2000/svg" 
-                                    viewBox="0 0 20 20" 
-                                    fill="currentColor"
-                                    >
-                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-                                    </svg>
-                                    <!-- Red Cross -->
-                                    <svg 
-                                    x-show="error === folder" 
-                                    class="h-5 w-5 text-red-500" 
-                                    xmlns="http://www.w3.org/2000/svg" 
-                                    viewBox="0 0 20 20" 
-                                    fill="currentColor"
-                                    >
-                                    <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
-                                    </svg>
-                                </span>
-                                </a>
-                            </div>
-                            </template>
-                        </div>
-                        </div>
-                        </div>
-                      </div>
-                      
-                      <!-- Right side: Share Button -->
+                    </div>
+                    
+                    <!-- Skip Outro Button (Right) -->
+                    <div class="pointer-events-auto ml-auto">
+                        <button x-show="IsOutroPlaying" @click="skipOutro()" 
+                            class="border-2 font-semibold text-white text-sm sm:text-base px-2 py-1 sm:px-4 sm:py-2 rounded-lg hover:bg-white hover:text-black transition-colors
+                                   active:scale-95 transform transition-transform">
+                            Skip Outro
+                        </button>
+                    </div>
+                </div>
+            
+                <iframe id="playerIframeId" x-ref="videoPlayer" :src="currentVideoLink" 
+                    class="w-full h-full" allowfullscreen x-on:load="isVideoLoading = false"></iframe>
+            </div>
+
+            <!-- Watching Status Bar -->
+            <style>
+                /* YouTube-style colors */
+                .bg-youtube-dark {
+                  background-color: #0f0f0f;
+                }
+                .bg-youtube-button {
+                  background-color: #272727;
+                }
+                .hover-youtube-button:hover {
+                  background-color: #3f3f3f;
+                }
+                
+                /* Particle animation for like/dislike buttons */
+                @keyframes particle-animation {
+                  0% {
+                    transform: translate(0, 0) scale(0);
+                    opacity: 1;
+                  }
+                  100% {
+                    transform: translate(var(--tx), var(--ty)) scale(1);
+                    opacity: 0;
+                  }
+                }
+                .particle {
+                  position: absolute;
+                  border-radius: 50%;
+                  pointer-events: none;
+                  animation: particle-animation 0.6s ease-out forwards;
+                }
+                .particle-like {
+                  background-color: rgb(239, 68, 68); /* Red */
+                }
+                .particle-dislike {
+                  background-color: rgb(59, 130, 246); /* Blue */
+                }
+                .particle-watchlist {
+                  background-color: rgb(16, 185, 129); /* Green */
+                }
+                
+                /* Count animation */
+                @keyframes count-up {
+                  0% { transform: translateY(-10px); opacity: 0; }
+                  100% { transform: translateY(0); opacity: 1; }
+                }
+                @keyframes count-down {
+                  0% { transform: translateY(10px); opacity: 0; }
+                  100% { transform: translateY(0); opacity: 1; }
+                }
+                .count-animate-up {
+                  animation: count-up 0.3s ease-out forwards;
+                }
+                .count-animate-down {
+                  animation: count-down 0.3s ease-out forwards;
+                }
+                
+                /* Button animation */
+                @keyframes button-pop {
+                  0% { transform: scale(1); }
+                  50% { transform: scale(1.2); }
+                  100% { transform: scale(1); }
+                }
+                .button-pop {
+                  animation: button-pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+                }
+              </style>
+              
+              <!-- YouTube-style video controls -->
+              <div class="flex flex-col px-2 sm:px-4 py-2 gap-3 sm:gap-4 bg-youtube-dark text-white rounded-md">
+                <!-- Video Controls -->
+                <div class="flex items-center justify-between gap-2">
+                  <!-- Left side: Watching Count and Like/Dislike -->
+                  <div class="flex items-center gap-2 sm:gap-4">
+                    <!-- Watching Counter - First for psychological reasons -->
+                    <div 
+                      x-data="counter()" 
+                      x-init="initializeSocket()" 
+                      @join-room.window="joinRoom()"
+                      class="flex items-center gap-2 px-2 sm:px-4 py-1.5 sm:py-2 rounded-full bg-youtube-button"
+                    >
+                      <span x-text="formatCount(count)" class="number-animation inline-block text-xs sm:text-sm font-medium"
+                        :class="{'number-up': increasing, 'number-down': decreasing}">
+                      </span>
+                      <span class="text-red-500 text-xs">●</span>
+                      <span class="text-xs sm:text-sm">watching</span>
+                    </div>
+                    
+                    <!-- Like/Dislike - After watching count for better engagement flow -->
+                    <div 
+                      x-data="likeSystem()" 
+                      x-init="
+                        $watch('liked', value => {
+                          if (value && !isLoading) createParticles('like-button', 'particle-like');
+                        });
+                        $watch('disliked', value => {
+                          if (value && !isLoading) createParticles('dislike-button', 'particle-dislike');
+                        })
+                      "
+                      class="flex items-center rounded-full overflow-hidden bg-youtube-button"
+                    >
+                      <!-- Like Button -->
                       <button 
-                        @click="isShareOpen = true" 
-                        class="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 rounded-full bg-youtube-button hover-youtube-button transition-colors duration-200"
+                        id="like-button"
+                        @click="like()" 
+                        :disabled="isLoading"
+                        class="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 hover-youtube-button transition-colors duration-200 relative"
+                        :class="{ 'text-red-500': liked, 'text-white': !liked }"
                       >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                          <circle cx="18" cy="5" r="3"/>
-                          <circle cx="6" cy="12" r="3"/>
-                          <circle cx="18" cy="19" r="3"/>
-                          <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
-                          <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+                        <!-- Loading spinner -->
+                        <div 
+                          x-show="isLoading" 
+                          class="absolute inset-0 flex items-center justify-center bg-youtube-button bg-opacity-80"
+                        >
+                          <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                        </div>
+                        
+                        <!-- Like icon - Outline version (when not liked) -->
+                        <svg 
+                          x-show="!liked"
+                          xmlns="http://www.w3.org/2000/svg" 
+                          width="18" 
+                          height="18" 
+                          viewBox="0 0 24 24" 
+                          fill="none" 
+                          stroke="currentColor" 
+                          stroke-width="2" 
+                          stroke-linecap="round" 
+                          stroke-linejoin="round"
+                        >
+                          <path d="M7 10v12"/>
+                          <path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2h0a3.13 3.13 0 0 1 3 3.88Z"/>
                         </svg>
-                        <span class="text-xs sm:text-sm font-medium">Share</span>
+                        
+                        <!-- Like icon - Filled version (when liked) -->
+                        <svg 
+                          x-show="liked"
+                          xmlns="http://www.w3.org/2000/svg" 
+                          width="18" 
+                          height="18" 
+                          viewBox="0 0 24 24" 
+                          fill="currentColor" 
+                          stroke="none"
+                        >
+                          <path d="M7 10v12M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2h0a3.13 3.13 0 0 1 3 3.88Z"/>
+                        </svg>
+                        
+                        <span 
+                          x-text="likes" 
+                          class="text-xs sm:text-sm font-medium transition-colors duration-200"
+                          :class="liked ? 'text-red-500' : 'text-white'"
+                          x-effect="
+                            if (!isLoading) {
+                              $el.classList.remove('count-animate-up', 'count-animate-down');
+                              void $el.offsetWidth;
+                              $el.classList.add(liked ? 'count-animate-up' : 'count-animate-down');
+                            }
+                          "
+                        ></span>
+                      </button>
+                      
+                      <div class="w-px h-6 bg-zinc-700"></div>
+                      
+                      <!-- Dislike Button -->
+                      <button 
+                        id="dislike-button"
+                        @click="dislike()" 
+                        :disabled="isLoading"
+                        class="px-2 sm:px-4 py-1.5 sm:py-2 hover-youtube-button transition-colors duration-200 relative"
+                        :class="{ 'text-blue-500': disliked, 'text-white': !disliked }"
+                      >
+                        <!-- Loading spinner -->
+                        <div 
+                          x-show="isLoading" 
+                          class="absolute inset-0 flex items-center justify-center bg-youtube-button bg-opacity-80"
+                        >
+                          <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                        </div>
+                        
+                        <!-- Dislike icon - Outline version (when not disliked) -->
+                        <svg 
+                          x-show="!disliked"
+                          xmlns="http://www.w3.org/2000/svg" 
+                          width="18" 
+                          height="18" 
+                          viewBox="0 0 24 24" 
+                          fill="none" 
+                          stroke="currentColor" 
+                          stroke-width="2" 
+                          stroke-linecap="round" 
+                          stroke-linejoin="round"
+                        >
+                          <path d="M17 14V2"/>
+                          <path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22h0a3.13 3.13 0 0 1-3-3.88Z"/>
+                        </svg>
+                        
+                        <!-- Dislike icon - Filled version (when disliked) -->
+                        <svg 
+                          x-show="disliked"
+                          xmlns="http://www.w3.org/2000/svg" 
+                          width="18" 
+                          height="18" 
+                          viewBox="0 0 24 24" 
+                          fill="currentColor" 
+                          stroke="none"
+                        >
+                          <path d="M17 14V2M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22h0a3.13 3.13 0 0 1-3-3.88Z"/>
+                        </svg>
                       </button>
                     </div>
+                    
+                    <!-- Watchlist Button - Added next to Like/Dislike -->
+                    <div 
+                      x-data="watchlist()" 
+                      x-init="
+                        $watch('inWatchlist', value => {
+                          if (value && !isLoading) createParticles('watchlist-button', 'particle-watchlist');
+                        })
+                      "
+                      class="rounded-full bg-youtube-button relative"
+                    >
+                      <!-- Watchlist Button Trigger -->
+                       {% if userInfo %}
+                      <button 
+                      id="watchlist-button"
+                      @click="toggleDropdown()" 
+                      :disabled="isLoading"
+                      class="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 hover-youtube-button transition-colors duration-200 relative rounded-full"
+                      :class="{ 'text-green-500': inWatchlist, 'text-white': !inWatchlist }"
+                    >
+                      <!-- Loading spinner -->
+                      <div 
+                        x-show="isLoading" 
+                        class="absolute inset-0 flex items-center justify-center bg-youtube-button bg-opacity-80 rounded-full"
+                      >
+                        <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                      </div>
+                      
+                      <!-- Bookmark icon - Outline (not in watchlist) -->
+                      <svg 
+                        x-show="!inWatchlist"
+                        xmlns="http://www.w3.org/2000/svg" 
+                        width="18" 
+                        height="18" 
+                        viewBox="0 0 24 24" 
+                        fill="none" 
+                        stroke="currentColor" 
+                        stroke-width="2" 
+                        stroke-linecap="round" 
+                        stroke-linejoin="round"
+                      >
+                        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                      </svg>
+                      
+                      <!-- Bookmark icon - Filled (in watchlist) -->
+                      <svg 
+                        x-show="inWatchlist"
+                        xmlns="http://www.w3.org/2000/svg" 
+                        width="18" 
+                        height="18" 
+                        viewBox="0 0 24 24" 
+                        fill="currentColor" 
+                        stroke="none"
+                      >
+                        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                      </svg>
+                      
+                      <span 
+                        x-text="inWatchlist ? 'Added' : 'Add'" 
+                        class="text-xs sm:text-sm font-medium"
+                        :class="inWatchlist ? 'text-green-500' : 'text-white'"
+                      ></span>
+                    </button>
+                    {% else %}
+                      <button 
+                        id="watchlist-button"
+                        @click="isAuthOpen = true" 
+                        :disabled="isLoading"
+                        class="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 hover-youtube-button transition-colors duration-200 relative rounded-full"
+                        :class="{ 'text-green-500': inWatchlist, 'text-white': !inWatchlist }"
+                      >
+                        <!-- Loading spinner -->
+                        <div 
+                          x-show="isLoading" 
+                          class="absolute inset-0 flex items-center justify-center bg-youtube-button bg-opacity-80 rounded-full"
+                      >
+                        <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                      </div>
+                      
+                      <!-- Bookmark icon - Outline (not in watchlist) -->
+                      <svg 
+                        x-show="!inWatchlist"
+                        xmlns="http://www.w3.org/2000/svg" 
+                        width="18" 
+                        height="18" 
+                        viewBox="0 0 24 24" 
+                        fill="none" 
+                        stroke="currentColor" 
+                        stroke-width="2" 
+                        stroke-linecap="round" 
+                        stroke-linejoin="round"
+                      >
+                        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                      </svg>
+                      
+                      <!-- Bookmark icon - Filled (in watchlist) -->
+                      <svg 
+                        x-show="inWatchlist"
+                        xmlns="http://www.w3.org/2000/svg" 
+                        width="18" 
+                        height="18" 
+                        viewBox="0 0 24 24" 
+                        fill="currentColor" 
+                        stroke="none"
+                      >
+                        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                      </svg>
+                      
+                      <span 
+                        x-text="inWatchlist ? 'Added' : 'Add'" 
+                        class="text-xs sm:text-sm font-medium"
+                        :class="inWatchlist ? 'text-green-500' : 'text-white'"
+                      ></span>
+                    </button>
+                    {% endif %}
+                    <!-- Watchlist Dropdown Menu -->
+                    <div 
+                    x-show="dropdownOpen" 
+                    @click.away="dropdownOpen = false" 
+                    class="absolute left-0 top-full z-50 w-[180px] sm:w-[200px] mt-3 bg-youtube-dark border border-zinc-600 rounded-lg shadow-lg overflow-hidden"
+                    style="display: none;">
+                    <div class="py-2">
+                        <template x-for="folder in folders" :key="folder">
+                        <div class="relative px-2">
+                            <a 
+                            href="#" 
+                            @click.prevent="addToWatchlist(folder)" 
+                            class="block px-4 py-3 my-1 text-sm text-white hover:bg-youtube-button transition-colors flex items-center justify-between rounded-md"
+                            :class="{'bg-youtube-button': currentFolder === folder}"
+                            >
+                            <span x-text="folder" class="font-medium truncate mr-4"></span>
+                            <span class="relative flex-shrink-0 flex items-center">
+                                <!-- Loading Circle -->
+                                <svg 
+                                x-show="loading === folder" 
+                                class="animate-spin h-5 w-5 text-white" 
+                                xmlns="http://www.w3.org/2000/svg" 
+                                fill="none" 
+                                viewBox="0 0 24 24"
+                                >
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                <!-- Green Tick -->
+                                <svg 
+                                x-show="success === folder || (inWatchlist && currentFolder === folder)" 
+                                class="h-5 w-5 text-green-500" 
+                                xmlns="http://www.w3.org/2000/svg" 
+                                viewBox="0 0 20 20" 
+                                fill="currentColor"
+                                >
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                </svg>
+                                <!-- Red Cross -->
+                                <svg 
+                                x-show="error === folder" 
+                                class="h-5 w-5 text-red-500" 
+                                xmlns="http://www.w3.org/2000/svg" 
+                                viewBox="0 0 20 20" 
+                                fill="currentColor"
+                                >
+                                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                </svg>
+                            </span>
+                            </a>
+                        </div>
+                        </template>
+                    </div>
+                    </div>
+                    </div>
                   </div>
+                  
+                  <!-- Right side: Share Button -->
+                  <button 
+                    @click="isShareOpen = true" 
+                    class="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 rounded-full bg-youtube-button hover-youtube-button transition-colors duration-200"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <circle cx="18" cy="5" r="3"/>
+                      <circle cx="6" cy="12" r="3"/>
+                      <circle cx="18" cy="19" r="3"/>
+                      <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+                      <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+                    </svg>
+                    <span class="text-xs sm:text-sm font-medium">Share</span>
+                  </button>
+                </div>
+              </div>
 
-                <div class="flex flex-col xl:flex-row">
-                    <div class="bg-pink-200 p-4 rounded-lg w-full xl:w-64 mb-4 xl:mb-0">
-                        <div class="text-black text-center">
-                            <div class="font-medium">You are watching</div>
-                            <div class="font-bold mb-2">Episode <span id="epn"></span></div>
-                            <div class="text-sm">
-                                If current server doesn't work<br />
-                                please try other servers<br />
-                                beside.
-                            </div>
+            <div class="flex flex-col xl:flex-row">
+                <div class="bg-pink-200 p-4 rounded-lg w-full xl:w-64 mb-4 xl:mb-0">
+                    <div class="text-black text-center">
+                        <div class="font-medium">You are watching</div>
+                        <div class="font-bold mb-2">Episode <span id="epn"></span></div>
+                        <div class="text-sm">
+                            If current server doesn't work<br />
+                            please try other servers<br />
+                            beside.
                         </div>
                     </div>
-                    
-                    <!-- Quality Selection -->
-                    <div class="flex-1 xl:ml-4 bg-[#1a1a1a] rounded-lg p-4">
-                        <div class="space-y-4">
-                            <!-- SUB Options -->
-                            <div x-show="episodeLinks.filter(l => l.dataType === 'sub').length > 0"
-                                class="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
-                                <div class="flex items-center text-gray-300 mb-2 sm:mb-0">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none"
-                                        viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M4 6h16M4 12h16m-7 6h7" />
-                                    </svg>
-                                    SUB:
-                                </div>
-                                <div class="space-x-1 sub-options overflow-x-auto pb-2 sm:pb-0 grid-cols-4 space-y-3">
-                                    <template x-for="link in episodeLinks.filter(l => l.dataType === 'sub')"
-                                        :key="link.$id">
-                                        <button @click="selectServer(link)"
-                                            :class="{'bg-red-500 text-white': currentServer === link,'bg-gray-800 text-gray-300 hover:bg-gray-700': currentServer !== link}"
-                                            class="px-4 py-1 text-white rounded hover:bg-[#3a3a3a] transition-colors server-button inline-flex items-center space-x-1.5">
-                                            <svg x-show="link.continue" 
-                                                xmlns="http://www.w3.org/2000/svg" 
-                                                width="16" 
-                                                height="16" 
-                                                viewBox="0 0 24 24" 
-                                                fill="none" 
-                                                stroke="currentColor" 
-                                                stroke-width="2" 
-                                                stroke-linecap="round" 
-                                                stroke-linejoin="round" 
-                                                :class="currentServer === link ? 'text-white' : 'text-green-500'"
-                                                class="flex-shrink-0 mr-3"
-                                                title="Supports Continue Watching">
-                                                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
-                                                <path d="M3 3v5h5"/>
-                                                <path d="M12 7v5l4 2"/>
-                                            </svg>
-                                            <span x-text="link.serverName"></span>
-                                        </button>
-                                    </template>
-                                </div>
+                </div>
+                
+                <!-- Quality Selection -->
+                <div class="flex-1 xl:ml-4 bg-[#1a1a1a] rounded-lg p-4">
+                    <div class="space-y-4">
+                        <!-- SUB Options -->
+                        <div x-show="episodeLinks.filter(l => l.dataType === 'sub').length > 0"
+                            class="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
+                            <div class="flex items-center text-gray-300 mb-2 sm:mb-0">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none"
+                                    viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M4 6h16M4 12h16m-7 6h7" />
+                                </svg>
+                                SUB:
                             </div>
-
-                            <!-- DUB Options -->
-                            <div x-show="episodeLinks.filter(l => l.dataType === 'dub').length > 0"
-                                class="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
-                                <div class="flex items-center text-gray-300 mb-2 sm:mb-0">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none"
-                                        viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                                    </svg>
-                                    DUB:
-                                </div>
-                                <div class="space-x-1 dub-options overflow-x-auto pb-2 sm:pb-0 grid-cols-4 space-y-3">
-                                    <template x-for="link in episodeLinks.filter(l => l.dataType === 'dub')"
-                                        :key="link.$id">
-                                        <button @click="selectServer(link)" 
-                                            :class="{'bg-red-500 text-white': currentServer === link,'bg-gray-800 text-gray-300 hover:bg-gray-700': currentServer !== link}"
-                                            class="px-4 py-1 text-white rounded hover:bg-[#3a3a3a] transition-colors server-button inline-flex items-center space-x-1.5">
-                                            <svg x-show="link.continue" 
-                                                xmlns="http://www.w3.org/2000/svg" 
-                                                width="16" 
-                                                height="16" 
-                                                viewBox="0 0 24 24" 
-                                                fill="none" 
-                                                stroke="currentColor" 
-                                                stroke-width="2" 
-                                                stroke-linecap="round" 
-                                                stroke-linejoin="round" 
-                                                :class="currentServer === link ? 'text-white' : 'text-green-500'"
-                                                class="flex-shrink-0 mr-3"
-                                                title="Supports Continue Watching">
-                                                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
-                                                <path d="M3 3v5h5"/>
-                                                <path d="M12 7v5l4 2"/>
-                                            </svg>
-                                            <span x-text="link.serverName"></span>
-                                        </button>
-                                    </template>
-                                </div>
+                            <div class="space-x-1 sub-options overflow-x-auto pb-2 sm:pb-0 grid-cols-4 space-y-3">
+                                <template x-for="link in episodeLinks.filter(l => l.dataType === 'sub')"
+                                    :key="link.$id">
+                                    <button @click="selectServer(link)"
+                                        :class="{'bg-red-500 text-white': currentServer === link,'bg-gray-800 text-gray-300 hover:bg-gray-700': currentServer !== link}"
+                                        class="px-4 py-1 text-white rounded hover:bg-[#3a3a3a] transition-colors server-button inline-flex items-center space-x-1.5">
+                                        <svg x-show="link.continue" 
+                                            xmlns="http://www.w3.org/2000/svg" 
+                                            width="16" 
+                                            height="16" 
+                                            viewBox="0 0 24 24" 
+                                            fill="none" 
+                                            stroke="currentColor" 
+                                            stroke-width="2" 
+                                            stroke-linecap="round" 
+                                            stroke-linejoin="round" 
+                                            :class="currentServer === link ? 'text-white' : 'text-green-500'"
+                                            class="flex-shrink-0 mr-3"
+                                            title="Supports Continue Watching">
+                                            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                                            <path d="M3 3v5h5"/>
+                                            <path d="M12 7v5l4 2"/>
+                                        </svg>
+                                        <span x-text="link.serverName"></span>
+                                    </button>
+                                </template>
                             </div>
+                        </div>
 
-                            <!-- DUB2 Options (Korean DUB) -->
-                            <div x-show="episodeLinks.filter(l => l.dataType === 'korean-dub').length > 0"
-                                class="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
-                                <div class="flex items-center text-gray-300 mb-2 sm:mb-0">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none"
-                                        viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                                    </svg>
-                                    DUB2:
-                                </div>
-                                <div class="space-x-1 dub-options overflow-x-auto pb-2 sm:pb-0 grid-cols-4 space-y-3">
-                                    <template x-for="link in episodeLinks.filter(l => l.dataType === 'korean-dub')"
-                                        :key="link.$id">
-                                        <button @click="selectServer(link)" 
-                                            :class="{'bg-red-500 text-white': currentServer === link,'bg-gray-800 text-gray-300 hover:bg-gray-700': currentServer !== link}"
-                                            class="px-4 py-1 text-white rounded hover:bg-[#3a3a3a] transition-colors server-button inline-flex items-center space-x-1.5">
-                                            <svg x-show="link.continue" 
-                                                xmlns="http://www.w3.org/2000/svg" 
-                                                width="16" 
-                                                height="16" 
-                                                viewBox="0 0 24 24" 
-                                                fill="none" 
-                                                stroke="currentColor" 
-                                                stroke-width="2" 
-                                                stroke-linecap="round" 
-                                                stroke-linejoin="round" 
-                                                :class="currentServer === link ? 'text-white' : 'text-green-500'"
-                                                class="flex-shrink-0 mr-3"
-                                                title="Supports Continue Watching">
-                                                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
-                                                <path d="M3 3v5h5"/>
-                                                <path d="M12 7v5l4 2"/>
-                                            </svg>
-                                            <span x-text="link.serverName"></span>
-                                        </button>
-                                    </template>
-                                </div>
+                        <!-- DUB Options -->
+                        <div x-show="episodeLinks.filter(l => l.dataType === 'dub').length > 0"
+                            class="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
+                            <div class="flex items-center text-gray-300 mb-2 sm:mb-0">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none"
+                                    viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                                </svg>
+                                DUB:
+                            </div>
+                            <div class="space-x-1 dub-options overflow-x-auto pb-2 sm:pb-0 grid-cols-4 space-y-3">
+                                <template x-for="link in episodeLinks.filter(l => l.dataType === 'dub')"
+                                    :key="link.$id">
+                                    <button @click="selectServer(link)" 
+                                        :class="{'bg-red-500 text-white': currentServer === link,'bg-gray-800 text-gray-300 hover:bg-gray-700': currentServer !== link}"
+                                        class="px-4 py-1 text-white rounded hover:bg-[#3a3a3a] transition-colors server-button inline-flex items-center space-x-1.5">
+                                        <svg x-show="link.continue" 
+                                            xmlns="http://www.w3.org/2000/svg" 
+                                            width="16" 
+                                            height="16" 
+                                            viewBox="0 0 24 24" 
+                                            fill="none" 
+                                            stroke="currentColor" 
+                                            stroke-width="2" 
+                                            stroke-linecap="round" 
+                                            stroke-linejoin="round" 
+                                            :class="currentServer === link ? 'text-white' : 'text-green-500'"
+                                            class="flex-shrink-0 mr-3"
+                                            title="Supports Continue Watching">
+                                            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                                            <path d="M3 3v5h5"/>
+                                            <path d="M12 7v5l4 2"/>
+                                        </svg>
+                                        <span x-text="link.serverName"></span>
+                                    </button>
+                                </template>
+                            </div>
+                        </div>
+
+                        <!-- DUB2 Options (Korean DUB) -->
+                        <div x-show="episodeLinks.filter(l => l.dataType === 'korean-dub').length > 0"
+                            class="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
+                            <div class="flex items-center text-gray-300 mb-2 sm:mb-0">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none"
+                                    viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                                </svg>
+                                DUB2:
+                            </div>
+                            <div class="space-x-1 dub-options overflow-x-auto pb-2 sm:pb-0 grid-cols-4 space-y-3">
+                                <template x-for="link in episodeLinks.filter(l => l.dataType === 'korean-dub')"
+                                    :key="link.$id">
+                                    <button @click="selectServer(link)" 
+                                        :class="{'bg-red-500 text-white': currentServer === link,'bg-gray-800 text-gray-300 hover:bg-gray-700': currentServer !== link}"
+                                        class="px-4 py-1 text-white rounded hover:bg-[#3a3a3a] transition-colors server-button inline-flex items-center space-x-1.5">
+                                        <svg x-show="link.continue" 
+                                            xmlns="http://www.w3.org/2000/svg" 
+                                            width="16" 
+                                            height="16" 
+                                            viewBox="0 0 24 24" 
+                                            fill="none" 
+                                            stroke="currentColor" 
+                                            stroke-width="2" 
+                                            stroke-linecap="round" 
+                                            stroke-linejoin="round" 
+                                            :class="currentServer === link ? 'text-white' : 'text-green-500'"
+                                            class="flex-shrink-0 mr-3"
+                                            title="Supports Continue Watching">
+                                            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                                            <path d="M3 3v5h5"/>
+                                            <path d="M12 7v5l4 2"/>
+                                        </svg>
+                                        <span x-text="link.serverName"></span>
+                                    </button>
+                                </template>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+        </div>
 
-            <div class="block lg:hidden">
-                <!-- Your comments section here -->
-                {% include "comments.html" %}
-            </div>
+        <!-- Episodes Section -->
+        <aside class="lg:w-3/12 space-y-6 p-4 scrollbar-thin scrollbar-thumb-[#FF0000] scrollbar-track-[#2a2a2a]" 
+          id="episode-container"
+          x-bind:style="'max-height: ' + mainContentHeight + 'px; overflow-y: hidden;'">
+          <div class="flex flex-col bg-[#1a1a1a] rounded-lg p-6 shadow-lg mb-6" x-bind:style="'max-height: ' + mainContentHeight + 'px; overflow-y: hidden;'">
+              <h2 class="text-2xl font-semibold mb-4 text-white">Episodes</h2>
 
-            <!-- Episodes Section -->
-            <aside class="lg:w-3/12 space-y-6 p-4 scrollbar-thin scrollbar-thumb-[#FF0000] scrollbar-track-[#2a2a2a]" 
-              id="episode-container"
-              x-bind:style="'max-height: ' + mainContentHeight + 'px; overflow-y: hidden;'">
-              <div class="flex flex-col bg-[#1a1a1a] rounded-lg p-6 shadow-lg mb-6" x-bind:style="'max-height: ' + mainContentHeight + 'px; overflow-y: hidden;'">
-                  <h2 class="text-2xl font-semibold mb-4 text-white">Episodes</h2>
+              <!-- Search Input -->
+              <div class="mb-4">
+                  <input x-model="searchInput" @input="searchEpisodes" type="text"
+                      placeholder="Search by episode number or title..."
+                      class="w-full p-2 rounded-lg border border-[#808080] bg-black text-gray-300 focus:outline-none focus:ring-2 focus:ring-[#FF0000]">
+              </div>
 
-                  <!-- Search Input -->
-                  <div class="mb-4">
-                      <input x-model="searchInput" @input="searchEpisodes" type="text"
-                          placeholder="Search by episode number or title..."
-                          class="w-full p-2 rounded-lg border border-[#808080] bg-black text-gray-300 focus:outline-none focus:ring-2 focus:ring-[#FF0000]">
-                  </div>
-
-                  <!-- Episode List Container with Smooth Scrolling -->
-                  <div
-                      x-ref="episodesContainer"
-                      class="space-y-4 overflow-y-auto pl-4 pr-4 pb-4 scrollbar-thin scrollbar-thumb-[#FF0000] scrollbar-track-[#1a1a1a] bg-black rounded-md border border-[#808080]"
-                      @scroll="handleScroll"
-                      style="scroll-behavior: smooth;">
-                      <template x-for="episode in filteredEpisodes" :key="episode.id">
-                          <div class="group" :data-episode="episode.number">
-                              <div class="episode bg-black p-4 rounded-lg cursor-pointer hover:bg-[#412c2c] transition-colors duration-200"
-                                  :class="{
-                                      'border-2 border-red-600 current-episode': currentEpisode === episode.number,
-                                      'border-2 border-gray-600 hover:border-gray-700': currentEpisode !== episode.number
-                                  }">
-                                  <div class="flex items-center justify-between">
-                                      <div class="flex items-center flex-1" @click="selectEpisode(episode.number)">
-                                          <div class="flex-1">
-                                              <h3 class="font-semibold text-white line-clamp-1"
-                                                  x-text="episode.number +'. ' + episode.titles[0]"></h3>
-                                              <p class="text-sm text-[#808080]" x-text="'Aired '+episode.aired"></p>
-                                          </div>
+              <!-- Episode List Container with Smooth Scrolling -->
+              <div
+                  x-ref="episodesContainer"
+                  class="space-y-4 overflow-y-auto pl-4 pr-4 pb-4 scrollbar-thin scrollbar-thumb-[#FF0000] scrollbar-track-[#1a1a1a] bg-black rounded-md border border-[#808080]"
+                  @scroll="handleScroll"
+                  style="scroll-behavior: smooth;">
+                  <template x-for="episode in filteredEpisodes" :key="episode.id">
+                      <div class="group" :data-episode="episode.number">
+                          <div class="episode bg-black p-4 rounded-lg cursor-pointer hover:bg-[#412c2c] transition-colors duration-200"
+                              :class="{
+                                  'border-2 border-red-600 current-episode': currentEpisode === episode.number,
+                                  'border-2 border-gray-600 hover:border-gray-700': currentEpisode !== episode.number
+                              }">
+                              <div class="flex items-center justify-between">
+                                  <div class="flex items-center flex-1" @click="selectEpisode(episode.number)">
+                                      <div class="flex-1">
+                                          <h3 class="font-semibold text-white line-clamp-1"
+                                              x-text="episode.number +'. ' + episode.titles[0]"></h3>
+                                          <p class="text-sm text-[#808080]" x-text="'Aired '+episode.aired"></p>
                                       </div>
-                                      <button x-show="currentEpisode === episode.number"
-                                          @click.stop="openEpisodeEdit(episode)"
-                                          class="ml-4 p-1 hover:bg-red-500/20 rounded-full transition-colors flex-shrink-0">
-                                          <svg class="w-5 h-5 text-red-500 hover:text-red-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                              <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
-                                          </svg>
-                                      </button>
                                   </div>
+                                  <button x-show="currentEpisode === episode.number"
+                                      @click.stop="openEpisodeEdit(episode)"
+                                      class="ml-4 p-1 hover:bg-red-500/20 rounded-full transition-colors flex-shrink-0">
+                                      <svg class="w-5 h-5 text-red-500 hover:text-red-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                          <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                                      </svg>
+                                  </button>
                               </div>
                           </div>
-                      </template>
-                  </div>
+                      </div>
+                  </template>
               </div>
-              <div class="bg-[#1a1a1a] rounded-lg shadow-lg overflow-hidden block xl:hidden" x-data="{ showFullDescription: false }">
-                  {% include "infoCard.html" %}
-              </div>
-            </aside>
-        </div>
-
-        <!-- Share Dialog -->
-        <div x-cloak x-show="isShareOpen" 
-            class="fixed inset-0 bg-black/80 flex items-center justify-center z-50" 
-            @click.self="isShareOpen = false">
-            <div x-show="isShareOpen" 
-                x-transition:enter="transition ease-out duration-200"
-                x-transition:enter-start="opacity-0 transform scale-95"
-                x-transition:enter-end="opacity-100 transform scale-100"
-                x-transition:leave="transition ease-in duration-150"
-                x-transition:leave-start="opacity-100 transform scale-100"
-                x-transition:leave-end="opacity-0 transform scale-95"
-                @click.away="isShareOpen = false"
-                class="bg-[#282828]/80 backdrop-blur-md rounded-xl shadow-2xl w-[95%] max-w-[480px] border border-white/10"
-                @keydown.escape.window="isShareOpen = false">
-                
-                <!-- Header -->
-                <div class="relative px-6 py-4 border-b border-white/10">
-                    <div class="text-center">
-                        <h2 class="text-[17px] font-medium text-white">Share</h2>
-                    </div>
-                    <button @click="isShareOpen = false" 
-                            class="absolute right-4 top-4 text-[#aaa] hover:text-white transition-colors p-1">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                        </svg>
-                    </button>
-                </div>
-
-                <!-- Share Section -->
-                <div class="p-6">
-                    <div class="mb-6">
-                        <div class="relative share-container">
-                            <!-- Left Arrow -->
-                            <button @click="scrollLeft" 
-                                    class="nav-arrow absolute left-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 flex items-center justify-center bg-[#282828] rounded-full shadow-lg">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
-                                </svg>
-                            </button>
-                            
-                            <div class="flex space-x-4 overflow-x-auto share-scroll pb-2 px-2" x-ref="shareButtons">
-                                <button @click="share('whatsapp')" 
-                                        class="share-button flex-shrink-0 w-12 h-12 bg-[#25D366] rounded-full flex items-center justify-center">
-                                    <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
-                                    </svg>
-                                </button>
-                                <button @click="share('facebook')" 
-                                        class="share-button flex-shrink-0 w-12 h-12 bg-[#1877F2] rounded-full flex items-center justify-center">
-                                    <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                        <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-                                    </svg>
-                                </button>
-                                <button @click="share('twitter')" 
-                                        class="share-button flex-shrink-0 w-12 h-12 bg-black rounded-full flex items-center justify-center border border-gray-700">
-                                    <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-                                    </svg>
-                                </button>
-                                <button @click="share('email')" 
-                                        class="share-button flex-shrink-0 w-12 h-12 bg-[#666] rounded-full flex items-center justify-center">
-                                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-                                    </svg>
-                                </button>
-                                <button @click="share('kakaotalk')" 
-                                        class="share-button flex-shrink-0 w-12 h-12 bg-[#FAE100] rounded-full flex items-center justify-center">
-                                    <svg class="w-6 h-6 text-black" viewBox="0 0 24 24" fill="currentColor">
-                                        <path d="M12 3c-5.523 0-10 3.582-10 8 0 2.91 1.564 5.471 3.95 6.934-.184.757-.736 2.736-.85 3.163-.142.537.197.527.497.387.205-.096 3.264-2.196 4.57-3.084.576.082 1.17.125 1.777.125 5.523 0 10-3.582 10-8s-4.477-8-10-8z"/>
-                                    </svg>
-                                </button>
-                                <button @click="share('reddit')" 
-                                        class="share-button flex-shrink-0 w-12 h-12 bg-[#FF4500] rounded-full flex items-center justify-center">
-                                    <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                        <path d="M12 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm5.01 4.744c.688 0 1.25.561 1.25 1.249a1.25 1.25 0 0 1-2.498.056l-2.597-.547-.8 3.747c1.824.07 3.48.632 4.674 1.488.308-.309.73-.491 1.207-.491.968 0 1.754.786 1.754 1.754 0 .716-.435 1.333-1.01 1.614a3.111 3.111 0 0 1 .042.52c0 2.694-3.13 4.87-7.004 4.87-3.874 0-7.004-2.176-7.004-4.87 0-.183.015-.366.043-.534A1.748 1.748 0 0 1 4.028 12c0-.968.786-1.754 1.754-1.754.463 0 .898.196 1.207.49 1.207-.883 2.878-1.43 4.744-1.487l.885-4.182a.342.342 0 0 1 .14-.197.35.35 0 0 1 .238-.042l2.906.617a1.214 1.214 0 0 1 1.108-.701zM9.25 12C8.561 12 8 12.562 8 13.25c0 .687.561 1.248 1.25 1.248.687 0 1.248-.561 1.248-1.249 0-.688-.561-1.249-1.249-1.249zm5.5 0c-.687 0-1.248.561-1.248 1.25 0 .687.561 1.248 1.249 1.248.688 0 1.249-.561 1.249-1.249 0-.687-.562-1.249-1.25-1.249zm-5.466 3.99a.327.327 0 0 0-.231.094.33.33 0 0 0 0 .463c.842.842 2.484.913 2.961.913.477 0 2.105-.056 2.961-.913a.361.361 0 0 0 .029-.463.33.33 0 0 0-.464 0c-.547.533-1.684.73-2.512.73-.828 0-1.979-.196-2.512-.73a.326.326 0 0 0-.232-.095z"/>
-                                    </svg>
-                                </button>
-                                <button @click="share('telegram')" 
-                                        class="share-button flex-shrink-0 w-12 h-12 bg-[#0088cc] rounded-full flex items-center justify-center">
-                                    <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                        <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.14.18-.357.295-.6.295-.002 0-.003 0-.005 0l.213-3.054 5.56-5.022c.24-.213-.054-.334-.373-.121l-6.869 4.326-2.96-.924c-.64-.203-.658-.64.135-.954l11.566-4.458c.538-.196 1.006.128.832.941z"/>
-                                    </svg>
-                                </button>
-                            </div>
-
-                            <!-- Right Arrow -->
-                            <button @click="scrollRight"
-                                    class="nav-arrow absolute right-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 flex items-center justify-center bg-[#282828] rounded-full shadow-lg">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Title input field -->
-                    <div class="mb-4" x-data="{ title: '{{ animeInfo.english }}' }" >
-                        <input type="text" 
-                            x-model="title" 
-                            placeholder="Enter post title"
-                            class="w-full glass-input text-white text-sm px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3ea6ff]"
-                        >
-                    </div>
-
-                     <!-- Description textarea field -->
-                    <div class="mb-4">
-                        <textarea 
-                            x-model="description" 
-                            placeholder="Enter post description"
-                            class="w-full glass-input text-white text-sm px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3ea6ff] resize-none"
-                            rows="3"
-                        ></textarea>
-                    </div>
-
-                    <!-- URL Copy field -->
-                    <div class="relative">
-                        <div class="flex items-center glass-input rounded-lg overflow-hidden">
-                            <input type="text" 
-                                x-model="url" 
-                                class="flex-1 bg-transparent text-sm px-4 py-3 focus:outline-none text-[#aaa]"
-                                readonly>
-                            <button @click="copyToClipboard"
-                                    class="px-6 py-3 bg-[#3ea6ff] text-[#0f0f0f] text-sm font-medium hover:bg-opacity-90 transition-colors"
-                                    :class="{ 'bg-green-500': copySuccess }">
-                                <span x-text="copySuccess ? 'Copied!' : 'Copy'"></span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="hidden lg:inline-block">
-        {% include "comments.html" %}
-        </div>
+          </div>
+          <div class="bg-[#1a1a1a] rounded-lg shadow-lg overflow-hidden block xl:hidden" x-data="{ showFullDescription: false }">
+              {% include "infoCard.html" %}
+          </div>
+        </aside>
     </div>
-        <!-- Episode Edit Modal -->
-<div x-cloak x-show="isEditModalOpen" 
-     class="fixed inset-0 bg-black/80 flex items-center justify-center z-50"
-     x-transition:enter="transition ease-out duration-200"
-     x-transition:leave="transition ease-in duration-150">
-    <div class="bg-[#1a1a1a] rounded-lg p-6 w-full max-w-2xl relative">
-        <h3 class="text-2xl font-bold mb-4 text-white">Edit Episode Details</h3>
-        
-        <form @submit.prevent="submitEpisodeUpdate">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <label class="text-gray-300 text-sm">Title</label>
-                    <input type="text" x-model="editData.title" 
-                           class="w-full bg-[#2a2a2a] text-white rounded p-2 mb-2">
-                </div>
-                <div>
-                    <label class="text-gray-300 text-sm">Romaji Title</label>
-                    <input type="text" x-model="editData.romaji_title" 
-                           class="w-full bg-[#2a2a2a] text-white rounded p-2 mb-2">
-                </div>
-                <div>
-                    <label class="text-gray-300 text-sm">Native Title</label>
-                    <input type="text" x-model="editData.native_title" 
-                           class="w-full bg-[#2a2a2a] text-white rounded p-2 mb-2">
-                </div>
-                <div>
-                    <label class="text-gray-300 text-sm">Intro Start (seconds)</label>
-                    <input type="number" x-model="editData.intro_start" 
-                           class="w-full bg-[#2a2a2a] text-white rounded p-2 mb-2">
-                </div>
-                <div>
-                    <label class="text-gray-300 text-sm">Intro End (seconds)</label>
-                    <input type="number" x-model="editData.intro_end" 
-                           class="w-full bg-[#2a2a2a] text-white rounded p-2 mb-2">
-                </div>
-                <div>
-                    <label class="text-gray-300 text-sm">Outro Start (seconds)</label>
-                    <input type="number" x-model="editData.outro_start" 
-                           class="w-full bg-[#2a2a2a] text-white rounded p-2 mb-2">
-                </div>
-                <div>
-                    <label class="text-gray-300 text-sm">Outro End (seconds)</label>
-                    <input type="number" x-model="editData.outro_end" 
-                           class="w-full bg-[#2a2a2a] text-white rounded p-2 mb-2">
-                </div>
-            </div>
 
-            <div class="mt-6 flex justify-end gap-2">
-                <button type="button" 
-                        @click="isEditModalOpen = false"
-                        class="px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded text-white">
-                    Dismiss
-                </button>
-                <button type="submit" 
-                        :disabled="isUpdating"
-                        class="px-4 py-2 bg-red-600 hover:bg-red-700 rounded text-white flex items-center">
-                    <span x-show="!isUpdating">Post Update</span>
-                    <svg x-show="isUpdating" class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+    <!-- COMMENTS SECTION - Single implementation for both mobile and desktop -->
+    <div class="w-full mt-6">
+      {% include "comments.html" %}
+    </div>
+
+    <!-- Share Dialog -->
+    <div x-cloak x-show="isShareOpen" 
+        class="fixed inset-0 bg-black/80 flex items-center justify-center z-50" 
+        @click.self="isShareOpen = false">
+        <div x-show="isShareOpen" 
+            x-transition:enter="transition ease-out duration-200"
+            x-transition:enter-start="opacity-0 transform scale-95"
+            x-transition:enter-end="opacity-100 transform scale-100"
+            x-transition:leave="transition ease-in duration-150"
+            x-transition:leave-start="opacity-100 transform scale-100"
+            x-transition:leave-end="opacity-0 transform scale-95"
+            @click.away="isShareOpen = false"
+            class="bg-[#282828]/80 backdrop-blur-md rounded-xl shadow-2xl w-[95%] max-w-[480px] border border-white/10"
+            @keydown.escape.window="isShareOpen = false">
+            
+            <!-- Header -->
+            <div class="relative px-6 py-4 border-b border-white/10">
+                <div class="text-center">
+                    <h2 class="text-[17px] font-medium text-white">Share</h2>
+                </div>
+                <button @click="isShareOpen = false" 
+                        class="absolute right-4 top-4 text-[#aaa] hover:text-white transition-colors p-1">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                     </svg>
                 </button>
             </div>
-        </form>
+
+            <!-- Share Section -->
+            <div class="p-6">
+                <div class="mb-6">
+                    <div class="relative share-container">
+                        <!-- Left Arrow -->
+                        <button @click="scrollLeft" 
+                                class="nav-arrow absolute left-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 flex items-center justify-center bg-[#282828] rounded-full shadow-lg">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                            </svg>
+                        </button>
+                        
+                        <div class="flex space-x-4 overflow-x-auto share-scroll pb-2 px-2" x-ref="shareButtons">
+                            <button @click="share('whatsapp')" 
+                                    class="share-button flex-shrink-0 w-12 h-12 bg-[#25D366] rounded-full flex items-center justify-center">
+                                <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+                                </svg>
+                            </button>
+                            <button @click="share('facebook')" 
+                                    class="share-button flex-shrink-0 w-12 h-12 bg-[#1877F2] rounded-full flex items-center justify-center">
+                                <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                                </svg>
+                            </button>
+                            <button @click="share('twitter')" 
+                                    class="share-button flex-shrink-0 w-12 h-12 bg-black rounded-full flex items-center justify-center border border-gray-700">
+                                <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                                </svg>
+                            </button>
+                            <button @click="share('email')" 
+                                    class="share-button flex-shrink-0 w-12 h-12 bg-[#666] rounded-full flex items-center justify-center">
+                                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                                </svg>
+                            </button>
+                            <button @click="share('kakaotalk')" 
+                                    class="share-button flex-shrink-0 w-12 h-12 bg-[#FAE100] rounded-full flex items-center justify-center">
+                                <svg class="w-6 h-6 text-black" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M12 3c-5.523 0-10 3.582-10 8 0 2.91 1.564 5.471 3.95 6.934-.184.757-.736 2.736-.85 3.163-.142.537.197.527.497.387.205-.096 3.264-2.196 4.57-3.084.576.082 1.17.125 1.777.125 5.523 0 10-3.582 10-8s-4.477-8-10-8z"/>
+                                </svg>
+                            </button>
+                            <button @click="share('reddit')" 
+                                    class="share-button flex-shrink-0 w-12 h-12 bg-[#FF4500] rounded-full flex items-center justify-center">
+                                <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M12 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm5.01 4.744c.688 0 1.25.561 1.25 1.249a1.25 1.25 0 0 1-2.498.056l-2.597-.547-.8 3.747c1.824.07 3.48.632 4.674 1.488.308-.309.73-.491 1.207-.491.968 0 1.754.786 1.754 1.754 0 .716-.435 1.333-1.01 1.614a3.111 3.111 0 0 1 .042.52c0 2.694-3.13 4.87-7.004 4.87-3.874 0-7.004-2.176-7.004-4.87 0-.183.015-.366.043-.534A1.748 1.748 0 0 1 4.028 12c0-.968.786-1.754 1.754-1.754.463 0 .898.196 1.207.49 1.207-.883 2.878-1.43 4.744-1.487l.885-4.182a.342.342 0 0 1 .14-.197.35.35 0 0 1 .238-.042l2.906.617a1.214 1.214 0 0 1 1.108-.701zM9.25 12C8.561 12 8 12.562 8 13.25c0 .687.561 1.248 1.25 1.248.687 0 1.248-.561 1.248-1.249 0-.688-.561-1.249-1.249-1.249zm5.5 0c-.687 0-1.248.561-1.248 1.25 0 .687.561 1.248 1.249 1.248.688 0 1.249-.561 1.249-1.249 0-.687-.562-1.249-1.25-1.249zm-5.466 3.99a.327.327 0 0 0-.231.094.33.33 0 0 0 0 .463c.842.842 2.484.913 2.961.913.477 0 2.105-.056 2.961-.913a.361.361 0 0 0 .029-.463.33.33 0 0 0-.464 0c-.547.533-1.684.73-2.512.73-.828 0-1.979-.196-2.512-.73a.326.326 0 0 0-.232-.095z"/>
+                                </svg>
+                            </button>
+                            <button @click="share('telegram')" 
+                                    class="share-button flex-shrink-0 w-12 h-12 bg-[#0088cc] rounded-full flex items-center justify-center">
+                                <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.14.18-.357.295-.6.295-.002 0-.003 0-.005 0l.213-3.054 5.56-5.022c.24-.213-.054-.334-.373-.121l-6.869 4.326-2.96-.924c-.64-.203-.658-.64.135-.954l11.566-4.458c.538-.196 1.006.128.832.941z"/>
+                                </svg>
+                            </button>
+                        </div>
+
+                        <!-- Right Arrow -->
+                        <button @click="scrollRight"
+                                class="nav-arrow absolute right-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 flex items-center justify-center bg-[#282828] rounded-full shadow-lg">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Title input field -->
+                <div class="mb-4" x-data="{ title: '{{ animeInfo.english }}' }" >
+                    <input type="text" 
+                        x-model="title" 
+                        placeholder="Enter post title"
+                        class="w-full glass-input text-white text-sm px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3ea6ff]"
+                    >
+                </div>
+
+                 <!-- Description textarea field -->
+                <div class="mb-4">
+                    <textarea 
+                        x-model="description" 
+                        placeholder="Enter post description"
+                        class="w-full glass-input text-white text-sm px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3ea6ff] resize-none"
+                        rows="3"
+                    ></textarea>
+                </div>
+
+                <!-- URL Copy field -->
+                <div class="relative">
+                    <div class="flex items-center glass-input rounded-lg overflow-hidden">
+                        <input type="text" 
+                            x-model="url" 
+                            class="flex-1 bg-transparent text-sm px-4 py-3 focus:outline-none text-[#aaa]"
+                            readonly>
+                        <button @click="copyToClipboard"
+                                class="px-6 py-3 bg-[#3ea6ff] text-[#0f0f0f] text-sm font-medium hover:bg-opacity-90 transition-colors"
+                                :class="{ 'bg-green-500': copySuccess }">
+                            <span x-text="copySuccess ? 'Copied!' : 'Copy'"></span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
-    </div>
-    <script src="{{ url_for('static', filename='js/emoji.js') }}"></script>
-    <script>
+    <!-- Episode Edit Modal -->
+<div x-cloak x-show="isEditModalOpen" 
+ class="fixed inset-0 bg-black/80 flex items-center justify-center z-50"
+ x-transition:enter="transition ease-out duration-200"
+ x-transition:leave="transition ease-in duration-150">
+<div class="bg-[#1a1a1a] rounded-lg p-6 w-full max-w-2xl relative">
+    <h3 class="text-2xl font-bold mb-4 text-white">Edit Episode Details</h3>
+    
+    <form @submit.prevent="submitEpisodeUpdate">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label class="text-gray-300 text-sm">Title</label>
+                <input type="text" x-model="editData.title" 
+                       class="w-full bg-[#2a2a2a] text-white rounded p-2 mb-2">
+            </div>
+            <div>
+                <label class="text-gray-300 text-sm">Romaji Title</label>
+                <input type="text" x-model="editData.romaji_title" 
+                       class="w-full bg-[#2a2a2a] text-white rounded p-2 mb-2">
+            </div>
+            <div>
+                <label class="text-gray-300 text-sm">Native Title</label>
+                <input type="text" x-model="editData.native_title" 
+                       class="w-full bg-[#2a2a2a] text-white rounded p-2 mb-2">
+            </div>
+            <div>
+                <label class="text-gray-300 text-sm">Intro Start (seconds)</label>
+                <input type="number" x-model="editData.intro_start" 
+                       class="w-full bg-[#2a2a2a] text-white rounded p-2 mb-2">
+            </div>
+            <div>
+                <label class="text-gray-300 text-sm">Intro End (seconds)</label>
+                <input type="number" x-model="editData.intro_end" 
+                       class="w-full bg-[#2a2a2a] text-white rounded p-2 mb-2">
+            </div>
+            <div>
+                <label class="text-gray-300 text-sm">Outro Start (seconds)</label>
+                <input type="number" x-model="editData.outro_start" 
+                       class="w-full bg-[#2a2a2a] text-white rounded p-2 mb-2">
+            </div>
+            <div>
+                <label class="text-gray-300 text-sm">Outro End (seconds)</label>
+                <input type="number" x-model="editData.outro_end" 
+                       class="w-full bg-[#2a2a2a] text-white rounded p-2 mb-2">
+            </div>
+        </div>
 
-            function animeData() {
-                return {
-                    currentTab: 'today',
-                    animeList: {},
-                    isLoading: true,
-                    
-                    async init() {
-                        await this.fetchAnimeData();
-                    },
-                    
-                    async fetchAnimeData() {
-                        this.isLoading = true;
-                        try {
-                            const response = await fetch(`/api/top/anime/?tab=month&limit=3`);
-                            if (!response.ok) throw new Error('Network response was not ok');
-                            const data = await response.json();
-                            this.animeList = {
-                                ...this.animeList,
-                                [this.currentTab]: data
-                            };
-                        } catch (error) {
-                            console.error('Error fetching anime data:', error);
-                            this.animeList[this.currentTab] = [];
-                        } finally {
-                            this.isLoading = false;
-                        }
-                    },
-                    
-                    get filteredAnime() {
-                        return this.animeList[this.currentTab] || [];
+        <div class="mt-6 flex justify-end gap-2">
+            <button type="button" 
+                    @click="isEditModalOpen = false"
+                    class="px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded text-white">
+                Dismiss
+            </button>
+            <button type="submit" 
+                    :disabled="isUpdating"
+                    class="px-4 py-2 bg-red-600 hover:bg-red-700 rounded text-white flex items-center">
+                <span x-show="!isUpdating">Post Update</span>
+                <svg x-show="isUpdating" class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+            </button>
+        </div>
+    </form>
+</div>
+</div>
+</div>
+<script src="{{ url_for('static', filename='js/emoji.js') }}"></script>
+<script>
+
+        function animeData() {
+            return {
+                currentTab: 'today',
+                animeList: {},
+                isLoading: true,
+                
+                async init() {
+                    await this.fetchAnimeData();
+                },
+                
+                async fetchAnimeData() {
+                    this.isLoading = true;
+                    try {
+                        const response = await fetch(`/api/top/anime/?tab=month&limit=3`);
+                        if (!response.ok) throw new Error('Network response was not ok');
+                        const data = await response.json();
+                        this.animeList = {
+                            ...this.animeList,
+                            [this.currentTab]: data
+                        };
+                    } catch (error) {
+                        console.error('Error fetching anime data:', error);
+                        this.animeList[this.currentTab] = [];
+                    } finally {
+                        this.isLoading = false;
                     }
+                },
+                
+                get filteredAnime() {
+                    return this.animeList[this.currentTab] || [];
                 }
             }
+        }
 
-        document.addEventListener('DOMContentLoaded', function() {
-            const videoIframe = document.getElementById('playerIframeId');
-            if (videoIframe) {
-            videoIframe.addEventListener('load', function() {
-                // Dispatch a custom event that Alpine.js can listen for
-                document.dispatchEvent(new CustomEvent('videoLoaded'));
-            });
-            }
-
-            
+    document.addEventListener('DOMContentLoaded', function() {
+        const videoIframe = document.getElementById('playerIframeId');
+        if (videoIframe) {
+        videoIframe.addEventListener('load', function() {
+            // Dispatch a custom event that Alpine.js can listen for
+            document.dispatchEvent(new CustomEvent('videoLoaded'));
         });
-        window.__watchConfig__ = {
-            userInfo: {{ userInfo | tojson | safe }},  // Remove quotes
-            animeId: "{{ anime_id }}",
-            animeIInfo: {{animeInfo | tojson | safe }},
-            epNumber: {{ ep_number }},
-            likes: {{ animeInfo.likes | default(0) }},
-            dislikes: {{ animeInfo.dislikes | default(0) }},
-            userLiked: {{ animeInfo.userLiked | default(false) | tojson }},
-            userUnliked: {{ animeInfo.userUnliked | default(false) | tojson }}
-        };
-    </script>
-    
-    <!-- Main script file -->
-    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+        }
+
+        
+    });
+    window.__watchConfig__ = {
+        userInfo: {{ userInfo | tojson | safe }},  // Remove quotes
+        animeId: "{{ anime_id }}",
+        animeIInfo: {{animeInfo | tojson | safe }},
+        epNumber: {{ ep_number }},
+        likes: {{ animeInfo.likes | default(0) }},
+        dislikes: {{ animeInfo.dislikes | default(0) }},
+        userLiked: {{ animeInfo.userLiked | default(false) | tojson }},
+        userUnliked: {{ animeInfo.userUnliked | default(false) | tojson }}
+    };
+</script>
+
+<!-- Main script file -->
+<script src="{{ url_for('static', filename='js/script.js') }}"></script>
+
+<script>
+  // Initialize comments section with a single Alpine.js component
+  document.addEventListener('alpine:init', () => {
+    Alpine.data('commentsSection', function() {
+      return {
+        init() {
+          console.log('Comments section initialized');
+        }
+      }
+    });
+  });
+</script>
 </body>
 {% include "footer.html" %}
 {% endblock %}

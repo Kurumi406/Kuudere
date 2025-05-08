@@ -1,0 +1,1605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Live Stream</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'yt-dark': '#0f0f0f',
+                        'yt-card': '#1a1a1a',
+                        'yt-card-hover': '#2a2a2a',
+                        'yt-red': '#ff0000',
+                        'yt-red-hover': '#cc0000',
+                        'yt-blue': '#3ea6ff',
+                        'yt-blue-hover': '#65b8ff',
+                        'yt-gray': '#272727',
+                        'yt-gray-light': '#aaaaaa',
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    },
+                    boxShadow: {
+                        'inner-glow': 'inset 0 0 10px rgba(255, 255, 255, 0.1)',
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <!-- ArtPlayer -->
+    <script src="https://cdn.jsdelivr.net/npm/artplayer/dist/artplayer.js"></script>
+    <!-- HLS Support for ArtPlayer -->
+    <script src="https://cdn.jsdelivr.net/npm/hls.js/dist/hls.min.js"></script>
+    <!-- Anime.js -->
+    <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+    <!-- Socket.IO Client -->
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f0f0f;
+            color: white;
+            overflow-x: hidden;
+            height: 100vh;
+        }
+        
+        /* Research-based custom scrollbar - reduced visual noise */
+        .chat-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .chat-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .chat-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            transition: background 0.3s ease;
+        }
+        .chat-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        /* Subtle animations based on attention research */
+        @keyframes subtle-fade-in {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .message-animation {
+            animation: subtle-fade-in 0.3s ease-out forwards;
+        }
+        
+        /* Live indicator with research-based attention-grabbing but non-distracting animation */
+        .live-pulse {
+            position: relative;
+        }
+        
+        .live-pulse::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 0, 0, 0.3);
+            border-radius: 9999px;
+            animation: live-pulse 3s cubic-bezier(0.55, 0, 0.1, 1) infinite;
+        }
+        
+        @keyframes live-pulse {
+            0%, 100% {
+                opacity: 0.3;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0;
+                transform: scale(1.3);
+            }
+        }
+        
+        /* Research-based typing indicator - creates social presence */
+        .typing-indicator {
+            display: flex;
+            align-items: center;
+        }
+        
+        .typing-indicator span {
+            height: 6px;
+            width: 6px;
+            background: #3ea6ff;
+            border-radius: 50%;
+            display: inline-block;
+            margin: 0 1px;
+            opacity: 0.8;
+        }
+        
+        .typing-indicator span:nth-child(1) {
+            animation: typing 1.4s infinite 0.2s;
+        }
+        
+        .typing-indicator span:nth-child(2) {
+            animation: typing 1.4s infinite 0.4s;
+        }
+        
+        .typing-indicator span:nth-child(3) {
+            animation: typing 1.4s infinite 0.6s;
+        }
+        
+        @keyframes typing {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-4px);
+            }
+        }
+        
+        /* Message highlight effect - based on recency bias research */
+        @keyframes highlight-fade {
+            0% {
+                background-color: rgba(62, 166, 255, 0.15);
+            }
+            100% {
+                background-color: transparent;
+            }
+        }
+        
+        .highlight-new {
+            animation: highlight-fade 3s ease-out forwards;
+        }
+        
+        /* Focus states based on attention research */
+        .focus-visible:focus-visible {
+            outline: 2px solid #3ea6ff;
+            outline-offset: 2px;
+        }
+        
+        /* Chat bubble design based on conversation UI research */
+        .chat-bubble {
+            position: relative;
+            border-radius: 1rem;
+            padding: 0.5rem 0.75rem;
+            max-width: 85%;
+            word-wrap: break-word;
+        }
+        
+        /* Accessibility improvements */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border-width: 0;
+        }
+        
+        /* Full-height layout */
+        .full-height-container {
+            height: calc(100vh - 80px); /* Adjust for header height */
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* Make sure the chat container takes full height */
+        .chat-full-height {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+        
+        /* Chat messages area should expand to fill available space */
+        .chat-messages-container {
+            flex: 1;
+            overflow-y: auto;
+        }
+        
+        /* Modal styles */
+        .modal-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px);
+            z-index: 50;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-content {
+            background-color: #1a1a1a;
+            border-radius: 0.75rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            width: 100%;
+            max-width: 500px;
+            overflow: hidden;
+        }
+        
+        /* Sync notification */
+        .sync-notification {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 8px 16px;
+            border-radius: 20px;
+            z-index: 10;
+            font-size: 14px;
+            transition: opacity 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mx-auto px-4 py-4 max-w-[1800px]" x-data="youtubeApp()">
+        <!-- Header -->
+        <header class="flex items-center justify-between mb-6 h-16">
+            <div class="flex items-center">
+                <svg class="w-8 h-8 text-yt-red mr-2" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"></path>
+                </svg>
+                <h1 class="text-xl font-bold">YouTube Live</h1>
+            </div>
+            <div class="flex items-center space-x-4">
+                <template x-if="!roomId">
+                    <button 
+                        @click="showCreateRoomModal = true" 
+                        class="bg-yt-red hover:bg-yt-red-hover px-5 py-2 rounded-full transition-all duration-300 font-medium"
+                    >
+                        Create Room
+                    </button>
+                </template>
+                <template x-if="roomId">
+                    <div class="flex items-center space-x-3">
+                        <div class="bg-yt-card px-4 py-2 rounded-full text-sm">
+                            <span class="font-medium">Room:</span>
+                            <span x-text="roomName"></span>
+                        </div>
+                        <button 
+                            @click="leaveRoom" 
+                            class="bg-yt-gray hover:bg-yt-card-hover px-4 py-2 rounded-full text-sm transition-all duration-300"
+                        >
+                            Leave Room
+                        </button>
+                    </div>
+                </template>
+                <button 
+                    @click="showJoinRoomModal = true" 
+                    class="bg-yt-gray hover:bg-yt-card-hover px-4 py-2 rounded-full flex items-center transition-all duration-300"
+                >
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                    </svg>
+                    Join Room
+                </button>
+                <button 
+                    @click="showUsernameModal = !username" 
+                    class="bg-yt-blue hover:bg-yt-blue-hover px-5 py-2 rounded-full transition-all duration-300 font-medium"
+                >
+                    <span x-text="username ? username : 'Set Username'"></span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content - Full Height Layout -->
+        <div class="flex flex-col lg:flex-row gap-6 full-height-container">
+            <!-- Video Section -->
+            <div class="lg:w-[70%] flex flex-col">
+                <div class="relative w-full bg-black rounded-xl overflow-hidden shadow-lg" style="padding-top: 56.25%">
+                    <div id="artplayer-container" class="absolute top-0 left-0 w-full h-full"></div>
+                    <div class="absolute top-4 left-4 flex items-center space-x-3">
+                        <div class="bg-red-600 text-white text-xs font-semibold px-3 py-1 rounded-full flex items-center live-pulse">
+                            <span class="relative z-10">LIVE</span>
+                        </div>
+                        <div class="bg-black/70 backdrop-blur-sm text-white text-xs px-3 py-1 rounded-full" x-text="`${viewerCount} watching`"></div>
+                    </div>
+                    
+                    <!-- Sync notification -->
+                    <div 
+                        x-show="syncNotification.show" 
+                        x-transition:enter="transition ease-out duration-300"
+                        x-transition:enter-start="opacity-0 transform translate-y-4"
+                        x-transition:enter-end="opacity-100 transform translate-y-0"
+                        x-transition:leave="transition ease-in duration-200"
+                        x-transition:leave-start="opacity-100 transform translate-y-0"
+                        x-transition:leave-end="opacity-0 transform translate-y-4"
+                        class="sync-notification"
+                        x-text="syncNotification.message"
+                    ></div>
+                    
+                    <!-- Room creator controls -->
+                    <template x-if="isRoomCreator && roomId">
+                        <div class="absolute bottom-4 right-4 flex items-center space-x-2">
+                            <button 
+                                @click="showChangeVideoModal = true"
+                                class="bg-yt-red hover:bg-yt-red-hover text-white px-3 py-1 rounded-full text-xs font-medium transition-all duration-300"
+                            >
+                                Change Video
+                            </button>
+                        </div>
+                    </template>
+                </div>
+                
+                <!-- Video Info -->
+                <div class="mt-6">
+                    <h1 class="text-2xl font-bold">Live Stream: Interactive Programming Session</h1>
+                    <div class="flex items-center justify-between mt-4">
+                        <div class="flex items-center">
+                            <div class="w-12 h-12 rounded-full bg-gradient-to-r from-purple-600 to-pink-500 flex items-center justify-center text-white font-bold text-lg shadow-lg">C</div>
+                            <div class="ml-3">
+                                <p class="font-semibold text-lg">CodeChannel</p>
+                                <p class="text-sm text-yt-gray-light">1.2M subscribers</p>
+                            </div>
+                            <button class="ml-6 bg-yt-red hover:bg-yt-red-hover px-5 py-2 rounded-full transition-all duration-300 font-medium">
+                                Subscribe
+                            </button>
+                        </div>
+                        <div class="flex items-center space-x-4">
+                            <button 
+                                class="flex items-center bg-yt-card hover:bg-yt-card-hover px-4 py-2 rounded-full transition-all duration-300"
+                                @click="likeVideo"
+                                :class="{'text-yt-blue': liked}"
+                            >
+                                <svg 
+                                    class="w-6 h-6 mr-2" 
+                                    fill="none" 
+                                    stroke="currentColor" 
+                                    viewBox="0 0 24 24" 
+                                    xmlns="http://www.w3.org/2000/svg"
+                                >
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"></path>
+                                </svg>
+                                <span x-text="likeCount"></span>
+                            </button>
+                            <button class="flex items-center bg-yt-card hover:bg-yt-card-hover px-4 py-2 rounded-full transition-all duration-300">
+                                <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path>
+                                </svg>
+                                <span>Share</span>
+                            </button>
+                            <button class="flex items-center bg-yt-card hover:bg-yt-card-hover p-2 rounded-full transition-all duration-300">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Description -->
+                <div class="mt-6 p-5 bg-yt-card rounded-xl shadow-inner-glow">
+                    <div class="flex items-center text-sm text-yt-gray-light mb-3">
+                        <div class="flex items-center mr-4">
+                            <div class="w-2 h-2 bg-red-600 rounded-full mr-2 animate-pulse"></div>
+                            <span x-text="`${viewerCount} watching now`"></span>
+                        </div>
+                        <span>Started streaming 2 hours ago</span>
+                    </div>
+                    <p class="text-sm leading-relaxed">
+                        Welcome to our live coding session! Today we're building a modern web application with the latest technologies. Feel free to ask questions in the chat. We'll be covering UI design principles, animations, and interactive elements that make applications more engaging and user-friendly.
+                    </p>
+                    <div class="mt-4 flex flex-wrap gap-2">
+                        <span class="px-3 py-1 bg-yt-gray rounded-full text-xs cursor-pointer">#WebDevelopment</span>
+                        <span class="px-3 py-1 bg-yt-gray rounded-full text-xs cursor-pointer">#UIDesign</span>
+                        <span class="px-3 py-1 bg-yt-gray rounded-full text-xs cursor-pointer">#LiveCoding</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Chat Section - Full Height Design -->
+            <div class="lg:w-[30%] chat-full-height" id="chat-container">
+                <!-- Chat header with clear visual hierarchy -->
+                <div class="bg-yt-card rounded-t-xl overflow-hidden shadow-lg">
+                    <div class="p-4 border-b border-gray-800 flex justify-between items-center bg-gradient-to-r from-yt-card to-[#212121]">
+                        <div class="flex items-center">
+                            <h2 class="font-semibold text-lg">Live Chat</h2>
+                            <div class="ml-2 px-2 py-0.5 bg-red-600 rounded-full text-xs flex items-center">
+                                <span class="w-1.5 h-1.5 bg-white rounded-full mr-1 animate-pulse"></span>
+                                <span>Live</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Chat controls with improved accessibility -->
+                        <div class="flex items-center space-x-3">
+                            <button 
+                                class="text-yt-gray-light hover:text-white transition-colors duration-200"
+                                @click="toggleChatMode"
+                                aria-label="Toggle chat mode"
+                            >
+                                <span class="text-xs mr-1" x-text="chatMode"></span>
+                                <svg class="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </button>
+                            <button 
+                                class="text-yt-gray-light hover:text-white transition-colors duration-200"
+                                @click="toggleChatSettings"
+                                aria-label="Chat settings"
+                            >
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Chat settings panel - progressive disclosure -->
+                    <div 
+                        x-show="showChatSettings" 
+                        x-transition:enter="transition ease-out duration-200"
+                        x-transition:enter-start="opacity-0 transform -translate-y-4"
+                        x-transition:enter-end="opacity-100 transform translate-y-0"
+                        x-transition:leave="transition ease-in duration-150"
+                        x-transition:leave-start="opacity-100 transform translate-y-0"
+                        x-transition:leave-end="opacity-0 transform -translate-y-4"
+                        class="p-3 border-b border-gray-800 bg-[#212121]"
+                    >
+                        <div class="flex flex-col space-y-2 text-sm">
+                            <div class="flex items-center justify-between">
+                                <label for="slowMode" class="flex items-center cursor-pointer">
+                                    <span>Slow mode</span>
+                                    <span class="text-xs text-yt-gray-light ml-2">(Send messages every 3 seconds)</span>
+                                </label>
+                                <div class="relative inline-block w-10 h-5 transition duration-200 ease-in-out rounded-full">
+                                    <input 
+                                        type="checkbox" 
+                                        id="slowMode" 
+                                        class="absolute w-0 h-0 opacity-0"
+                                        x-model="slowMode"
+                                    >
+                                    <label 
+                                        for="slowMode" 
+                                        class="absolute w-10 h-5 rounded-full cursor-pointer transition-colors duration-200 ease-in-out"
+                                        :class="slowMode ? 'bg-yt-blue' : 'bg-gray-600'"
+                                    ></label>
+                                    <span 
+                                        class="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full transition-transform duration-200 ease-in-out"
+                                        :class="slowMode ? 'transform translate-x-5' : ''"
+                                    ></span>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <label for="showTimestamps" class="cursor-pointer">Show timestamps</label>
+                                <div class="relative inline-block w-10 h-5 transition duration-200 ease-in-out rounded-full">
+                                    <input 
+                                        type="checkbox" 
+                                        id="showTimestamps" 
+                                        class="absolute w-0 h-0 opacity-0"
+                                        x-model="showTimestamps"
+                                    >
+                                    <label 
+                                        for="showTimestamps" 
+                                        class="absolute w-10 h-5 rounded-full cursor-pointer transition-colors duration-200 ease-in-out"
+                                        :class="showTimestamps ? 'bg-yt-blue' : 'bg-gray-600'"
+                                    ></label>
+                                    <span 
+                                        class="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full transition-transform duration-200 ease-in-out"
+                                        :class="showTimestamps ? 'transform translate-x-5' : ''"
+                                    ></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Active participants - social presence research -->
+                    <div class="px-4 py-2 border-b border-gray-800 bg-[#1d1d1d]">
+                        <p class="text-xs text-yt-gray-light mb-2">Active participants</p>
+                        <div class="flex -space-x-2 overflow-hidden">
+                            <template x-for="(user, index) in activeUsers" :key="index">
+                                <div 
+                                    class="inline-block w-7 h-7 rounded-full ring-2 ring-yt-card"
+                                    :class="getAvatarColor(user)"
+                                    :title="user"
+                                >
+                                    <span class="sr-only" x-text="user"></span>
+                                    <span class="flex items-center justify-center h-full text-xs font-medium" x-text="user.charAt(0).toUpperCase()"></span>
+                                </div>
+                            </template>
+                            <div class="inline-block w-7 h-7 rounded-full bg-yt-gray flex items-center justify-center text-xs">
+                                <span x-text="`+${Math.max(0, viewerCount - activeUsers.length)}`"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Chat Messages - Improved based on conversation UI research -->
+                <div class="chat-messages-container p-4 chat-scrollbar bg-[#141414] border-l border-r border-gray-800" id="chat-messages">
+                    <!-- Welcome message - establishes context -->
+                    <div class="mb-6 px-3 py-2 bg-yt-card bg-opacity-50 rounded-lg text-center">
+                        <p class="text-sm text-yt-gray-light">Welcome to the chat! Remember to keep conversations respectful and on-topic.</p>
+                    </div>
+                    
+                    <!-- Message groups - Gestalt principle of proximity -->
+                    <template x-for="(group, groupIndex) in messageGroups" :key="groupIndex">
+                        <div class="mb-6">
+                            <!-- Time separator - provides temporal context -->
+                            <div class="flex items-center justify-center mb-3" x-show="group.showTimeSeparator">
+                                <div class="border-t border-gray-800 flex-grow"></div>
+                                <div class="px-2 text-xs text-yt-gray-light" x-text="group.timeSeparator"></div>
+                                <div class="border-t border-gray-800 flex-grow"></div>
+                            </div>
+                            
+                            <!-- Messages in this group -->
+                            <template x-for="(message, messageIndex) in group.messages" :key="messageIndex">
+                                <div 
+                                    class="mb-3 opacity-0 chat-message" 
+                                    :class="{'pb-3 border-b border-gray-800/30': messageIndex === group.messages.length - 1 && groupIndex !== messageGroups.length - 1}"
+                                    x-init="animateMessage($el, messageIndex * 50)"
+                                >
+                                    <div class="flex items-start group">
+                                        <!-- Avatar - social presence -->
+                                        <div 
+                                            class="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md transition-all duration-300"
+                                            :class="getAvatarColor(message.username)"
+                                            x-text="message.username.charAt(0).toUpperCase()"
+                                        ></div>
+                                        
+                                        <!-- Message content -->
+                                        <div class="ml-2 flex-1">
+                                            <div class="flex items-center">
+                                                <span 
+                                                    class="font-medium text-sm transition-colors duration-300" 
+                                                    :class="message.username === username ? 'text-yt-blue' : 'group-hover:text-yt-blue'"
+                                                    x-text="message.username"
+                                                ></span>
+                                                <span 
+                                                    class="ml-2 text-xs text-yt-gray-light" 
+                                                    x-text="message.time"
+                                                    x-show="showTimestamps"
+                                                ></span>
+                                                
+                                                <!-- Message badges - social proof -->
+                                                <span 
+                                                    class="ml-1 px-1.5 py-0.5 bg-red-600 rounded text-[10px] font-medium"
+                                                    x-show="message.isModerator"
+                                                >MOD</span>
+                                                <span 
+                                                    class="ml-1 px-1.5 py-0.5 bg-yt-blue rounded text-[10px] font-medium"
+                                                    x-show="message.isVerified"
+                                                >✓</span>
+                                                <span 
+                                                    class="ml-1 px-1.5 py-0.5 bg-gradient-to-r from-yellow-500 to-yellow-600 rounded text-[10px] font-medium"
+                                                    x-show="message.isMember"
+                                                >MEMBER</span>
+                                                <span 
+                                                    class="ml-1 px-1.5 py-0.5 bg-yt-red rounded text-[10px] font-medium"
+                                                    x-show="message.isCreator"
+                                                >HOST</span>
+                                            </div>
+                                            
+                                            <!-- Message bubble - conversation UI research -->
+                                            <div 
+                                                class="mt-1 text-sm bg-opacity-30 rounded-lg chat-bubble"
+                                                :class="[
+                                                    message.username === username ? 'bg-yt-blue bg-opacity-20 text-white' : 'bg-yt-gray bg-opacity-30',
+                                                    message.isHighlighted ? 'highlight-new' : ''
+                                                ]"
+                                            >
+                                                <p x-text="message.text"></p>
+                                            </div>
+                                            
+                                            <!-- Reaction bar - social engagement -->
+                                            <div 
+                                                class="mt-1 flex items-center space-x-2 opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+                                                x-show="message.username !== username"
+                                            >
+                                                <button 
+                                                    class="text-xs text-yt-gray-light hover:text-white transition-colors duration-200"
+                                                    @click="reactToMessage(message, '👍')"
+                                                >
+                                                    👍
+                                                </button>
+                                                <button 
+                                                    class="text-xs text-yt-gray-light hover:text-white transition-colors duration-200"
+                                                    @click="reactToMessage(message, '❤️')"
+                                                >
+                                                    ❤️
+                                                </button>
+                                                <button 
+                                                    class="text-xs text-yt-gray-light hover:text-white transition-colors duration-200"
+                                                    @click="reactToMessage(message, '😂')"
+                                                >
+                                                    😂
+                                                </button>
+                                            </div>
+                                            
+                                            <!-- Message reactions display -->
+                                            <div class="mt-1 flex flex-wrap gap-1" x-show="message.reactions && message.reactions.length > 0">
+                                                <template x-for="(reaction, i) in message.reactions" :key="i">
+                                                    <span class="inline-flex items-center px-1.5 py-0.5 bg-yt-gray bg-opacity-30 rounded-full text-xs">
+                                                        <span x-text="reaction.emoji"></span>
+                                                        <span class="ml-1 text-yt-gray-light" x-text="reaction.count"></span>
+                                                    </span>
+                                                </template>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+                    
+                    <!-- Typing indicator - creates social presence -->
+                    <div class="flex items-center mb-4" x-show="isTyping">
+                        <div 
+                            class="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md"
+                            :class="getAvatarColor(typingUser)"
+                        >
+                            <span x-text="typingUser.charAt(0).toUpperCase()"></span>
+                        </div>
+                        <div class="ml-2">
+                            <div class="flex items-center">
+                                <span class="font-medium text-sm" x-text="typingUser"></span>
+                            </div>
+                            <div class="typing-indicator mt-1 bg-yt-gray bg-opacity-30 px-3 py-2 rounded-lg">
+                                <span></span>
+                                <span></span>
+                                <span></span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="chat-end" ref="chatEnd"></div>
+                </div>
+                
+                <!-- Chat Input - Improved based on interaction design research -->
+                <div class="p-4 border-t border-l border-r border-b border-gray-800 rounded-b-xl bg-[#1a1a1a]">
+                    <!-- Slow mode indicator - provides feedback -->
+                    <div class="mb-2 text-xs text-yt-gray-light flex items-center" x-show="slowMode && slowModeCountdown > 0">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <span x-text="`You can chat again in ${slowModeCountdown} seconds`"></span>
+                    </div>
+                    
+                    <div class="flex items-center">
+                        <!-- User avatar - consistent identity -->
+                        <div 
+                            class="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold shadow-md"
+                            x-text="username ? username.charAt(0).toUpperCase() : 'G'"
+                        ></div>
+                        
+                        <!-- Input form with accessibility improvements -->
+                        <div class="ml-2 flex-1">
+                            <form @submit.prevent="sendMessage">
+                                <div class="flex">
+                                    <input 
+                                        type="text" 
+                                        x-model="newMessage" 
+                                        placeholder="Chat something..." 
+                                        class="flex-1 bg-[#272727] border border-gray-700 rounded-l-full px-4 py-2 text-sm focus-visible focus:outline-none focus:border-yt-blue transition-all duration-300"
+                                        @focus="inputFocused = true"
+                                        @blur="inputFocused = false"
+                                        :disabled="slowMode && slowModeCountdown > 0 || !username || !roomId"
+                                        :class="{'opacity-50 cursor-not-allowed': slowMode && slowModeCountdown > 0 || !username || !roomId}"
+                                        aria-label="Type a message"
+                                    >
+                                    <button 
+                                        type="submit" 
+                                        class="bg-yt-blue hover:bg-yt-blue-hover rounded-r-full px-4 py-2 text-sm transition-all duration-300 focus-visible"
+                                        :disabled="slowMode && slowModeCountdown > 0 || !username || !roomId"
+                                        :class="{'opacity-50 cursor-not-allowed': slowMode && slowModeCountdown > 0 || !username || !roomId}"
+                                        aria-label="Send message"
+                                    >
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                    
+                    <!-- Quick reactions - reduces friction -->
+                    <div class="mt-3 flex justify-center" x-show="inputFocused && roomId">
+                        <div class="inline-flex bg-[#272727] rounded-full p-1">
+                            <button 
+                                class="p-1.5 text-sm hover:bg-yt-gray rounded-full transition-colors duration-200" 
+                                @click="addEmoji('👍')"
+                                aria-label="Add thumbs up emoji"
+                            >👍</button>
+                            <button 
+                                class="p-1.5 text-sm hover:bg-yt-gray rounded-full transition-colors duration-200" 
+                                @click="addEmoji('❤️')"
+                                aria-label="Add heart emoji"
+                            >❤️</button>
+                            <button 
+                                class="p-1.5 text-sm hover:bg-yt-gray rounded-full transition-colors duration-200" 
+                                @click="addEmoji('😂')"
+                                aria-label="Add laughing emoji"
+                            >😂</button>
+                            <button 
+                                class="p-1.5 text-sm hover:bg-yt-gray rounded-full transition-colors duration-200" 
+                                @click="addEmoji('🔥')"
+                                aria-label="Add fire emoji"
+                            >🔥</button>
+                            <button 
+                                class="p-1.5 text-sm hover:bg-yt-gray rounded-full transition-colors duration-200" 
+                                @click="addEmoji('👏')"
+                                aria-label="Add clapping emoji"
+                            >👏</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Modals -->
+        <!-- Username Modal -->
+        <div 
+            x-show="showUsernameModal" 
+            class="modal-backdrop"
+            x-transition:enter="transition ease-out duration-300"
+            x-transition:enter-start="opacity-0"
+            x-transition:enter-end="opacity-100"
+            x-transition:leave="transition ease-in duration-200"
+            x-transition:leave-start="opacity-100"
+            x-transition:leave-end="opacity-0"
+        >
+            <div 
+                class="modal-content"
+                x-transition:enter="transition ease-out duration-300"
+                x-transition:enter-start="opacity-0 transform scale-95"
+                x-transition:enter-end="opacity-100 transform scale-100"
+                x-transition:leave="transition ease-in duration-200"
+                x-transition:leave-start="opacity-100 transform scale-100"
+                x-transition:leave-end="opacity-0 transform scale-95"
+                @click.away="showUsernameModal = false"
+            >
+                <div class="p-6">
+                    <h3 class="text-xl font-bold mb-4">Set Your Username</h3>
+                    <p class="text-yt-gray-light mb-4">Choose a username to identify yourself in the chat.</p>
+                    <form @submit.prevent="setUsername">
+                        <input 
+                            type="text" 
+                            x-model="usernameInput" 
+                            placeholder="Enter username" 
+                            class="w-full bg-[#272727] border border-gray-700 rounded-lg px-4 py-2 mb-4 focus:outline-none focus:border-yt-blue"
+                            required
+                        >
+                        <div class="flex justify-end">
+                            <button 
+                                type="button" 
+                                @click="showUsernameModal = false" 
+                                class="bg-yt-gray hover:bg-yt-card-hover px-4 py-2 rounded-lg mr-2"
+                            >
+                                Cancel
+                            </button>
+                            <button 
+                                type="submit" 
+                                class="bg-yt-blue hover:bg-yt-blue-hover px-4 py-2 rounded-lg"
+                            >
+                                Save
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Create Room Modal -->
+        <div 
+            x-show="showCreateRoomModal" 
+            class="modal-backdrop"
+            x-transition:enter="transition ease-out duration-300"
+            x-transition:enter-start="opacity-0"
+            x-transition:enter-end="opacity-100"
+            x-transition:leave="transition ease-in duration-200"
+            x-transition:leave-start="opacity-100"
+            x-transition:leave-end="opacity-0"
+        >
+            <div 
+                class="modal-content"
+                x-transition:enter="transition ease-out duration-300"
+                x-transition:enter-start="opacity-0 transform scale-95"
+                x-transition:enter-end="opacity-100 transform scale-100"
+                x-transition:leave="transition ease-in duration-200"
+                x-transition:leave-start="opacity-100 transform scale-100"
+                x-transition:leave-end="opacity-0 transform scale-95"
+                @click.away="showCreateRoomModal = false"
+            >
+                <div class="p-6">
+                    <h3 class="text-xl font-bold mb-4">Create a Room</h3>
+                    <p class="text-yt-gray-light mb-4">Create a room to watch videos together with friends.</p>
+                    <form @submit.prevent="createRoom">
+                        <div class="mb-4">
+                            <label for="roomName" class="block text-sm font-medium mb-1">Room Name</label>
+                            <input 
+                                type="text" 
+                                id="roomName"
+                                x-model="createRoomData.name" 
+                                placeholder="Enter room name" 
+                                class="w-full bg-[#272727] border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:border-yt-blue"
+                                required
+                            >
+                        </div>
+                        <div class="mb-4">
+                            <label for="videoUrl" class="block text-sm font-medium mb-1">Video URL</label>
+                            <input 
+                                type="text" 
+                                id="videoUrl"
+                                x-model="createRoomData.videoUrl" 
+                                placeholder="Enter video URL (HLS, MP4, etc.)" 
+                                class="w-full bg-[#272727] border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:border-yt-blue"
+                                required
+                            >
+                        </div>
+                        <div class="mb-4 flex items-center">
+                            <input 
+                                type="checkbox" 
+                                id="isPublic"
+                                x-model="createRoomData.isPublic" 
+                                class="mr-2"
+                            >
+                            <label for="isPublic" class="text-sm">Make room public</label>
+                        </div>
+                        <div class="flex justify-end">
+                            <button 
+                                type="button" 
+                                @click="showCreateRoomModal = false" 
+                                class="bg-yt-gray hover:bg-yt-card-hover px-4 py-2 rounded-lg mr-
+                                class="bg-yt-gray hover:bg-yt-card-hover px-4 py-2 rounded-lg mr-2"
+                            >
+                                Cancel
+                            </button>
+                            <button 
+                                type="submit" 
+                                class="bg-yt-blue hover:bg-yt-blue-hover px-4 py-2 rounded-lg"
+                            >
+                                Create Room
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Join Room Modal -->
+        <div 
+            x-show="showJoinRoomModal" 
+            class="modal-backdrop"
+            x-transition:enter="transition ease-out duration-300"
+            x-transition:enter-start="opacity-0"
+            x-transition:enter-end="opacity-100"
+            x-transition:leave="transition ease-in duration-200"
+            x-transition:leave-start="opacity-100"
+            x-transition:leave-end="opacity-0"
+        >
+            <div 
+                class="modal-content"
+                x-transition:enter="transition ease-out duration-300"
+                x-transition:enter-start="opacity-0 transform scale-95"
+                x-transition:enter-end="opacity-100 transform scale-100"
+                x-transition:leave="transition ease-in duration-200"
+                x-transition:leave-start="opacity-100 transform scale-100"
+                x-transition:leave-end="opacity-0 transform scale-95"
+                @click.away="showJoinRoomModal = false"
+            >
+                <div class="p-6">
+                    <h3 class="text-xl font-bold mb-4">Join a Room</h3>
+                    <p class="text-yt-gray-light mb-4">Enter a room ID to join an existing room.</p>
+                    <form @submit.prevent="joinRoom">
+                        <input 
+                            type="text" 
+                            x-model="joinRoomId" 
+                            placeholder="Enter room ID" 
+                            class="w-full bg-[#272727] border border-gray-700 rounded-lg px-4 py-2 mb-4 focus:outline-none focus:border-yt-blue"
+                            required
+                        >
+                        <div class="flex justify-end">
+                            <button 
+                                type="button" 
+                                @click="showJoinRoomModal = false" 
+                                class="bg-yt-gray hover:bg-yt-card-hover px-4 py-2 rounded-lg mr-2"
+                            >
+                                Cancel
+                            </button>
+                            <button 
+                                type="submit" 
+                                class="bg-yt-blue hover:bg-yt-blue-hover px-4 py-2 rounded-lg"
+                            >
+                                Join Room
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Change Video Modal -->
+        <div 
+            x-show="showChangeVideoModal" 
+            class="modal-backdrop"
+            x-transition:enter="transition ease-out duration-300"
+            x-transition:enter-start="opacity-0"
+            x-transition:enter-end="opacity-100"
+            x-transition:leave="transition ease-in duration-200"
+            x-transition:leave-start="opacity-100"
+            x-transition:leave-end="opacity-0"
+        >
+            <div 
+                class="modal-content"
+                x-transition:enter="transition ease-out duration-300"
+                x-transition:enter-start="opacity-0 transform scale-95"
+                x-transition:enter-end="opacity-100 transform scale-100"
+                x-transition:leave="transition ease-in duration-200"
+                x-transition:leave-start="opacity-100 transform scale-100"
+                x-transition:leave-end="opacity-0 transform scale-95"
+                @click.away="showChangeVideoModal = false"
+            >
+                <div class="p-6">
+                    <h3 class="text-xl font-bold mb-4">Change Video</h3>
+                    <p class="text-yt-gray-light mb-4">Enter a new video URL to play in the room.</p>
+                    <form @submit.prevent="changeVideo">
+                        <input 
+                            type="text" 
+                            x-model="newVideoUrl" 
+                            placeholder="Enter video URL (HLS, MP4, etc.)" 
+                            class="w-full bg-[#272727] border border-gray-700 rounded-lg px-4 py-2 mb-4 focus:outline-none focus:border-yt-blue"
+                            required
+                        >
+                        <div class="flex justify-end">
+                            <button 
+                                type="button" 
+                                @click="showChangeVideoModal = false" 
+                                class="bg-yt-gray hover:bg-yt-card-hover px-4 py-2 rounded-lg mr-2"
+                            >
+                                Cancel
+                            </button>
+                            <button 
+                                type="submit" 
+                                class="bg-yt-blue hover:bg-yt-blue-hover px-4 py-2 rounded-lg"
+                            >
+                                Change Video
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function youtubeApp() {
+            return {
+                // Player
+                player: null,
+                videoUrl: 'https://x579fbxkqa2f.cdn-centaurus.com/hls2/01/08253/w6aqq3tciq4u_h/master.m3u8?t=08IfkTfbDF63gVfHOpaJAjK15jZ2nR2BADqwEfgnf_U&s=1742120535&e=129600&f=41267147&srv=flqirb5v8n3n&i=0.4&sp=500&p1=flqirb5v8n3n&p2=flqirb5v8n3n&asn=6939',
+                
+                // UI state
+                likeCount: 342,
+                liked: false,
+                isTyping: false,
+                inputFocused: false,
+                typingUser: 'StreamUser',
+                typingTimeout: null,
+                showChatSettings: false,
+                slowMode: false,
+                slowModeCountdown: 0,
+                showTimestamps: true,
+                chatMode: 'Top chat',
+                userColors: {},
+                
+                // Socket.io connection
+                socket: null,
+                connected: false,
+                
+                // User data
+                userId: null,
+                username: localStorage.getItem('username') || '',
+                usernameInput: '',
+                showUsernameModal: false,
+                
+                // Room data
+                roomId: null,
+                roomName: '',
+                isRoomCreator: false,
+                viewerCount: 0,
+                activeUsers: [],
+                
+                // Chat data
+                newMessage: '',
+                messageGroups: [],
+                
+                // Modals
+                showCreateRoomModal: false,
+                showJoinRoomModal: false,
+                showChangeVideoModal: false,
+                
+                // Form data
+                createRoomData: {
+                    name: '',
+                    videoUrl: '',
+                    isPublic: true
+                },
+                joinRoomId: '',
+                newVideoUrl: '',
+                
+                // Sync notification
+                syncNotification: {
+                    show: false,
+                    message: '',
+                    timeout: null
+                },
+                
+                // Video control flags
+                ignoreNextSeek: false,
+                ignoreNextPlay: false,
+                ignoreNextPause: false,
+                
+                init() {
+                    this.initSocketConnection();
+                    this.initPlayer();
+                    
+                    // Animate the chat container on load
+                    anime({
+                        targets: '#chat-container',
+                        translateY: [20, 0],
+                        opacity: [0, 1],
+                        easing: 'easeOutExpo',
+                        duration: 800,
+                        delay: 300
+                    });
+                    
+                    // Animate video section
+                    anime({
+                        targets: '.lg\\:w-\\[70\\%\\]',
+                        translateY: [30, 0],
+                        opacity: [0, 1],
+                        easing: 'easeOutExpo',
+                        duration: 800
+                    });
+                },
+                
+                initSocketConnection() {
+                    // Connect to Socket.IO server
+                    this.socket = io('http://localhost:5000');
+                    
+                    // Socket event handlers
+                    this.socket.on('connect', () => {
+                        this.connected = true;
+                        console.log('Connected to server');
+                    });
+                    
+                    this.socket.on('disconnect', () => {
+                        this.connected = false;
+                        console.log('Disconnected from server');
+                    });
+                    
+                    this.socket.on('connected', (data) => {
+                        this.userId = data.userId;
+                        console.log('User ID:', this.userId);
+                    });
+                    
+                    this.socket.on('room_joined', (data) => {
+                        this.roomId = data.roomId;
+                        this.roomName = data.name;
+                        this.isRoomCreator = data.isCreator;
+                        this.viewerCount = data.viewers;
+                        this.videoUrl = data.videoUrl;
+                        
+                        // Update player with new video
+                        if (this.player) {
+                            this.player.switchUrl(data.videoUrl);
+                            
+                            // Apply current state
+                            if (data.currentState) {
+                                if (data.currentState.playing) {
+                                    this.ignoreNextPlay = true;
+                                    this.player.play();
+                                } else {
+                                    this.ignoreNextPause = true;
+                                    this.player.pause();
+                                }
+                                
+                                this.ignoreNextSeek = true;
+                                this.player.seek(data.currentState.currentTime);
+                            }
+                        }
+                        
+                        // Process messages
+                        if (data.messages && data.messages.length > 0) {
+                            this.processMessages(data.messages);
+                        }
+                        
+                        console.log('Joined room:', data);
+                        this.showNotification(`Joined room: ${data.name}`);
+                    });
+                    
+                    this.socket.on('user_joined', (data) => {
+                        this.viewerCount = data.viewers;
+                        if (!this.activeUsers.includes(data.username)) {
+                            this.activeUsers.push(data.username);
+                        }
+                        this.showNotification(`${data.username} joined the room`);
+                    });
+                    
+                    this.socket.on('user_left', (data) => {
+                        this.viewerCount = data.viewers;
+                        this.activeUsers = this.activeUsers.filter(user => user !== data.username);
+                        this.showNotification(`${data.username} left the room`);
+                    });
+                    
+                    this.socket.on('chat_message', (data) => {
+                        this.addMessage(data);
+                    });
+                    
+                    this.socket.on('video_control', (data) => {
+                        if (!this.player) return;
+                        
+                        const username = data.username;
+                        
+                        if (data.action === 'play') {
+                            this.showNotification(`${username} played the video`);
+                            this.ignoreNextPlay = true;
+                            this.player.play();
+                        } else if (data.action === 'pause') {
+                            this.showNotification(`${username} paused the video`);
+                            this.ignoreNextPause = true;
+                            this.player.pause();
+                        } else if (data.action === 'seek') {
+                            this.showNotification(`${username} seeked to ${this.formatTime(data.currentTime)}`);
+                            this.ignoreNextSeek = true;
+                            this.player.seek(data.currentTime);
+                        }
+                    });
+                    
+                    this.socket.on('video_updated', (data) => {
+                        this.videoUrl = data.videoUrl;
+                        if (this.player) {
+                            this.player.switchUrl(data.videoUrl);
+                            
+                            // Apply current state
+                            if (data.currentState) {
+                                if (data.currentState.playing) {
+                                    this.ignoreNextPlay = true;
+                                    this.player.play();
+                                } else {
+                                    this.ignoreNextPause = true;
+                                    this.player.pause();
+                                }
+                                
+                                this.ignoreNextSeek = true;
+                                this.player.seek(data.currentState.currentTime);
+                            }
+                        }
+                        this.showNotification('Video has been changed');
+                    });
+                    
+                    this.socket.on('error', (data) => {
+                        console.error('Socket error:', data.message);
+                        alert(data.message);
+                    });
+                },
+                
+                initPlayer() {
+                    this.player = new Artplayer({
+                        container: '#artplayer-container',
+                        url: this.videoUrl,
+                        title: 'Live Stream',
+                        poster: '/placeholder.svg?height=720&width=1280',
+                        volume: 0.5,
+                        isLive: false,
+                        muted: false,
+                        autoplay: false,
+                        pip: true,
+                        autoSize: true,
+                        autoMini: true,
+                        screenshot: true,
+                        setting: true,
+                        playbackRate: true,
+                        fullscreen: true,
+                        fullscreenWeb: true,
+                        subtitleOffset: true,
+                        miniProgressBar: true,
+                        mutex: true,
+                        backdrop: true,
+                        playsInline: true,
+                        autoPlayback: true,
+                        airplay: true,
+                        theme: '#ff0000',
+                        lang: 'en',
+                        whitelist: ['*'],
+                        moreVideoAttr: {
+                            crossOrigin: 'anonymous',
+                        },
+                        customType: {
+                            m3u8: function (video, url) {
+                                if (Hls.isSupported()) {
+                                    const hls = new Hls();
+                                    hls.loadSource(url);
+                                    hls.attachMedia(video);
+                                } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                                    video.src = url;
+                                } else {
+                                    this.notice.show = 'HLS is not supported in your browser';
+                                }
+                            },
+                        }
+                    });
+                    
+                    // Handle player events for synchronization
+                    this.player.on('play', () => {
+                        if (this.ignoreNextPlay) {
+                            this.ignoreNextPlay = false;
+                            return;
+                        }
+                        
+                        if (this.roomId) {
+                            this.socket.emit('video_control', {
+                                roomId: this.roomId,
+                                action: 'play',
+                                currentTime: this.player.currentTime
+                            });
+                        }
+                    });
+                    
+                    this.player.on('pause', () => {
+                        if (this.ignoreNextPause) {
+                            this.ignoreNextPause = false;
+                            return;
+                        }
+                        
+                        if (this.roomId) {
+                            this.socket.emit('video_control', {
+                                roomId: this.roomId,
+                                action: 'pause',
+                                currentTime: this.player.currentTime
+                            });
+                        }
+                    });
+                    
+                    this.player.on('seek', () => {
+                        if (this.ignoreNextSeek) {
+                            this.ignoreNextSeek = false;
+                            return;
+                        }
+                        
+                        if (this.roomId) {
+                            this.socket.emit('video_control', {
+                                roomId: this.roomId,
+                                action: 'seek',
+                                currentTime: this.player.currentTime
+                            });
+                        }
+                    });
+                    
+                    // Handle errors with a more user-friendly approach
+                    this.player.on('error', () => {
+                        this.player.notice.show = 'Video stream is currently unavailable. We\'re working on it!';
+                        
+                        // Show a friendly error overlay
+                        const container = document.getElementById('artplayer-container');
+                        const errorOverlay = document.createElement('div');
+                        errorOverlay.className = 'absolute inset-0 bg-black/80 flex flex-col items-center justify-center text-center p-6';
+                        errorOverlay.innerHTML = `
+                            <svg class="w-16 h-16 text-red-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <h3 class="text-xl font-bold mb-2">Stream Temporarily Unavailable</h3>
+                            <p class="text-gray-300 mb-4">We're experiencing some technical difficulties with the video stream. Please check back in a few moments.</p>
+                            <button class="bg-yt-red hover:bg-yt-red-hover px-4 py-2 rounded-full transition-all duration-300">Try Again</button>
+                        `;
+                        container.appendChild(errorOverlay);
+                    });
+                },
+                
+                // Room management
+                createRoom() {
+                    if (!this.username) {
+                        this.showUsernameModal = true;
+                        return;
+                    }
+                    
+                    this.socket.emit('create_room', {
+                        name: this.createRoomData.name,
+                        videoUrl: this.createRoomData.videoUrl,
+                        isPublic: this.createRoomData.isPublic,
+                        userId: this.userId,
+                        username: this.username
+                    }, (response) => {
+                        if (response.error) {
+                            alert(response.error);
+                            return;
+                        }
+                        
+                        this.joinRoom(response.roomId);
+                        this.showCreateRoomModal = false;
+                    });
+                },
+                
+                joinRoom(roomId = null) {
+                    if (!this.username) {
+                        this.showUsernameModal = true;
+                        return;
+                    }
+                    
+                    const roomToJoin = roomId || this.joinRoomId;
+                    
+                    this.socket.emit('join_room', {
+                        roomId: roomToJoin,
+                        username: this.username
+                    });
+                    
+                    this.showJoinRoomModal = false;
+                },
+                
+                leaveRoom() {
+                    if (this.roomId) {
+                        this.socket.emit('leave_room', {
+                            roomId: this.roomId
+                        });
+                        
+                        this.roomId = null;
+                        this.roomName = '';
+                        this.isRoomCreator = false;
+                        this.messageGroups = [];
+                        this.activeUsers = [];
+                        
+                        // Reset video to default
+                        this.videoUrl = 'https://x579fbxkqa2f.cdn-centaurus.com/hls2/01/08253/w6aqq3tciq4u_h/master.m3u8?t=08IfkTfbDF63gVfHOpaJAjK15jZ2nR2BADqwEfgnf_U&s=1742120535&e=129600&f=41267147&srv=flqirb5v8n3n&i=0.4&sp=500&p1=flqirb5v8n3n&p2=flqirb5v8n3n&asn=6939';
+                        if (this.player) {
+                            this.player.switchUrl(this.videoUrl);
+                        }
+                    }
+                },
+                
+                changeVideo() {
+                    if (!this.roomId || !this.isRoomCreator) return;
+                    
+                    this.socket.emit('update_video', {
+                        roomId: this.roomId,
+                        videoUrl: this.newVideoUrl
+                    });
+                    
+                    this.showChangeVideoModal = false;
+                    this.newVideoUrl = '';
+                },
+                
+                // User management
+                setUsername() {
+                    if (this.usernameInput.trim()) {
+                        this.username = this.usernameInput.trim();
+                        localStorage.setItem('username', this.username);
+                        this.showUsernameModal = false;
+                    }
+                },
+                
+                // Chat functions
+                sendMessage() {
+                    if (this.newMessage.trim() === '' || !this.username || !this.roomId) return;
+                    if (this.slowMode && this.slowModeCountdown > 0) return;
+                    
+                    this.socket.emit('chat_message', {
+                        roomId: this.roomId,
+                        message: this.newMessage
+                    });
+                    
+                    this.newMessage = '';
+                    
+                    // Start slow mode countdown if enabled
+                    if (this.slowMode) {
+                        this.slowModeCountdown = 3;
+                        const countdownInterval = setInterval(() => {
+                            this.slowModeCountdown--;
+                            if (this.slowModeCountdown <= 0) {
+                                clearInterval(countdownInterval);
+                            }
+                        }, 1000);
+                    }
+                },
+                
+                addMessage(message) {
+                    const now = new Date();
+                    const hours = now.getHours();
+                    const minutes = now.getMinutes();
+                    const ampm = hours >= 12 ? 'PM' : 'AM';
+                    const formattedHours = hours % 12 || 12;
+                    const formattedMinutes = minutes < 10 ? '0' + minutes : minutes;
+                    const timeString = `${formattedHours}:${formattedMinutes} ${ampm}`;
+                    
+                    // Format the message
+                    const formattedMessage = {
+                        id: message.id,
+                        username: message.username,
+                        text: message.text,
+                        time: timeString,
+                        isHighlighted: true,
+                        isCreator: message.isCreator
+                    };
+                    
+                    // Add to the last group if it's recent, otherwise create a new group
+                    if (this.messageGroups.length > 0) {
+                        const lastGroup = this.messageGroups[this.messageGroups.length - 1];
+                        lastGroup.messages.push(formattedMessage);
+                    } else {
+                        this.messageGroups.push({
+                            showTimeSeparator: true,
+                            timeSeparator: timeString,
+                            messages: [formattedMessage]
+                        });
+                    }
+                    
+                    this.$nextTick(() => {
+                        this.scrollToBottom();
+                    });
+                },
+                
+                processMessages(messages) {
+                    // Group messages by time (simplified)
+                    const groupedMessages = {};
+                    
+                    messages.forEach(message => {
+                        const date = new Date(message.time * 1000);
+                        const hours = date.getHours();
+                        const minutes = date.getMinutes();
+                        const ampm = hours >= 12 ? 'PM' : 'AM';
+                        const formattedHours = hours % 12 || 12;
+                        const formattedMinutes = minutes < 10 ? '0' + minutes : minutes;
+                        const timeString = `${formattedHours}:${formattedMinutes} ${ampm}`;
+                        
+                        // Format the message
+                        const formattedMessage = {
+                            id: message.id,
+                            username: message.username,
+                            text: message.text,
+                            time: timeString,
+                            isCreator: message.isCreator
+                        };
+                        
+                        // Group by hour
+                        const hourKey = `${formattedHours}:${Math.floor(minutes / 15) * 15} ${ampm}`;
+                        
+                        if (!groupedMessages[hourKey]) {
+                            groupedMessages[hourKey] = [];
+                        }
+                        
+                        groupedMessages[hourKey].push(formattedMessage);
+                    });
+                    
+                    // Convert to message groups
+                    this.messageGroups = Object.keys(groupedMessages).map(key => ({
+                        showTimeSeparator: true,
+                        timeSeparator: key,
+                        messages: groupedMessages[key]
+                    }));
+                    
+                    this.$nextTick(() => {
+                        this.scrollToBottom();
+                    });
+                },
+                
+                scrollToBottom() {
+                    const chatMessages = document.getElementById('chat-messages');
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                },
+                
+                animateMessage(el, delay) {
+                    setTimeout(() => {
+                        el.classList.add('message-animation');
+                    }, delay || 0);
+                },
+                
+                // UI helpers
+                showNotification(message) {
+                    // Clear any existing timeout
+                    if (this.syncNotification.timeout) {
+                        clearTimeout(this.syncNotification.timeout);
+                    }
+                    
+                    this.syncNotification.message = message;
+                    this.syncNotification.show = true;
+                    
+                    this.syncNotification.timeout = setTimeout(() => {
+                        this.syncNotification.show = false;
+                    }, 3000);
+                },
+                
+                likeVideo() {
+                    if (!this.liked) {
+                        this.likeCount++;
+                        this.liked = true;
+                        
+                        // Animate like button
+                        anime({
+                            targets: 'button svg',
+                            scale: [1, 1.3, 1],
+                            duration: 500,
+                            easing: 'easeInOutQuad'
+                        });
+                    } else {
+                        this.likeCount--;
+                        this.liked = false;
+                    }
+                },
+                
+                getAvatarColor(username) {
+                    // Generate consistent colors for usernames
+                    if (!this.userColors[username]) {
+                        const colorOptions = [
+                            'bg-gradient-to-r from-purple-500 to-pink-500',
+                            'bg-gradient-to-r from-blue-500 to-teal-500',
+                            'bg-gradient-to-r from-red-500 to-orange-500',
+                            'bg-gradient-to-r from-green-500 to-teal-500',
+                            'bg-gradient-to-r from-yellow-500 to-orange-500',
+                            'bg-gradient-to-r from-indigo-500 to-purple-500'
+                        ];
+                        
+                        // Use a hash function to consistently assign colors
+                        const hash = username.split('').reduce((acc, char) => {
+                            return char.charCodeAt(0) + acc;
+                        }, 0);
+                        
+                        this.userColors[username] = colorOptions[hash % colorOptions.length];
+                    }
+                    
+                    return this.userColors[username];
+                },
+                
+                addEmoji(emoji) {
+                    this.newMessage += emoji;
+                    // Focus the input after adding emoji
+                    this.$nextTick(() => {
+                        document.querySelector('input[type="text"]').focus();
+                    });
+                },
+                
+                toggleChatSettings() {
+                    this.showChatSettings = !this.showChatSettings;
+                },
+                
+                toggleChatMode() {
+                    this.chatMode = this.chatMode === 'Top chat' ? 'All messages' : 'Top chat';
+                },
+                
+                reactToMessage(message, emoji) {
+                    if (!message.reactions) {
+                        message.reactions = [];
+                    }
+                    
+                    // Check if this emoji already exists
+                    const existingReaction = message.reactions.find(r => r.emoji === emoji);
+                    if (existingReaction) {
+                        existingReaction.count++;
+                    } else {
+                        message.reactions.push({ emoji, count: 1 });
+                    }
+                    
+                    // Animate the reaction
+                    anime({
+                        targets: '.chat-message:last-child .chat-bubble',
+                        scale: [1, 1.03, 1],
+                        duration: 300,
+                        easing: 'easeInOutQuad'
+                    });
+                },
+                
+                formatTime(seconds) {
+                    const minutes = Math.floor(seconds / 60);
+                    const remainingSeconds = Math.floor(seconds % 60);
+                    return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
+                }
+            };
+        }
+    </script>
+</body>
+</html>

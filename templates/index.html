@@ -373,7 +373,7 @@
                     </div>
                 </section>
 
-                <section class="mt-12 rounded-lg bg-gray-900/50 p-4 sm:p-6 overflow-hidden" x-data="schedule()">
+                <section class="mt-12 rounded-lg bg-black p-4 sm:p-6 overflow-hidden" x-data="schedule()">
                     <!-- Loading Animation -->
                     <div x-show="isLoading" class="flex items-center justify-center h-64">
                         <div class="flex space-x-2">
@@ -433,7 +433,7 @@
                         </div>
                         <div class="space-y-4" x-data="{ hoveredItem: null }">
                             <template x-for="(item, index) in scheduleData[selectedDate]" :key="index">
-                                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between rounded-lg bg-gray-800/50 p-4 transition-all duration-300 ease-in-out hover:bg-gray-700/50"
+                                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between rounded-sm bg-black p-4 transition-all duration-300 ease-in-out hover:bg-gray-900/50 border-b border-gray-700"
                                     @mouseenter="hoveredItem = index" @mouseleave="hoveredItem = null"
                                     :class="{ 'transform scale-[1.02]': hoveredItem === index }">
                                     <div class="flex items-start sm:items-center gap-4 mb-2 sm:mb-0">

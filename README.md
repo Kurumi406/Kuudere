@@ -1,23 +1,32 @@
 # Kuudare
 Public Repo For Kuudere.to
 
+## Table of Contents
+- [Overview](#overview)
+- [Authentication](#authentication)
+  - [Obtaining the Key](#obtaining-the-key)
+- [API Endpoints](#api-endpoints)
+  - [Anime Search](#anime-search)
+  - [Anime Info](#anime-info)
+  - [Episode Streaming](#episode-streaming)
+  - [Watchlist](#watchlist)
+  - [Continue Watching](#continue-watching)
+  - [User Profile](#user-profile)
+  - [Community](#community)
+  - [Watch Rooms](#watch-rooms)
+- [Complete Endpoint Reference](#endpoint-reference)
+
 ## <span id="thanks">🤝 Thanks</span>
 
 - [Aniwatch API](https://github.com/ghoshRitesh12/aniwatch-api)
 
-
-
-# kuudere.to Anime API Documentation
-
-## Overview
+## <span id="overview">Overview</span>
 This project provides documentation for the kuudere.to Anime Streaming API.
 
-## Understanding
-- **KEY :** Is your account or user's account secret you can obtain it via `/login` endpoint
-- **SECRET :**  Have To obtain via our discord server
+## <span id="authentication">Authentication</span>
+The API requires authentication using a `key` and `secret` for each request.
 
-
-### 1. Obtaining The Key
+### <span id="obtaining-the-key">Obtaining The Key</span>
 - **URL:** `https://kuudere.to/login`
 - **Method:** POST
 
@@ -26,6 +35,15 @@ This project provides documentation for the kuudere.to Anime Streaming API.
 |-------|------|----------|-------------|
 | `email` | `string` | Yes | Account email used in site |
 | `password` | `string` | Yes | Account password used in site |
+
+#### Sample Request
+```json
+POST /login
+{
+  "email": "your_email@example.com",
+  "password": "your_password"
+}
+```
 
 #### Sample Response
 ```json
@@ -47,486 +65,366 @@ This project provides documentation for the kuudere.to Anime Streaming API.
     },
     "success":true
 }
-
 ```
 
+## <span id="api-endpoints">API Endpoints</span>
 
- 
-## Authentication
-The API requires authentication using a `key` and `secret` for each request.
+For all API-enabled endpoints, include the following in your request body as JSON:
 
-## Endpoints
-
-### 1. Home Endpoint
-- **URL:** `https://kuudere.to/home`
-- **Method:** POST
-
-#### Required Fields
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `key` | `string` | Yes | Authentication key |
-| `secret` | `string` | Yes | Authentication secret |
-
-#### Sample Response
 ```json
 {
-    "lastUpdated": [
-        {
-            "id": "67759a9c00231b0dea36",
-            "english": "Unnamed Memory Season 2",
-            "romaji": "Unnamed Memory Act.2",
-            "native": "Unnamed Memory Act.2",
-            "ageRating": "PG-13",
-            "malScore": 7.15,
-            "averageScore": 68,
-            "duration": 24,
-            "genres": [
-                "Adventure",
-                "Fantasy",
-                "Romance"
-            ],
-            "cover": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx178550-1mjYHtOwiqkC.jpg",
-            "season": "WINTER",
-            "startDate": "Jan 07, 2025",
-            "status": "RELEASING",
-            "synonyms": [
-                "Unnamed Memory \u7b2c2\u671f",
-                "Unnamed Memory 2nd Season",
-                "\u30a2\u30f3\u30cd\u30fc\u30e0\u30c9\u30e1\u30e2\u30ea\u30fc Act.2"
-            ],
-            "type": "TV",
-            "year": 2025,
-            "epCount": 9,
-            "subbedCount": 9,
-            "dubbedCount": 0,
-            "description": "The second season of <i>Unnamed Memory</i>.<br>\n<br>\nSeeking to end a curse thwarting his lineage, Prince Oscar sets out on a quest that leads him to a powerful and beautiful witch, Tinasha, and he demands a unique bargain: marriage. Though unenthused by the proposal, she agrees to stay in his castle for a year while researching the spell cast upon him. But beneath her beauty lies a lifetime of dark secrets that soon come to light.<br>\n<br>\n(Source: Crunchyroll)"
-        },
-        {
-            "id": "675c236b0027b1bff29c",
-            "english": "Tying the Knot with an Amagami Sister",
-            "romaji": "Amagami-san Chi no Enmusubi",
-            "native": "\u7518\u795e\u3055\u3093\u3061\u306e\u7e01\u7d50\u3073",
-            "ageRating": "PG-13",
-            "malScore": 7.16,
-            "averageScore": 69,
-            "duration": 24,
-            "genres": [
-                "Comedy",
-                "Drama",
-                "Ecchi",
-                "Romance",
-                "Supernatural"
-            ],
-            "cover": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx164172-GY2aqItIuqtR.jpg",
-            "season": "FALL",
-            "startDate": "Oct 02, 2024",
-            "status": "RELEASING",
-            "synonyms": [
-                "Matchmaking of the Amagami Household",
-                "\u0e14\u0e49\u0e32\u0e22\u0e41\u0e14\u0e07\u0e1c\u0e39\u0e01\u0e23\u0e31\u0e01\u0e1a\u0e49\u0e32\u0e19\u0e2d\u0e32\u0e21\u0e32\u0e01\u0e32\u0e21\u0e34",
-                "\u7d50\u7de3\u7518\u795e\u795e\u793e",
-                "\u7518\u795e\u5bb6\u7684\u8fde\u7406\u679d",
-                "\u0631\u0628\u0637 \u0627\u0644\u0639\u0642\u062f \u0645\u0639 \u0623\u062e\u0648\u0627\u062a \u0623\u0645\u0627\u063a\u0627\u0645\u064a"
-            ],
-            "type": "TV",
-            "year": 2024,
-            "epCount": 21,
-            "subbedCount": 21,
-            "dubbedCount": 17,
-            "description": "Uryuu Kamihate is a high school student striving to enter Kyoto University\u2019s medical school. After being raised at an orphanage, Uryuu is taken in by the chief priest at Amagami Shrine, where he begins to live as a freeloader\u2014and to cohabit with Yae, Yuna, and Asahi, the three beautiful shrine maiden sisters! What\u2019s more, the condition he must meet in order to live at the shrine for free is to marry into the family and inherit the shrine! How will Uryuu overcome his marriage meetings with the three sisters as well as the many challenges that Amagami Shrine faces? So begins a miraculous rom-com about living under the same roof with three shrine maidens!<br>\n<br>\n(Source: Crunchyroll, edited)"
-        },
-    ],
-    "latestEps": [
-        {
-            "id": "67759a9c00231b0dea36",
-            "english": "Unnamed Memory Season 2",
-            "romaji": "Unnamed Memory Act.2",
-            "native": "Unnamed Memory Act.2",
-            "ageRating": "PG-13",
-            "malScore": 7.15,
-            "averageScore": 68,
-            "duration": 24,
-            "genres": [
-                "Adventure",
-                "Fantasy",
-                "Romance"
-            ],
-            "cover": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx178550-1mjYHtOwiqkC.jpg",
-            "season": "WINTER",
-            "startDate": "Jan 07, 2025",
-            "status": "RELEASING",
-            "synonyms": [
-                "Unnamed Memory \u7b2c2\u671f",
-                "Unnamed Memory 2nd Season",
-                "\u30a2\u30f3\u30cd\u30fc\u30e0\u30c9\u30e1\u30e2\u30ea\u30fc Act.2"
-            ],
-            "type": "TV",
-            "year": 2025,
-            "epCount": 9,
-            "subbedCount": 9,
-            "dubbedCount": 0,
-            "description": "The second season of <i>Unnamed Memory</i>.<br>\n<br>\nSeeking to end a curse thwarting his lineage, Prince Oscar sets out on a quest that leads him to a powerful and beautiful witch, Tinasha, and he demands a unique bargain: marriage. Though unenthused by the proposal, she agrees to stay in his castle for a year while researching the spell cast upon him. But beneath her beauty lies a lifetime of dark secrets that soon come to light.<br>\n<br>\n(Source: Crunchyroll)",
-            "url": "/watch/67759a9c00231b0dea36/9"
-        },
-        {
-            "id": "675c236b0027b1bff29c",
-            "english": "Tying the Knot with an Amagami Sister",
-            "romaji": "Amagami-san Chi no Enmusubi",
-            "native": "\u7518\u795e\u3055\u3093\u3061\u306e\u7e01\u7d50\u3073",
-            "ageRating": "PG-13",
-            "malScore": 7.16,
-            "averageScore": 69,
-            "duration": 24,
-            "genres": [
-                "Comedy",
-                "Drama",
-                "Ecchi",
-                "Romance",
-                "Supernatural"
-            ],
-            "cover": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx164172-GY2aqItIuqtR.jpg",
-            "season": "FALL",
-            "startDate": "Oct 02, 2024",
-            "status": "RELEASING",
-            "synonyms": [
-                "Matchmaking of the Amagami Household",
-                "\u0e14\u0e49\u0e32\u0e22\u0e41\u0e14\u0e07\u0e1c\u0e39\u0e01\u0e23\u0e31\u0e01\u0e1a\u0e49\u0e32\u0e19\u0e2d\u0e32\u0e21\u0e32\u0e01\u0e32\u0e21\u0e34",
-                "\u7d50\u7de3\u7518\u795e\u795e\u793e",
-                "\u7518\u795e\u5bb6\u7684\u8fde\u7406\u679d",
-                "\u0631\u0628\u0637 \u0627\u0644\u0639\u0642\u062f \u0645\u0639 \u0623\u062e\u0648\u0627\u062a \u0623\u0645\u0627\u063a\u0627\u0645\u064a"
-            ],
-            "type": "TV",
-            "year": 2024,
-            "epCount": 21,
-            "subbedCount": 21,
-            "dubbedCount": 17,
-            "description": "Uryuu Kamihate is a high school student striving to enter Kyoto University\u2019s medical school. After being raised at an orphanage, Uryuu is taken in by the chief priest at Amagami Shrine, where he begins to live as a freeloader\u2014and to cohabit with Yae, Yuna, and Asahi, the three beautiful shrine maiden sisters! What\u2019s more, the condition he must meet in order to live at the shrine for free is to marry into the family and inherit the shrine! How will Uryuu overcome his marriage meetings with the three sisters as well as the many challenges that Amagami Shrine faces? So begins a miraculous rom-com about living under the same roof with three shrine maidens!<br>\n<br>\n(Source: Crunchyroll, edited)",
-            "url": "/watch/675c236b0027b1bff29c/21"
-        },
-    ],
-    "topAired": [
-        {
-            "id": "67759a9c00231b0dea36",
-            "english": "Unnamed Memory Season 2",
-            "romaji": "Unnamed Memory Act.2",
-            "native": "Unnamed Memory Act.2",
-            "ageRating": "PG-13",
-            "malScore": 7.15,
-            "averageScore": 68,
-            "duration": 24,
-            "genres": [
-                "Adventure",
-                "Fantasy",
-                "Romance"
-            ],
-            "cover": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx178550-1mjYHtOwiqkC.jpg",
-            "banner": "https://s4.anilist.co/file/anilistcdn/media/anime/banner/178550-iM5NTASgQ4wt.jpg",
-            "season": "WINTER",
-            "startDate": "Jan 12, 2025",
-            "status": "RELEASING",
-            "synonyms": [
-                "Unnamed Memory \u7b2c2\u671f",
-                "Unnamed Memory 2nd Season",
-                "\u30a2\u30f3\u30cd\u30fc\u30e0\u30c9\u30e1\u30e2\u30ea\u30fc Act.2"
-            ],
-            "type": "TV",
-            "year": 2025,
-            "epCount": 9,
-            "subbedCount": 9,
-            "dubbedCount": 0,
-            "description": "The second season of <i>Unnamed Memory</i>.<br>\n<br>\nSeeking to end a curse thwarting his lineage, Prince Oscar sets out on a quest that leads him to a powerful and beautiful witch, Tinasha, and he demands a unique bargain: marriage. Though unenthused by the proposal, she agrees to stay in his castle for a year while researching the spell cast upon him. But beneath her beauty lies a lifetime of dark secrets that soon come to light.<br>\n<br>\n(Source: Crunchyroll)"
-        },
-        {
-            "id": "675c236b0027b1bff29c",
-            "english": "Tying the Knot with an Amagami Sister",
-            "romaji": "Amagami-san Chi no Enmusubi",
-            "native": "\u7518\u795e\u3055\u3093\u3061\u306e\u7e01\u7d50\u3073",
-            "ageRating": "PG-13",
-            "malScore": 7.16,
-            "averageScore": 69,
-            "duration": 24,
-            "genres": [
-                "Comedy",
-                "Drama",
-                "Ecchi",
-                "Romance",
-                "Supernatural"
-            ],
-            "cover": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx164172-GY2aqItIuqtR.jpg",
-            "banner": "https://s4.anilist.co/file/anilistcdn/media/anime/banner/164172-ceuofxXerReI.jpg",
-            "season": "FALL",
-            "startDate": "Jan 12, 2025",
-            "status": "RELEASING",
-            "synonyms": [
-                "Matchmaking of the Amagami Household",
-                "\u0e14\u0e49\u0e32\u0e22\u0e41\u0e14\u0e07\u0e1c\u0e39\u0e01\u0e23\u0e31\u0e01\u0e1a\u0e49\u0e32\u0e19\u0e2d\u0e32\u0e21\u0e32\u0e01\u0e32\u0e21\u0e34",
-                "\u7d50\u7de3\u7518\u795e\u795e\u793e",
-                "\u7518\u795e\u5bb6\u7684\u8fde\u7406\u679d",
-                "\u0631\u0628\u0637 \u0627\u0644\u0639\u0642\u062f \u0645\u0639 \u0623\u062e\u0648\u0627\u062a \u0623\u0645\u0627\u063a\u0627\u0645\u064a"
-            ],
-            "type": "TV",
-            "year": 2024,
-            "epCount": 21,
-            "subbedCount": 21,
-            "dubbedCount": 17,
-            "description": "Uryuu Kamihate is a high school student striving to enter Kyoto University\u2019s medical school. After being raised at an orphanage, Uryuu is taken in by the chief priest at Amagami Shrine, where he begins to live as a freeloader\u2014and to cohabit with Yae, Yuna, and Asahi, the three beautiful shrine maiden sisters! What\u2019s more, the condition he must meet in order to live at the shrine for free is to marry into the family and inherit the shrine! How will Uryuu overcome his marriage meetings with the three sisters as well as the many challenges that Amagami Shrine faces? So begins a miraculous rom-com about living under the same roof with three shrine maidens!<br>\n<br>\n(Source: Crunchyroll, edited)"
-        },
-    ],
-    "topUpcoming": [
-        {
-            "id": "6774772800330ef06e8a",
-            "english": "Fate/strange Fake",
-            "romaji": "Fate/strange Fake",
-            "native": "Fate/strange Fake",
-            "ageRating": "PG-13",
-            "malScore": null,
-            "averageScore": null,
-            "duration": 25,
-            "genres": [
-                "Action",
-                "Adventure",
-                "Fantasy",
-                "Mystery",
-                "Supernatural"
-            ],
-            "cover": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx166617-34fpC9y47tTx.png",
-            "banner": "https://s4.anilist.co/file/anilistcdn/media/anime/banner/166617-P4w3p0H4lE1O.jpg",
-            "season": null,
-            "startDate": null,
-            "status": "NOT_YET_RELEASED",
-            "synonyms": [],
-            "type": "TV",
-            "year": null,
-            "epCount": 1,
-            "subbedCount": 1,
-            "dubbedCount": 0,
-            "description": "In a Holy Grail War, Mages (Masters) and their Heroic Spirits (Servants) fight for the control of the Holy Grail\u2014an omnipotent wish-granting device said to fulfill any desire. Years have passed since the end of the Fifth Holy Grail War in Japan. Now, signs portend the emergence of a new Holy Grail in the western American city of Snowfield. Sure enough, Masters and Servants begin to gather... <br><br>\n\nA missing Servant class...<br>\nImpossible Servant summonings...<br>\nA nation shrouded in secrecy...<br>\nAnd a city created as a battleground.<br>\n<br>\nIn the face of such irregularities, the Holy Grail War is twisted and driven into the depth of madness. Let the curtain rise on a masquerade of humans and heroes, made to dance upon the stage of a false Holy Grail. <i>This is a Holy Grail War covered in lies.</i>\n<br><br>\n(Source: Official Site, Aniplex USA, edited)\n<br><br>\n<i>Notes:</i><br>\n\u2022  <i>Special premiere of Episode 1 in its English Dub occurred in Los Angeles at the Fate 20th Anniversary Showcase event and as well through Crunchyroll\u2019s YouTube Channel on November 23, 2024 before the Japanese television premiere.</i><br>\n\u2022  <i>The Japanese advanced premiere occurred during the \"Fate New Year's Eve TV Special 2024\" on December 31, 2024.</i>"
-        },
-        {
-            "id": "67759a9c001bcb01cfab",
-            "english": "Hell\u2019s Paradise Season 2",
-            "romaji": "Jigokuraku 2nd Season",
-            "native": "\u5730\u7344\u697d \u7b2c\u4e8c\u671f",
-            "ageRating": null,
-            "malScore": null,
-            "averageScore": null,
-            "duration": null,
-            "genres": [
-                "Action",
-                "Adventure",
-                "Mystery",
-                "Supernatural"
-            ],
-            "cover": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx166613-YzuAjRNJKo1K.png",
-            "banner": "https://s4.anilist.co/file/anilistcdn/media/anime/banner/166613-drS86exJlIjG.jpg",
-            "season": "WINTER",
-            "startDate": null,
-            "status": "NOT_YET_RELEASED",
-            "synonyms": [
-                "Hell\u2019s Paradise: Jigokuraku Season 2",
-                "\u0e2a\u0e38\u0e02\u0e32\u0e27\u0e14\u0e35\u0e2d\u0e40\u0e27\u0e08\u0e35",
-                "\u0410\u0434\u0441\u043a\u0438\u0439 \u0440\u0430\u0439"
-            ],
-            "type": "TV",
-            "year": 2026,
-            "epCount": 0,
-            "subbedCount": 0,
-            "dubbedCount": 0,
-            "description": "The second season of <i>Jigokuraku</i>."
-        },
-    ],
-    "userInfo": {
-        "userId": "123rff3e23",
-        "username": "test",
-        "email": "test@gmail.com"
-    },
-    "ctotal": 0//User's Continue Watchling list 
+  "key": "your_session_key",
+  "secret": "your_secret"
 }
 ```
 
-### 2. Anime Information
-- **URL:** `https://kuudere.to/anime/{anime_id}`
-- **Method:** POST
+### <span id="anime-search">Anime Search</span>
 
-#### Required Fields
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `key` | `string` | Yes | Authentication key |
-| `secret` | `string` | Yes | Authentication secret |
+#### Endpoint: `/search`
+- **Method**: GET/POST
+- **Description**: Search for anime using various filters
 
-#### URL Parameters
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `anime_id` | `string` | Yes | Unique identifier for the anime |
+**URL Parameters**:
+- `keyword`: Search term
+- `season`: Filter by season
+- `language`: Filter by language
+- `sort`: Sort order (default,score,etc)
+- `genres`: Filter by genres
+- `year`: Filter by year
+- `type`: Filter by type
+- `score`: Filter by score
+- `page`: Page number
 
-#### Sample Response
+**Sample Request**:
+```
+GET /search?keyword=naruto&genres=action,adventure&year=2020&page=1
+```
 ```json
+POST /search
 {
-    "data": {
-        "id": "67759a9c00231b0dea36",
-        "english": "Unnamed Memory Season 2",
-        "romaji": "Unnamed Memory Act.2",
-        "native": "Unnamed Memory Act.2",
-        "ageRating": "PG-13",
-        "malScore": 7.15,
-        "averageScore": 68,
-        "duration": 24,
-        "genres": [
-            "Adventure",
-            "Fantasy",
-            "Romance"
-        ],
-        "cover": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx178550-1mjYHtOwiqkC.jpg",
-        "banner": "https://s4.anilist.co/file/anilistcdn/media/anime/banner/178550-iM5NTASgQ4wt.jpg",
-        "season": "WINTER",
-        "startDate": "2025-01-07T00:00:00.000+00:00",
-        "status": "RELEASING",
-        "synonyms": [
-            "Unnamed Memory \u7b2c2\u671f",
-            "Unnamed Memory 2nd Season",
-            "\u30a2\u30f3\u30cd\u30fc\u30e0\u30c9\u30e1\u30e2\u30ea\u30fc Act.2"
-        ],
-        "studios": [
-            "ENGI",
-            "KADOKAWA",
-            "Tencent",
-            "Sammy",
-            "AT-X",
-            "Bandai Namco Music Live"
-        ],
-        "type": "TV",
-        "year": 2025,
-        "epCount": 9,
-        "subbedCount": 9,
-        "dubbedCount": 0,
-        "description": "The second season of <i>Unnamed Memory</i>.<br>\n<br>\nSeeking to end a curse thwarting his lineage, Prince Oscar sets out on a quest that leads him to a powerful and beautiful witch, Tinasha, and he demands a unique bargain: marriage. Though unenthused by the proposal, she agrees to stay in his castle for a year while researching the spell cast upon him. But beneath her beauty lies a lifetime of dark secrets that soon come to light.<br>\n<br>\n(Source: Crunchyroll)",
-        "in_watchlist": false,
-        "folder": null,//watchlist folder
-        "views": "150 Views",
-        "likes": "0 Likes"
-    },
-    "userInfo": {
-        "userId": "1234",
-        "username": "test",
-        "email": "test@gmail.com"
-    },
-    "success": true
+  "key": "your_session_key",
+  "secret": "your_secret"
 }
 ```
 
-### 3. Anime Streaming Information
-- **URL:** `https://kuudere.to/watch/{anime_id}/{episode_number}`
-- **Method:** POST
+### <span id="anime-info">Anime Info</span>
 
-#### Required Fields
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `key` | `string` | Yes | Authentication key |
-| `secret` | `string` | Yes | Authentication secret |
+#### Endpoint: `/anime/<id>`
+- **Method**: GET/POST
+- **Description**: Get detailed information about an anime
 
-#### URL Parameters
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `anime_id` | `string` | Yes | Unique identifier for the anime |
-| `episode_number` | `integer` | Yes | Specific episode to stream |
+**URL Parameters**:
+- `id`: Anime ID (in URL path)
 
-#### Sample Response
+**Sample Request**:
+```
+GET /anime/67759a9c00231b0dea36
+```
 ```json
+POST /anime/67759a9c00231b0dea36
 {
-    "all_episodes": [
-        {
-            "id": "677d62ed001b25ef0fe7",
-            "titles": [
-                "Episode 1"
-            ],
-            "filler": null,
-            "number": 1,
-            "recap": null,
-            "aired": "Jan 07, 2025",
-            "ago": "1 month ago"
-        },
-        {
-            "id": "678695c4001399460c77",
-            "titles": [
-                "Episode 2"
-            ],
-            "filler": null,
-            "number": 2,
-            "recap": null,
-            "aired": "Jan 14, 2025",
-            "ago": "1 month ago"
-        },
-    ],
-    "episode_links": [
-        {
-            "$id": "677d68d5001251172503",
-            "continue": false,
-            "serverId": 1,
-            "serverName": "StreamWish",
-            "episodeNumber": 1,
-            "dataType": "sub",
-            "dataLink": "https://hlswish.com/e/tcay002grd1q"
-        },
-        {
-            "$id": "677d62ed0002f30f7835",
-            "serverId": 1000,
-            "continue": true,
-            "serverName": "Hianime",
-            "episodeNumber": 1,
-            "dataType": "sub",
-            "dataLink": "https://kuudere.to/player/Hianime/unnamed-memory-season-2-19440?ep=131525&server=hd-1&category=sub&episode=677d62ed001b25ef0fe7&anime=67759a9c00231b0dea36&vide=Hianime&api=http://127.0.0.1:5000"
-        },
-        {
-            "$id": "jvjvh",
-            "serverId": 10001,
-            "continue": true,
-            "serverName": "Hianime-2",
-            "episodeNumber": 1,
-            "dataType": "sub",
-            "dataLink": "https://kuudere.to/player2/Hianime/unnamed-memory-season-2-19440?ep=131525&server=hd-1&category=sub&episode=677d62ed001b25ef0fe7&anime=67759a9c00231b0dea36&vide=Hianime-2&api=http://127.0.0.1:5000"
-        }
-    ],
-    "episode_comments": [],
-    "total_comments": 0,
-    "episode_id": "677d62ed001b25ef0fe7",
-    "success": true,
-    "duration": 0,
-    "current": 0,
-    "intro_start": 0,
-    "intro_end": 0,
-    "outro_start": 0,
-    "outro_end": 0
+  "key": "your_session_key",
+  "secret": "your_secret"
 }
 ```
 
-## Example Usage
+### <span id="episode-streaming">Episode Streaming</span>
 
-- Python
+#### Endpoint: `/watch/<anime_id>/<ep_number>`
+- **Method**: GET/POST
+- **Description**: Get episode streaming information
 
-```python
-import requests
+**URL Parameters**:
+- `anime_id`: Anime ID (in URL path)
+- `ep_number`: Episode number (in URL path)
 
-def get_anime_info(anime_id, key, secret):
-    url = f"https://kuudere.to/anime/{anime_id}"
-    payload = {
-        "key": key,
-        "secret": secret
-    }
-    response = requests.post(url, json=payload)
-    return response.json()
+**Sample Request**:
 ```
-- Curl
-
-```sh
-curl 'https://kuudere.to/home' \
-  -H 'accept: */*' \
-  -H 'accept-language: en-US,en;q=0.8' \
-  -H 'content-type: application/json' \
-  -H 'sec-gpc: 1' \
-  -H 'user-agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36' \
-  --data-raw '{"key":"#####, "secret": "######"}'
-
+GET /watch/67759a9c00231b0dea36/1
 ```
+```json
+POST /watch/67759a9c00231b0dea36/1
+{
+  "key": "your_session_key",
+  "secret": "your_secret"
+}
+```
+
+### <span id="watchlist">Watchlist</span>
+
+#### Endpoint: `/add-to-watchlist/<folder>/<animeid>`
+- **Method**: GET/POST
+- **Description**: Add anime to watchlist
+
+**URL Parameters**:
+- `folder`: Watchlist folder name (in URL path) 
+- `animeid`: Anime ID (in URL path)
+
+**Sample Request**:
+```
+GET /add-to-watchlist/watching/67759a9c00231b0dea36
+```
+```json
+POST /add-to-watchlist/watching/67759a9c00231b0dea36
+{
+  "key": "your_session_key",
+  "secret": "your_secret"
+}
+```
+
+#### Endpoint: `/api/watchlist`
+- **Method**: GET/POST
+- **Description**: Get user's watchlist
+
+**URL Parameters**:
+- `folder`: Folder to filter (optional)
+- `page`: Page number (optional)
+
+**Sample Request**:
+```
+GET /api/watchlist?folder=watching&page=1
+```
+```json
+POST /api/watchlist
+{
+  "key": "your_session_key",
+  "secret": "your_secret"
+}
+```
+
+### <span id="continue-watching">Continue Watching</span>
+
+#### Endpoint: `/save/progress`
+- **Method**: POST
+- **Description**: Save watching progress
+
+**Body Parameters**:
+- `key`: Your session key
+- `secret`: Your secret
+- `anime_id`: Anime ID
+- `episode_id`: Episode ID
+- `current`: Current time in seconds
+- `duration`: Total duration in seconds
+
+**Sample Request**:
+```json
+POST /save/progress
+{
+  "key": "your_session_key",
+  "secret": "your_secret",
+  "anime_id": "67759a9c00231b0dea36",
+  "episode_id": "677d62ed001b25ef0fe7",
+  "current": 120,
+  "duration": 1440
+}
+```
+
+#### Endpoint: `/api/continue-watching`
+- **Method**: GET/POST
+- **Description**: Get continue watching list
+
+**URL Parameters**:
+- `page`: Page number (optional)
+
+**Sample Request**:
+```
+GET /api/continue-watching?page=1
+```
+```json
+POST /api/continue-watching
+{
+  "key": "your_session_key",
+  "secret": "your_secret"
+}
+```
+
+### <span id="user-profile">User Profile</span>
+
+#### Endpoint: `/profile`
+- **Method**: GET/POST
+- **Description**: Get user profile information
+
+**Sample Request**:
+```json
+POST /profile
+{
+  "key": "your_session_key",
+  "secret": "your_secret"
+}
+```
+
+#### Endpoint: `/update/profile`
+- **Method**: POST
+- **Description**: Update user profile
+
+**Body Parameters**:
+- `key`: Your session key
+- `secret`: Your secret
+- `username`: New username
+- `avatar`: Avatar image
+- `bio`: User biography
+
+**Sample Request**:
+```json
+POST /update/profile
+{
+  "key": "your_session_key",
+  "secret": "your_secret",
+  "username": "new_username",
+  "bio": "My new profile bio"
+}
+```
+
+### <span id="community">Community</span>
+
+#### Endpoint: `/community`
+- **Method**: GET/POST
+- **Description**: Get community posts
+
+**URL Parameters**:
+- `page`: Page number (optional)
+- `sort`: Sort order (optional)
+
+**Sample Request**:
+```
+GET /community?page=1&sort=recent
+```
+```json
+POST /community
+{
+  "key": "your_session_key",
+  "secret": "your_secret"
+}
+```
+
+#### Endpoint: `/anime/comment/`
+- **Method**: POST
+- **Description**: Add a comment to an anime
+
+**Body Parameters**:
+- `key`: Your session key
+- `secret`: Your secret
+- `anime_id`: Anime ID
+- `episode_id`: Episode ID
+- `content`: Comment content
+
+**Sample Request**:
+```json
+POST /anime/comment/
+{
+  "key": "your_session_key",
+  "secret": "your_secret",
+  "anime_id": "67759a9c00231b0dea36",
+  "episode_id": "677d62ed001b25ef0fe7",
+  "content": "This episode was amazing!"
+}
+```
+
+### <span id="watch-rooms">Watch Rooms</span>
+
+#### Endpoint: `/create_room`
+- **Method**: POST
+- **Description**: Create a watch room
+
+**Body Parameters**:
+- `key`: Your session key
+- `secret`: Your secret
+- `anime_id`: Anime ID
+- `episode_id`: Episode ID
+- `name`: Room name
+- `password`: Room password (optional)
+
+**Sample Request**:
+```json
+POST /create_room
+{
+  "key": "your_session_key",
+  "secret": "your_secret",
+  "anime_id": "67759a9c00231b0dea36",
+  "episode_id": "677d62ed001b25ef0fe7",
+  "name": "Watch Party",
+  "password": "optional_password"
+}
+```
+
+#### Endpoint: `/send_chat`
+- **Method**: POST
+- **Description**: Send a chat message in a room
+
+**Body Parameters**:
+- `key`: Your session key
+- `secret`: Your secret
+- `room_id`: Room ID
+- `message`: Chat message content
+
+**Sample Request**:
+```json
+POST /send_chat
+{
+  "key": "your_session_key",
+  "secret": "your_secret",
+  "room_id": "room12345",
+  "message": "Hello everyone!"
+}
+```
+
+## <span id="endpoint-reference">Complete Endpoint Reference</span>
+
+For each endpoint:
+- **URL Parameters**: Sent in the URL query string (e.g., `/search?keyword=naruto&page=1`)
+- **Body Parameters**: Sent in the JSON request body
+
+| Endpoint | Method | Description | URL Parameters | Body Parameters |
+|----------|--------|-------------|--------------|----------------|
+| `/logout` | POST | Log out of your account | None | `key`, `secret` |
+| [`/home`](#api-endpoints) | GET/POST | Get homepage data including latest episodes | `page` (optional): Page number | `key`, `secret` |
+| [`/search`](#anime-search) | GET/POST | Search anime | `keyword`: Search term<br>`season`: Filter by season<br>`language`: Filter by language<br>`sort`: Sort order (default,score,etc)<br>`genres`: Filter by genres<br>`year`: Filter by year<br>`type`: Filter by type<br>`score`: Filter by score<br>`page`: Page number | `key`, `secret` |
+| `/upcoming` | GET/POST | Get upcoming anime | `page`: Page number (optional) | `key`, `secret` |
+| [`/anime/<id>`](#anime-info) | GET/POST | Get detailed information about an anime | `id` in URL path | `key`, `secret` |
+| [`/watch/<anime_id>/<ep_number>`](#episode-streaming) | GET/POST | Get episode streaming information | `anime_id` and `ep_number` in URL path | `key`, `secret` |
+| `/api/anime/respond/<id>` | POST | Like/unlike an anime | `id` in URL path | `key`, `secret`<br>`type`: Action type (like/unlike) |
+| `/api/anime/comment/respond/<id>` | POST | Like/unlike an anime comment | `id` in URL path | `key`, `secret`<br>`type`: Action type (like/unlike) |
+| [`/add-to-watchlist/<folder>/<animeid>`](#watchlist) | GET/POST | Add anime to watchlist | `folder` and `animeid` in URL path | `key`, `secret` |
+| `/processx` | POST | Process file uploads | None | `key`, `secret`<br>`file`: File to upload |
+| `/search-api` | GET | Search API for anime | `keyword`: Search term | `key`, `secret` |
+| `/watch-api/<anime_id>/<ep_number>` | GET/POST | Get episode information | `anime_id` and `ep_number` in URL path | `key`, `secret` |
+| `/api/anime/comments/<anime_id>/<ep_number>` | GET/POST | Get episode comments | `anime_id` and `ep_number` in URL path | `key`, `secret`<br>`page`: Page number (optional) |
+| [`/community`](#community) | GET/POST | Get community posts | `page`: Page number (optional)<br>`sort`: Sort order (optional) | `key`, `secret` |
+| `/api/posts` | GET/POST | Get list of posts | `page`: Page number (optional)<br>`sort`: Sort order (optional) | `key`, `secret` |
+| `/api/post/comment/reply/<comment_id>` | POST | Reply to a post comment | `comment_id` in URL path | `key`, `secret`<br>`content`: Reply content |
+| `/api/post/respond/<id>` | POST | Like/unlike a post | `id` in URL path | `key`, `secret`<br>`type`: Action type (like/unlike) |
+| `/api/post/comment/respond/<id>` | POST | Like/unlike a post comment | `id` in URL path | `key`, `secret`<br>`type`: Action type (like/unlike) |
+| `/post/<post_id>` | GET/POST | View a specific post | `post_id` in URL path | `key`, `secret` |
+| [`/anime/comment/`](#community) | POST | Add a comment to an anime | None | `key`, `secret`<br>`anime_id`: Anime ID<br>`episode_id`: Episode ID<br>`content`: Comment content |
+| `/anime/comments/reply` | POST | Reply to an anime comment | None | `key`, `secret`<br>`comment_id`: Comment ID<br>`content`: Reply content |
+| [`/profile`](#user-profile) | GET/POST | Get user profile information | None | `key`, `secret` |
+| `/api/profile` | GET/POST | Get API profile information | None | `key`, `secret` |
+| `/api/settings` | GET/POST | Get user settings | None | `key`, `secret` |
+| `/api/sync/info` | GET/POST | Sync account information | None | `key`, `secret` |
+| `/api/save/settings` | POST | Save user settings | None | `key`, `secret`<br>`settings`: JSON object with user settings |
+| [`/api/watchlist`](#watchlist) | GET/POST | Get user's watchlist | `folder`: Folder to filter (optional)<br>`page`: Page number (optional) | `key`, `secret` |
+| [`/save/progress`](#continue-watching) | POST | Save watching progress | None | `key`, `secret`<br>`anime_id`: Anime ID<br>`episode_id`: Episode ID<br>`current`: Current time in seconds<br>`duration`: Total duration in seconds |
+| `/api/continue-watching-home` | GET/POST | Get continue watching for homepage | `limit`: Number of items (optional) | `key`, `secret` |
+| [`/api/continue-watching`](#continue-watching) | GET/POST | Get continue watching list | `page`: Page number (optional) | `key`, `secret` |
+| `/api/realtime/anime/<id>` | GET/POST | Get real-time anime information | `id` in URL path | `key`, `secret` |
+| `/api/notifications/<notification_type>` | GET/POST | Get user notifications | `notification_type` in URL path | `key`, `secret`<br>`page`: Page number (optional) |
+| `/api/notifications/count` | GET/POST | Get notification count | None | `key`, `secret` |
+| `/api/top/anime/` | GET/POST | Get top anime | `page`: Page number (optional)<br>`category`: Category filter (optional) | `key`, `secret` |
+| `/api/top/posts` | GET/POST | Get top posts | `page`: Page number (optional)<br>`period`: Time period (optional) | `key`, `secret` |
+| `/countdowns` | GET/POST | Get anime countdowns | None | `key`, `secret` |
+| `/api/schedule` | GET/POST | Get anime schedule | `day`: Day of week (optional) | `key`, `secret` |
+| [`/update/profile`](#user-profile) | POST | Update user profile | None | `key`, `secret`<br>`username`: New username<br>`avatar`: Avatar image<br>`bio`: User biography |
+| `/recently-updated` | GET/POST | Get recently updated anime | `page`: Page number (optional) | `key`, `secret` |
+| `/public/user/<id>` | GET/POST | Get public user profile | `id` in URL path | `key`, `secret` |
+| `/report/anime/episode` | POST | Report an episode issue | None | `key`, `secret`<br>`anime_id`: Anime ID<br>`episode_id`: Episode ID<br>`issue`: Issue description |
+| `/votes/anime/<anime_id>` | POST | Get votes for an anime | `anime_id` in URL path | `key`, `secret` |
+| `/vote/anime/<anime_id>` | POST | Submit a vote for an anime | `anime_id` in URL path | `key`, `secret`<br>`vote`: Vote value |
+| `/api/hover/anime/<anime_id>` | GET | Get hover data for an anime | `anime_id` in URL path | `key`, `secret` |
+| [`/create_room`](#watch-rooms) | POST | Create a watch room | None | `key`, `secret`<br>`anime_id`: Anime ID<br>`episode_id`: Episode ID<br>`name`: Room name<br>`password`: Room password (optional) |
+| `/get_all_rooms` | POST | Get list of all rooms | None | `key`, `secret`<br>`page`: Page number (optional) |
+| `/get_room` | POST | Get specific room information | None | `key`, `secret`<br>`room_id`: Room ID |
+| [`/send_chat`](#watch-rooms) | POST | Send a chat message in a room | None | `key`, `secret`<br>`room_id`: Room ID<br>`message`: Chat message content |
+
 ## Notes
 - Always include both `key` and `secret` in your requests
 - Ensure you have the correct permissions to access the API

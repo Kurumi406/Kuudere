@@ -12,52 +12,258 @@
             theme: {
                 extend: {
                     colors: {
-                        navy: {
-                            DEFAULT: '#1a1b2e',
-                            dark: '#13141f',
-                            light: '#2a2b3d'
-                        },
-                        accent: {
-                            cyan: '#0ff',
-                            pink: '#ff69b4'
+                        yt: {
+                            red: '#FF0000',
+                            dark: '#0F0F0F',
+                            darker: '#0A0A0A',
+                            gray: '#272727',
+                            lightgray: '#717171',
+                            hover: '#3F3F3F'
                         }
+                    },
+                    fontFamily: {
+                        roboto: ['Roboto', 'sans-serif']
                     }
                 }
             }
         }
     </script>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap">
 </head>
-<body class="bg-navy-dark text-white min-h-screen flex items-center justify-center" x-data="{
+<body class="bg-yt-dark text-white min-h-screen font-roboto" x-data="{
     newRoomId: '',
+    username: '',
     errorMessage: '',
-    createOrJoinRoom() {
-        if (this.newRoomId.trim()) {
-            window.location.href = '/' + this.newRoomId;
-        } else {
-            this.errorMessage = 'Please enter a room ID';
+    showUsernameInput: true,
+    recentRooms: [],
+    
+    init() {
+        // Check for recent rooms in local storage
+        const storedRooms = localStorage.getItem('recentRooms');
+        if (storedRooms) {
+            try {
+                this.recentRooms = JSON.parse(storedRooms);
+            } catch (e) {
+                console.error('Error parsing recent rooms:', e);
+                this.recentRooms = [];
+            }
         }
+        
+        // Check for saved username
+        const savedUsername = localStorage.getItem('username');
+        if (savedUsername) {
+            this.username = savedUsername;
+            this.showUsernameInput = false;
+        }
+    },
+    
+    createRoom() {
+        if (!this.username.trim()) {
+            this.errorMessage = 'Please enter a username';
+            return;
+        }
+        
+        // Save username to local storage
+        localStorage.setItem('username', this.username);
+        
+        // Create form and submit
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/create-room';
+        
+        const usernameInput = document.createElement('input');
+        usernameInput.type = 'hidden';
+        usernameInput.name = 'username';
+        usernameInput.value = this.username;
+        
+        form.appendChild(usernameInput);
+        document.body.appendChild(form);
+        form.submit();
+    },
+    
+    joinRoom() {
+        if (!this.username.trim()) {
+            this.errorMessage = 'Please enter a username';
+            return;
+        }
+        
+        if (!this.newRoomId.trim()) {
+            this.errorMessage = 'Please enter a room ID';
+            return;
+        }
+        
+        // Save username to local storage
+        localStorage.setItem('username', this.username);
+        
+        // Add to recent rooms
+        if (!this.recentRooms.includes(this.newRoomId)) {
+            this.recentRooms.unshift(this.newRoomId);
+            // Keep only the 5 most recent rooms
+            if (this.recentRooms.length > 5) {
+                this.recentRooms = this.recentRooms.slice(0, 5);
+            }
+            localStorage.setItem('recentRooms', JSON.stringify(this.recentRooms));
+        }
+        
+        // Submit the form
+        document.getElementById('joinRoomForm').submit();
+    },
+    
+    joinRecentRoom(roomId) {
+        this.newRoomId = roomId;
+        this.joinRoom();
     }
 }">
-    <div class="text-center">
-        <h1 class="text-4xl font-bold mb-8">Welcome to Anime Stream</h1>
-        <form @submit.prevent="createOrJoinRoom" class="space-y-4">
-            <div>
+    <header class="bg-yt-darker py-3 px-4 flex items-center justify-between border-b border-yt-gray">
+        <div class="flex items-center gap-2">
+            <svg class="w-8 h-8 text-yt-red" viewBox="0 0 90 20" preserveAspectRatio="xMidYMid meet" focusable="false">
+                <g viewBox="0 0 90 20" preserveAspectRatio="xMidYMid meet">
+                    <g>
+                        <path d="M27.9727 3.12324C27.6435 1.89323 26.6768 0.926623 25.4468 0.597366C23.2197 2.24288e-07 14.285 0 14.285 0C14.285 0 5.35042 2.24288e-07 3.12323 0.597366C1.89323 0.926623 0.926623 1.89323 0.597366 3.12324C2.24288e-07 5.35042 0 10 0 10C0 10 2.24288e-07 14.6496 0.597366 16.8768C0.926623 18.1068 1.89323 19.0734 3.12323 19.4026C5.35042 20 14.285 20 14.285 20C14.285 20 23.2197 20 25.4468 19.4026C26.6768 19.0734 27.6435 18.1068 27.9727 16.8768C28.5701 14.6496 28.5701 10 28.5701 10C28.5701 10 28.5677 5.35042 27.9727 3.12324Z" fill="#FF0000"></path>
+                        <path d="M11.4253 14.2854L18.8477 10.0004L11.4253 5.71533V14.2854Z" fill="white"></path>
+                    </g>
+                </g>
+            </svg>
+            <h1 class="text-xl font-bold">Anime Stream</h1>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-8 max-w-3xl">
+        <div class="bg-yt-gray rounded-lg p-6 shadow-lg">
+            <h2 class="text-2xl font-bold mb-6 text-center">Watch Anime Together</h2>
+            
+            <!-- Username Input (shown only if no username is saved) -->
+            <div x-show="showUsernameInput" class="mb-6">
+                <label for="username" class="block text-sm font-medium mb-2">Your Username</label>
                 <input 
                     type="text" 
-                    x-model="newRoomId"
-                    placeholder="Enter a room ID"
-                    class="w-64 px-4 py-2 bg-navy rounded-lg border border-navy-light focus:border-accent-cyan focus:ring-1 focus:ring-accent-cyan outline-none"
+                    id="username"
+                    x-model="username"
+                    placeholder="Enter your username"
+                    class="w-full px-4 py-2 bg-yt-darker rounded-lg border border-yt-hover focus:border-yt-red focus:ring-1 focus:ring-yt-red outline-none mb-2"
                 >
             </div>
-            <button 
-                type="submit"
-                class="px-6 py-2 bg-accent-cyan text-navy rounded-lg hover:bg-opacity-75 transition-colors font-medium"
-            >
-                Create/Join Room
-            </button>
-            <p x-show="errorMessage" x-text="errorMessage" class="text-red-500"></p>
-        </form>
-    </div>
+            
+            <!-- Username Display (shown if username is saved) -->
+            <div x-show="!showUsernameInput" class="mb-6 flex items-center justify-between">
+                <div>
+                    <span class="text-sm text-yt-lightgray">Logged in as:</span>
+                    <span class="font-medium ml-2" x-text="username"></span>
+                </div>
+                <button 
+                    @click="showUsernameInput = true"
+                    class="text-sm text-yt-red hover:text-red-400"
+                >
+                    Change
+                </button>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Create Room -->
+                <div class="bg-yt-darker p-4 rounded-lg">
+                    <h3 class="text-lg font-medium mb-4">Create a New Room</h3>
+                    <p class="text-sm text-yt-lightgray mb-4">Start a new room and invite friends to watch together. You'll automatically be the host.</p>
+                    <div class="flex items-center gap-2 mb-4 bg-yt-gray p-2 rounded-lg">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-yellow-500" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                        </svg>
+                        <span class="text-xs text-yt-lightgray">Room creators are automatically assigned as hosts</span>
+                    </div>
+                    <button 
+                        @click="createRoom"
+                        class="w-full px-4 py-2 bg-yt-red text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+                    >
+                        Create Room
+                    </button>
+                </div>
+                
+                <!-- Join Room -->
+                <div class="bg-yt-darker p-4 rounded-lg">
+                    <h3 class="text-lg font-medium mb-4">Join Existing Room</h3>
+                    <form id="joinRoomForm" @submit.prevent="joinRoom" action="/join" method="POST">
+                        <input type="hidden" name="username" :value="username">
+                        <div class="mb-4">
+                            <input 
+                                type="text" 
+                                name="room_id"
+                                x-model="newRoomId"
+                                placeholder="Enter room ID"
+                                class="w-full px-4 py-2 bg-yt-dark rounded-lg border border-yt-hover focus:border-yt-red focus:ring-1 focus:ring-yt-red outline-none"
+                            >
+                        </div>
+                        <button 
+                            type="submit"
+                            class="w-full px-4 py-2 bg-yt-red text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+                        >
+                            Join Room
+                        </button>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Error Message -->
+            <div x-show="errorMessage" class="mt-4 text-red-500 text-center" x-text="errorMessage"></div>
+            
+            <!-- Recent Rooms -->
+            <div x-show="recentRooms.length > 0" class="mt-8">
+                <h3 class="text-lg font-medium mb-4">Recent Rooms</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                    <template x-for="roomId in recentRooms" :key="roomId">
+                        <div 
+                            @click="joinRecentRoom(roomId)"
+                            class="bg-yt-darker p-3 rounded-lg cursor-pointer hover:bg-yt-hover transition-colors"
+                        >
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm font-medium" x-text="roomId"></span>
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-yt-red" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                                </svg>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Features Section -->
+        <div class="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-yt-gray p-4 rounded-lg text-center">
+                <div class="w-12 h-12 bg-yt-red rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+                <h3 class="text-lg font-medium mb-2">Synchronized Playback</h3>
+                <p class="text-sm text-yt-lightgray">Watch videos in perfect sync with friends, no matter where they are.</p>
+            </div>
+            
+            <div class="bg-yt-gray p-4 rounded-lg text-center">
+                <div class="w-12 h-12 bg-yt-red rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12  stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                    </svg>
+                </div>
+                <h3 class="text-lg font-medium mb-2">Live Chat</h3>
+                <p class="text-sm text-yt-lightgray">Chat with friends while watching your favorite anime together.</p>
+            </div>
+            
+            <div class="bg-yt-gray p-4 rounded-lg text-center">
+                <div class="w-12 h-12 bg-yt-red rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                </div>
+                <h3 class="text-lg font-medium mb-2">Private Rooms</h3>
+                <p class="text-sm text-yt-lightgray">Create private rooms to watch with just your friends.</p>
+            </div>
+        </div>
+    </main>
+    
+    <footer class="bg-yt-darker py-4 mt-12 border-t border-yt-gray">
+        <div class="container mx-auto px-4 text-center text-yt-lightgray text-sm">
+            <p>© 2025 Anime Stream. All rights reserved.</p>
+        </div>
+    </footer>
 </body>
 </html>
-
